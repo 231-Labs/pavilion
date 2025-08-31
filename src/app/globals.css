@@ -1,0 +1,236 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: rgba(255, 255, 255, 0.1);
+  --neon-silver: #c0c0c0;
+  --neon-gray: #808080;
+  --liquid-blur: blur(20px);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Courier New', monospace;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(128, 128, 128, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Liquid Glass Effect */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(192, 192, 192, 0.4), transparent);
+}
+
+.glass-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(192, 192, 192, 0.2), transparent);
+}
+
+/* Neon Text Effect */
+.neon-text {
+  color: var(--neon-silver);
+  text-shadow:
+    0 0 5px rgba(192, 192, 192, 0.5),
+    0 0 10px rgba(192, 192, 192, 0.3),
+    0 0 15px rgba(192, 192, 192, 0.2);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+/* Liquid Button Effect */
+.liquid-button {
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(192, 192, 192, 0.1) 50%,
+    rgba(128, 128, 128, 0.1) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(192, 192, 192, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(192, 192, 192, 0.15) 50%,
+    rgba(128, 128, 128, 0.15) 100%);
+}
+
+.liquid-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.liquid-button:hover::before {
+  left: 100%;
+}
+
+/* Control Panel Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.control-panel {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Glow Effect */
+.glow {
+  filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.3));
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(192, 192, 192, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(192, 192, 192, 0.5);
+}
+
+/* Custom Utilities */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+.z-5 {
+  z-index: 5;
+}
+
+.z-15 {
+  z-index: 15;
+}
+
+.z-25 {
+  z-index: 25;
+}
+
+/* Input styling for liquid glass effect */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.6));
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: rgba(192, 192, 192, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(192, 192, 192, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(192, 192, 192, 0.7);
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--neon-silver);
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(192, 192, 192, 0.4);
+  box-shadow: 0 0 8px rgba(192, 192, 192, 0.2);
+}
