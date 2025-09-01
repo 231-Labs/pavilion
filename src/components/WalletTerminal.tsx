@@ -98,7 +98,6 @@ export function WalletTerminal() {
             <ConnectButton
               className="liquid-button w-full py-2 px-3 text-sm font-light tracking-wide uppercase neon-text"
             />
-
             <button
               onClick={handleCallSuiFunction}
               className="liquid-button w-full py-2 px-3 text-sm font-light tracking-wide uppercase neon-text"
