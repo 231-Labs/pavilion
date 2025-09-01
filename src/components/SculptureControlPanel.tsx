@@ -33,20 +33,20 @@ export function SculptureControlPanel({
   }
 
   return (
-    <div className="glass-panel control-panel max-w-sm min-w-[360px] overflow-hidden glow">
+    <div className="glass-panel control-panel max-w-xs min-w-[320px] overflow-hidden glow" style={{ fontSize: '14px' }}>
       {/* Title bar */}
       <div
         className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="neon-text text-lg font-light tracking-wider uppercase">
-          🎨 Sculpture Terminal
+        <h3 className="neon-text text-xl font-medium tracking-wider uppercase" style={{ fontSize: '18px' }}>
+          Sculptures
         </h3>
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-400 tracking-wide">
+          <span className="text-sm font-semibold tracking-wide" style={{ color: 'var(--secondary-text)', fontSize: '13px' }}>
             {isExpanded ? 'COLLAPSE' : 'EXPAND'}
           </span>
-          <span className="text-gray-400 transition-transform duration-300" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <span className="transition-transform duration-300" style={{ color: 'var(--neon-light-blue)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             ▼
           </span>
         </div>
@@ -54,16 +54,17 @@ export function SculptureControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="p-5 space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-3 space-y-3" style={{ fontSize: '13px' }}>
           {/* Sculpture selector */}
-          <div className="space-y-3">
-            <label className="block text-sm font-light text-gray-300 tracking-wide uppercase">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold tracking-wide uppercase" style={{ color: 'var(--accent-text)', fontSize: '14px' }}>
               Select Sculpture
             </label>
             <select
               value={selectedSculpture || ''}
               onChange={(e) => setSelectedSculpture(e.target.value)}
-              className="w-full p-3 glass-panel rounded-lg border border-white/20 bg-transparent text-gray-300"
+              className="w-full p-3 glass-panel rounded-lg border border-white/20 bg-transparent"
+              style={{ color: 'var(--secondary-text)', fontSize: '13px' }}
             >
               {sculptures.map(sculpture => (
                 <option
@@ -78,14 +79,14 @@ export function SculptureControlPanel({
           </div>
 
           {/* Position control */}
-          <div className="space-y-4">
-            <label className="block text-sm font-light neon-text tracking-wide uppercase">
+          <div className="space-y-2">
+            <label className="block text-base font-medium neon-text tracking-wide uppercase" style={{ fontSize: '15px' }}>
               📍 Position Vector
             </label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2">
               {(['x', 'y', 'z'] as const).map(axis => (
-                <div key={axis} className="space-y-2">
-                  <label className="block text-xs text-gray-400 tracking-wide">{axis.toUpperCase()}</label>
+                <div key={axis} className="space-y-1">
+                  <label className="block text-sm font-medium tracking-wide text-center" style={{ color: 'var(--neon-light-blue)', fontSize: '13px' }}>{axis.toUpperCase()}</label>
                   <input
                     type="range"
                     min="-10"
@@ -97,6 +98,7 @@ export function SculptureControlPanel({
                       [axis]: parseFloat(e.target.value)
                     })}
                     className="w-full"
+                    style={{ height: '6px' }}
                   />
                   <input
                     type="number"
@@ -107,6 +109,7 @@ export function SculptureControlPanel({
                       [axis]: parseFloat(e.target.value) || 0
                     })}
                     className="w-full p-2 text-center"
+                    style={{ fontSize: '12px', color: 'var(--secondary-text)' }}
                   />
                 </div>
               ))}
@@ -115,14 +118,14 @@ export function SculptureControlPanel({
 
           {/* Rotation control */}
           {onUpdateRotation && (
-            <div className="space-y-4">
-              <label className="block text-sm font-light neon-text tracking-wide uppercase">
+            <div className="space-y-2">
+              <label className="block text-base font-medium neon-text tracking-wide uppercase" style={{ fontSize: '15px' }}>
                 🔄 Rotation Matrix
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2">
                 {(['x', 'y', 'z'] as const).map(axis => (
-                  <div key={axis} className="space-y-2">
-                    <label className="block text-xs text-gray-400 tracking-wide">{axis.toUpperCase()}</label>
+                  <div key={axis} className="space-y-1">
+                    <label className="block text-sm font-medium tracking-wide text-center" style={{ color: 'var(--neon-light-blue)', fontSize: '13px' }}>{axis.toUpperCase()}</label>
                     <input
                       type="range"
                       min="0"
@@ -161,14 +164,14 @@ export function SculptureControlPanel({
 
           {/* Scale control */}
           {onUpdateScale && (
-            <div className="space-y-4">
-              <label className="block text-sm font-light neon-text tracking-wide uppercase">
+            <div className="space-y-2">
+              <label className="block text-base font-medium neon-text tracking-wide uppercase" style={{ fontSize: '15px' }}>
                 📏 Scale Factor
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2">
                 {(['x', 'y', 'z'] as const).map(axis => (
-                  <div key={axis} className="space-y-2">
-                    <label className="block text-xs text-gray-400 tracking-wide">{axis.toUpperCase()}</label>
+                  <div key={axis} className="space-y-1">
+                    <label className="block text-sm font-medium tracking-wide text-center" style={{ color: 'var(--neon-light-blue)', fontSize: '13px' }}>{axis.toUpperCase()}</label>
                     <input
                       type="range"
                       min="0.1"
@@ -199,17 +202,19 @@ export function SculptureControlPanel({
           )}
 
           {/* Quick reset buttons */}
-          <div className="flex gap-3 pt-4 border-t border-white/10">
+          <div className="flex gap-2 pt-2 border-t border-white/10">
             <button
               onClick={() => onUpdatePosition(currentSculpture.config.id, { x: 0, y: 1, z: 0 })}
-              className="liquid-button flex-1 px-4 py-3 text-xs font-light tracking-wide uppercase neon-text"
+              className="liquid-button flex-1 px-3 py-2 text-sm font-medium tracking-wide uppercase"
+              style={{ fontSize: '12px' }}
             >
               Reset Position
             </button>
             {onUpdateRotation && (
               <button
                 onClick={() => onUpdateRotation(currentSculpture.config.id, { x: 0, y: 0, z: 0 })}
-                className="liquid-button flex-1 px-4 py-3 text-xs font-light tracking-wide uppercase neon-text"
+                className="liquid-button flex-1 px-3 py-2 text-sm font-medium tracking-wide uppercase"
+                style={{ fontSize: '12px' }}
               >
                 Reset Rotation
               </button>
@@ -217,10 +222,10 @@ export function SculptureControlPanel({
           </div>
 
           {/* Status indicator */}
-          <div className="text-center pt-2">
-            <div className="inline-flex items-center space-x-2 text-xs text-gray-400">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="tracking-wide uppercase">System Online</span>
+          <div className="text-center pt-1">
+            <div className="inline-flex items-center space-x-2">
+              <div className="w-3 h-3 animate-pulse" style={{ backgroundColor: 'var(--neon-blue)', boxShadow: '0 0 2px var(--neon-blue), 0 0 3px var(--neon-orange)' }}></div>
+              <span className="font-medium tracking-wide uppercase" style={{ color: 'var(--neon-light-blue)', fontSize: '12px' }}>System Online</span>
             </div>
           </div>
         </div>

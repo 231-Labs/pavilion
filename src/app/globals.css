@@ -2,20 +2,18 @@
 
 :root {
   --background: #000000;
-  --foreground: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-shadow: rgba(255, 255, 255, 0.1);
-  --neon-silver: #c0c0c0;
-  --neon-gray: #808080;
+  --foreground: #00ccff; /* 亮藍色主要文字 */
+  --secondary-text: #66ddff; /* 淺藍色次要文字 */
+  --accent-text: #ffbb66; /* 橘色強調文字 - 更亮的橘色 */
+  --glass-bg: linear-gradient(135deg, rgba(0, 136, 255, 0.25), rgba(255, 136, 0, 0.25)); /* 藍橘漸層玻璃背景 */
+  --glass-border: rgba(0, 136, 255, 0.2); /* 藍色邊框 */
+  --glass-shadow: rgba(0, 136, 255, 0.4); /* 藍色陰影 */
+  --neon-blue: #00aaff; /* 主要霓虹藍 */
+  --neon-light-blue: #66ddff; /* 淺藍色霓虹 */
+  --neon-orange: #ffaa44; /* 橘色霓虹 */
+  --panel-gradient: linear-gradient(135deg, rgba(0, 136, 255, 0.35), rgba(255, 136, 0, 0.35)); /* 面板主漸層 */
+  --button-gradient: linear-gradient(135deg, rgba(0, 136, 255, 0.4), rgba(255, 136, 0, 0.4)); /* 按鈕漸層 */
   --liquid-blur: blur(20px);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 * {
@@ -44,17 +42,18 @@ body::before {
   z-index: -1;
 }
 
-/* Liquid Glass Effect */
+/* Blue-Orange Gradient Glass Effect - Enhanced */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  background: var(--panel-gradient);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(0, 136, 255, 0.08);
+  border-radius: 0px;
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    0 0 6px rgba(0, 136, 255, 0.05),
+    0 0 12px rgba(255, 136, 0, 0.03),
+    inset 0 1px 0 rgba(0, 136, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 136, 0, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -65,8 +64,8 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(192, 192, 192, 0.4), transparent);
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(0, 136, 255, 0.15), rgba(255, 136, 0, 0.12), transparent);
 }
 
 .glass-panel::after {
@@ -75,48 +74,167 @@ body::before {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(192, 192, 192, 0.2), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 136, 0, 0.12), rgba(0, 136, 255, 0.1), transparent);
 }
 
-/* Neon Text Effect */
+/* Blue-Orange Neon Text Effect - Subtle */
 .neon-text {
-  color: var(--neon-silver);
+  color: var(--neon-blue);
   text-shadow:
-    0 0 5px rgba(192, 192, 192, 0.5),
-    0 0 10px rgba(192, 192, 192, 0.3),
-    0 0 15px rgba(192, 192, 192, 0.2);
-  font-weight: 300;
+    0 0 1px rgba(0, 170, 255, 0.6),
+    0 0 3px rgba(0, 170, 255, 0.4),
+    0 0 6px rgba(255, 170, 68, 0.3);
+  font-weight: 600;
   letter-spacing: 1px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Liquid Button Effect */
+/* Blue-Orange Button Effect - Enhanced */
 .liquid-button {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(192, 192, 192, 0.1) 50%,
-    rgba(128, 128, 128, 0.1) 100%);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--button-gradient);
+  border: 1px solid rgba(0, 136, 255, 0.1);
+  border-radius: 0px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 0 4px rgba(0, 136, 255, 0.08),
+    0 0 8px rgba(255, 136, 0, 0.05),
+    inset 0 1px 0 rgba(0, 136, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 136, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  color: var(--neon-blue);
+  font-weight: 600;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Force ConnectButton to match our button styles - Comprehensive */
+.liquid-button *,
+.liquid-button button,
+.liquid-button [role="button"],
+.liquid-button div,
+.liquid-button span,
+.liquid-button button:focus,
+.liquid-button [role="button"]:focus,
+.liquid-button button:hover,
+.liquid-button [role="button"]:hover {
+  background: var(--button-gradient) !important;
+  border: 1px solid rgba(0, 136, 255, 0.1) !important;
+  border-radius: 0px !important;
+  box-shadow:
+    0 0 4px rgba(0, 136, 255, 0.08),
+    0 0 8px rgba(255, 136, 0, 0.05),
+    inset 0 1px 0 rgba(0, 136, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 136, 0, 0.1) !important;
+  color: var(--neon-blue) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Specific ConnectButton dropdown and connected state styles */
+.liquid-button [data-radix-popper-content-wrapper],
+.liquid-button [data-radix-dropdown-menu-content],
+.liquid-button [role="menu"],
+.liquid-button [role="listbox"],
+.liquid-button ul,
+.liquid-button li,
+.liquid-button select,
+.liquid-button option {
+  background: var(--thermal-bg) !important;
+  border: 1px solid rgba(0, 136, 255, 0.2) !important;
+  border-radius: 0px !important;
+  box-shadow:
+    0 0 12px rgba(0, 136, 255, 0.15),
+    0 0 20px rgba(255, 136, 0, 0.1) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+}
+
+.liquid-button li,
+.liquid-button [role="menuitem"],
+.liquid-button option {
+  color: var(--secondary-text) !important;
+  padding: 8px 12px !important;
+  border-radius: 0px !important;
+  transition: all 0.2s ease !important;
+}
+
+.liquid-button li:hover,
+.liquid-button [role="menuitem"]:hover,
+.liquid-button option:hover {
+  background: rgba(0, 136, 255, 0.1) !important;
+  color: var(--neon-light-blue) !important;
+}
+
+/* Additional comprehensive overrides for ConnectButton */
+.liquid-button * {
+  font-family: 'Courier New', monospace !important;
+  font-weight: inherit !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+.liquid-button svg,
+.liquid-button img {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(74%) saturate(1352%) hue-rotate(178deg) brightness(105%) contrast(101%) !important;
+  /* This inverts the icon to match our blue color scheme */
+}
+
+/* Override any potential text truncation or overflow issues */
+.liquid-button [class*="truncate"],
+.liquid-button [class*="ellipsis"] {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* Ensure all interactive elements have proper cursor */
+.liquid-button [role="button"],
+.liquid-button button,
+.liquid-button li {
+  cursor: pointer !important;
 }
 
 .liquid-button:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 8px 32px rgba(192, 192, 192, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 0 8px rgba(0, 136, 255, 0.15),
+    0 0 16px rgba(255, 136, 0, 0.1),
+    inset 0 1px 0 rgba(0, 136, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 136, 0, 0.2);
   background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(192, 192, 192, 0.15) 50%,
-    rgba(128, 128, 128, 0.15) 100%);
+    rgba(0, 170, 255, 0.5) 0%,
+    rgba(255, 170, 0, 0.45) 50%,
+    rgba(0, 170, 255, 0.5) 100%);
+  color: var(--neon-light-blue);
+}
+
+/* Force ConnectButton hover styles - Comprehensive */
+.liquid-button:hover *,
+.liquid-button:hover button,
+.liquid-button:hover [role="button"],
+.liquid-button:hover div,
+.liquid-button:hover span {
+  background: linear-gradient(135deg,
+    rgba(0, 170, 255, 0.5) 0%,
+    rgba(255, 170, 0, 0.45) 50%,
+    rgba(0, 170, 255, 0.5) 100%) !important;
+  color: var(--neon-light-blue) !important;
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 0 8px rgba(0, 136, 255, 0.15),
+    0 0 16px rgba(255, 136, 0, 0.1),
+    inset 0 1px 0 rgba(0, 136, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 136, 0, 0.2) !important;
 }
 
 .liquid-button::before {
@@ -126,7 +244,7 @@ body::before {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 136, 255, 0.3), rgba(255, 136, 0, 0.2), transparent);
   transition: left 0.5s;
 }
 
@@ -156,12 +274,12 @@ body::before {
 
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: rgba(192, 192, 192, 0.3);
-  border-radius: 3px;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -189,48 +307,76 @@ body::before {
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.6));
-  height: 4px;
-  border-radius: 2px;
+  background: linear-gradient(to right, rgba(0, 136, 255, 0.3), rgba(255, 136, 0, 0.4), rgba(0, 136, 255, 0.3));
+  height: 6px;
+  border-radius: 0px;
   outline: none;
   cursor: pointer;
+  box-shadow: 0 0 2px rgba(0, 136, 255, 0.08);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
-  background: rgba(192, 192, 192, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(192, 192, 192, 0.5);
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, rgba(0, 136, 255, 0.9), rgba(255, 136, 0, 0.7));
+  border-radius: 0px;
+  box-shadow: 0 0 4px rgba(0, 136, 255, 0.25), 0 0 6px rgba(255, 136, 0, 0.15);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 12px rgba(192, 192, 192, 0.7);
+  box-shadow: 0 0 6px rgba(0, 136, 255, 0.4), 0 0 8px rgba(255, 136, 0, 0.2);
 }
 
 input[type="number"],
 input[type="text"],
 select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--neon-silver);
-  padding: 8px 12px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(0, 136, 255, 0.15), rgba(255, 136, 0, 0.12));
+  border: 1px solid rgba(0, 136, 255, 0.08);
+  border-radius: 0px;
+  color: var(--secondary-text);
+  padding: 5px 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   font-family: 'Courier New', monospace;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 0 2px rgba(0, 136, 255, 0.06), inset 0 1px 0 rgba(0, 136, 255, 0.04);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 input[type="number"]:focus,
 input[type="text"]:focus,
 select:focus {
   outline: none;
-  border-color: rgba(192, 192, 192, 0.4);
-  box-shadow: 0 0 8px rgba(192, 192, 192, 0.2);
+  border-color: rgba(0, 136, 255, 0.9);
+  box-shadow:
+    0 0 6px rgba(0, 136, 255, 0.15),
+    0 0 8px rgba(255, 136, 0, 0.1),
+    inset 0 1px 0 rgba(0, 136, 255, 0.1);
+  color: var(--neon-blue);
+  background: linear-gradient(135deg, rgba(0, 136, 255, 0.2), rgba(255, 136, 0, 0.18));
+}
+
+/* Hide number input spinners */
+input[type="number"] {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"]::-moz-number-spin-box {
+  -moz-appearance: none;
 }
