@@ -16,7 +16,7 @@ export default function Home() {
   } = useThreeScene({
     backgroundColor: 0x1a1a1a,
     // backgroundColor: 0xFFFFFF,
-    cameraPosition: [0, 5, 10],
+    cameraPosition: [0, 1, 20],
     createGallery: true,
     addSculptures: true,
   });
