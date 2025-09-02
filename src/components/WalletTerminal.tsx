@@ -78,14 +78,14 @@ export function WalletTerminal() {
           className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h3 className="neon-text text-xl font-medium tracking-wider uppercase" style={{ fontSize: '18px' }}>
+          <h3 className="elegant-title tracking-wider uppercase">
             Wallet
           </h3>
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-semibold tracking-wide" style={{ color: 'var(--secondary-text)', fontSize: '13px' }}>
+            <span className="elegant-expand-text font-medium tracking-wide">
               {isExpanded ? 'COLLAPSE' : 'EXPAND'}
             </span>
-            <span className="transition-transform duration-300" style={{ color: 'var(--neon-light-blue)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               ▼
             </span>
           </div>
@@ -93,40 +93,65 @@ export function WalletTerminal() {
 
         {/* Control panel content */}
         {isExpanded && (
-          <div className="p-3 space-y-3" style={{ fontSize: '13px' }}>
-
-            <ConnectButton
-              className="liquid-button w-full py-2 px-3 text-sm font-light tracking-wide uppercase neon-text"
-            />
-            <button
-              onClick={handleCallSuiFunction}
-              className="liquid-button w-full py-2 px-3 text-sm font-light tracking-wide uppercase neon-text"
-            >
-              Call Sui Function
-            </button>
+          <div className="p-3" style={{ fontSize: '13px' }}>
+            
+            <div className="wallet-terminal-buttons">
+              <ConnectButton
+                className="elegant-button w-full text-sm tracking-wide uppercase"
+                style={{ 
+                  padding: '12px 16px',
+                  minHeight: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '6px',
+                  background: 'var(--surface-light)',
+                  color: 'var(--primary-text)',
+                  fontFamily: '"Courier New", monospace',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  boxShadow: 'none'
+                }}
+              />
+              <button
+                onClick={handleCallSuiFunction}
+                className="elegant-button w-full py-3 px-4 text-sm tracking-wide uppercase"
+              >
+                Call Sui Function
+              </button>
+            </div>
 
             {currentAccount && (
-              <div className="p-3 glass-panel rounded-lg">
+              <div className="p-3 rounded-lg mt-4" style={{ backgroundColor: 'var(--surface-subtle)', border: '1px solid var(--border-light)', borderRadius: '6px' }}>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-sm font-semibold mb-1 tracking-wide uppercase" style={{ color: 'var(--accent-text)', fontSize: '12px' }}>WALLET ADDRESS</p>
-                    <p className="text-sm font-mono break-all leading-relaxed font-medium" style={{ color: 'var(--secondary-text)', fontSize: '12px' }}>
+                    <p className="text-sm font-medium mb-1 tracking-wide uppercase control-label-secondary">WALLET ADDRESS</p>
+                    <p className="text-sm font-mono break-all leading-relaxed font-medium control-input" style={{ padding: '8px', borderRadius: '4px' }}>
                       {currentAccount.address}
                     </p>
                   </div>
                   <div className="pt-2 border-t border-white/10">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--neon-blue)', fontSize: '13px' }}>
-                      BALANCE: <span className="font-bold" style={{ color: 'var(--secondary-text)' }}>{balance} SUI</span>
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">BALANCE</span>
+                      <span className="font-medium control-label-primary">{balance} SUI</span>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="p-3 glass-panel rounded-lg" style={{ border: '1px solid rgba(255, 187, 102, 0.6)', backgroundColor: 'rgba(64, 32, 0, 0.2)', boxShadow: '0 0 20px rgba(255, 187, 102, 0.3)' }}>
-                <p className="text-sm font-semibold tracking-wide" style={{ color: 'var(--accent-text)', fontSize: '12px' }}>
-                  ERROR: {error}
+              <div className="p-3 rounded-lg mt-4" style={{ backgroundColor: 'var(--surface-subtle)', border: '1px solid var(--border-medium)', borderRadius: '6px' }}>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+                </div>
+                <p className="text-sm font-mono break-all leading-relaxed font-medium control-input" style={{ padding: '8px', borderRadius: '4px' }}>
+                  {error}
                 </p>
               </div>
             )}
