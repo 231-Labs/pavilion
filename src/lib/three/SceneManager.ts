@@ -2,6 +2,7 @@ import * as THREE from 'three';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface SceneConfig {
   backgroundColor?: number;
@@ -13,6 +14,17 @@ export interface SceneConfig {
   cameraPosition?: [number, number, number];
 }
 
+// Options for loading GLB models
+export interface LoadGLBOptions {
+  position?: { x: number; y: number; z: number };
+  rotation?: { x: number; y: number; z: number };
+  scale?: { x: number; y: number; z: number };
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+  name?: string;
+  onProgress?: (progress: ProgressEvent) => void;
+}
+
 export class SceneManager {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
@@ -21,6 +33,7 @@ export class SceneManager {
   private animationId: number | null = null;
   private resizeHandler: () => void;
   private sculptures: Map<string, SculptureInstance> = new Map();
+  private loadedModels: Map<string, THREE.Group> = new Map();
 
   constructor(canvas: HTMLCanvasElement, config: SceneConfig = {}) {
     // Setup scene
@@ -265,5 +278,204 @@ export class SceneManager {
     
     this.renderer.dispose();
     this.controls.dispose();
+  }
+
+  async loadGLBModel(url: string, options: LoadGLBOptions = {}) {
+    const loader = new GLTFLoader();
+
+    // Check cache
+    if (this.loadedModels.has(url)) {
+      console.log(`Loading model from cache: ${url}`);
+      const cachedModel = this.loadedModels.get(url)!;
+
+      // If model is not in scene, add it back
+      if (cachedModel.parent !== this.scene) {
+        // Reapply options
+        if (options.name) {
+          cachedModel.name = options.name;
+        }
+        if (options.position) {
+          cachedModel.position.set(options.position.x, options.position.y, options.position.z);
+        }
+        if (options.rotation) {
+          cachedModel.rotation.set(options.rotation.x, options.rotation.y, options.rotation.z);
+        }
+        if (options.scale) {
+          cachedModel.scale.set(options.scale.x, options.scale.y, options.scale.z);
+        }
+
+        // Set shadows
+        const castShadow = options.castShadow !== false;
+        const receiveShadow = options.receiveShadow !== false;
+        cachedModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = castShadow;
+            child.receiveShadow = receiveShadow;
+          }
+        });
+
+        this.scene.add(cachedModel);
+      }
+
+      return Promise.resolve(cachedModel);
+    }
+
+    return new Promise<THREE.Group>((resolve, reject) => {
+      loader.load(
+        url,
+        (gltf) => {
+          const model = gltf.scene;
+
+          // Set name
+          if (options.name) {
+            model.name = options.name;
+          }
+
+          // Set position
+          if (options.position) {
+            model.position.set(options.position.x, options.position.y, options.position.z);
+          }
+
+          // Set rotation
+          if (options.rotation) {
+            model.rotation.set(options.rotation.x, options.rotation.y, options.rotation.z);
+          }
+
+          // Set scale
+          if (options.scale) {
+            model.scale.set(options.scale.x, options.scale.y, options.scale.z);
+          }
+
+          // Enable shadows
+          const castShadow = options.castShadow !== false;
+          const receiveShadow = options.receiveShadow !== false;
+
+          model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.castShadow = castShadow;
+              child.receiveShadow = receiveShadow;
+
+              // Ensure material is properly set
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach(mat => {
+                    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                      mat.needsUpdate = true;
+                    }
+                  });
+                } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhysicalMaterial) {
+                  child.material.needsUpdate = true;
+                }
+              }
+            }
+          });
+
+          // Add to scene
+          this.scene.add(model);
+
+          // Cache model reference for later removal
+          this.loadedModels.set(url, model);
+
+          console.log(`GLB model loaded successfully: ${url}`);
+          resolve(model);
+        },
+        (progress) => {
+          const percent = Math.round((progress.loaded / progress.total) * 100);
+          console.log(`Loading progress ${url}: ${percent}%`);
+
+          if (options.onProgress) {
+            options.onProgress(progress);
+          }
+        },
+        (error) => {
+          console.error(`Failed to load GLB model: ${url}`, error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          reject(new Error(`Failed to load GLB model: ${url}. ${errorMessage}`));
+        }
+      );
+    });
+  }
+
+
+
+  // Load multiple GLB models
+  async loadMultipleGLBModels(models: Array<{ url: string; options?: LoadGLBOptions }>): Promise<THREE.Group[]> {
+    const promises = models.map(({ url, options = {} }) =>
+      this.loadGLBModel(url, options)
+    );
+
+    try {
+      const loadedModels = await Promise.all(promises);
+      console.log(`Successfully loaded ${loadedModels.length} GLB models`);
+      return loadedModels;
+    } catch (error) {
+      console.error('Error loading multiple GLB models:', error);
+      throw error;
+    }
+  }
+
+  // Remove loaded model
+  removeLoadedModel(model: THREE.Group) {
+    this.scene.remove(model);
+
+    // Clean up resources
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(material => material.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  // Remove all loaded GLB models
+  removeAllLoadedModels() {
+    console.log('Starting to clear all loaded GLB models, current cache size:', this.loadedModels.size);
+
+    // Clear all models in cache
+    this.loadedModels.forEach((model, url) => {
+      console.log('Removing model:', url, model.name);
+
+      // Ensure model is still in scene
+      if (model.parent === this.scene) {
+        this.scene.remove(model);
+        console.log('Removed model from scene:', model.name);
+      } else {
+        console.log('Model not in scene:', model.name);
+      }
+
+      // Clean up resources
+      model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(material => material.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+    });
+
+    // Clear cache
+    this.loadedModels.clear();
+    console.log('All loaded GLB models cleared, cache emptied');
+  }
+
+  // Clear model cache
+  clearModelCache() {
+    this.loadedModels.clear();
+    console.log('GLB model cache cleared');
   }
 }

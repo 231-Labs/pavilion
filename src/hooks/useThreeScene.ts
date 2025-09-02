@@ -82,7 +82,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
 
   return {
     canvasRef,
-    sceneManager: getSceneManager,
+    sceneManager: getSceneManager() || undefined,
     sculptures,
     updateSculpturePosition,
     updateSculptureRotation,

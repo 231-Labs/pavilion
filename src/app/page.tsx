@@ -9,6 +9,7 @@ export default function Home() {
   // Use Three.js scene management hook
   const {
     canvasRef,
+    sceneManager,
     sculptures,
     updateSculpturePosition,
     updateSculptureRotation,
@@ -35,10 +36,12 @@ export default function Home() {
       {/* Left Control Panel - Sui Wallet */}
       <WalletTerminal />
 
-      {/* Right Sculpture Control Panel */}
+      {/* Right Control Panels */}
       <div className="absolute top-6 right-6 z-20">
+        {/* Sculpture Control Panel with Integrated GLB Loader */}
         <SculptureControlPanel
           sculptures={sculptures}
+          sceneManager={sceneManager}
           onUpdatePosition={updateSculpturePosition}
           onUpdateRotation={updateSculptureRotation}
           onUpdateScale={updateSculptureScale}
