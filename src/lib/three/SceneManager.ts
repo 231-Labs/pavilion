@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-// @ts-ignore
+// @ts-expect-error Importing OrbitControls from examples path lacks bundled TS types in this setup
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';

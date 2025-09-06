@@ -17,15 +17,24 @@ export function WalletTerminal() {
 
   // When wallet connection status changes
   useEffect(() => {
-    if (currentAccount) {
-      setError('');
-      // Get balance
-      const fetchBalance = async () => {
+    if (!currentAccount) return;
+
+    setError('');
+
+    let isCancelled = false;
+    const fetchBalance = async () => {
+      try {
         const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
+        if (isCancelled) return;
         setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
-      };
-      fetchBalance();
-    }
+      } catch (e) {
+        if (isCancelled) return;
+        setError((e as Error).message || 'Failed to fetch balance');
+      }
+    };
+    fetchBalance();
+
+    return () => { isCancelled = true; };
   }, [currentAccount, suiClient]);
 
   const handleCallSuiFunction = async () => {

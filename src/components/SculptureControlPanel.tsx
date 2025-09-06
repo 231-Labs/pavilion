@@ -73,10 +73,7 @@ export function SculptureControlPanel({
 
         if (child instanceof THREE.Group &&
             child.name &&
-            (child.name.startsWith('CustomModel_') ||
-             child.name === 'TestCube' ||
-             child.name === 'SmallCube' ||
-             child.name === 'LargeCube')) {
+            child.parent === scene) {
 
           const modelId = `external_${child.name}`;
 
@@ -119,117 +116,12 @@ export function SculptureControlPanel({
     if (allObjects.length > 0 && (!selectedSculpture || !selectedExists)) {
       setSelectedSculpture(allObjects[0].id);
     }
-  }, [sculptures, sceneManager, loadedModels]);
+  }, [sculptures, sceneManager, loadedModels, selectedSculpture]);
 
-  // Get external models from loaded models list
-  const getExternalObjects = (): ControllableObject[] => {
-    if (!sceneManager) return [];
-
-    const externalObjects: ControllableObject[] = [];
-    const scene = sceneManager.getScene();
-
-    scene.traverse((child) => {
-      if (child instanceof THREE.Group &&
-          child.name &&
-          (child.name.startsWith('CustomModel_') ||
-           child.name === 'TestCube' ||
-           child.name === 'SmallCube' ||
-           child.name === 'LargeCube')) {
-        externalObjects.push({
-          id: `external_${child.name}`,
-          name: child.name,
-          type: 'external' as const,
-          position: { x: child.position.x, y: child.position.y, z: child.position.z },
-          rotation: { x: child.rotation.x, y: child.rotation.y, z: child.rotation.z },
-          scale: { x: child.scale.x, y: child.scale.y, z: child.scale.z },
-          object: child
-        });
-      }
-    });
-
-    return externalObjects;
-  };
+  // (removed) getExternalObjects was unused
 
   // GLB loading handler functions
-  const loadTestCube = async () => {
-    if (!sceneManager) return;
-
-    // Check if already loaded
-    if (loadedModels.includes('TestCube')) {
-      setError('TestCube is already loaded');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    try {
-      const model = await sceneManager.loadGLBModel('/models/test-cube.glb', {
-        position: { x: 0, y: 2, z: 0 },
-        name: 'TestCube',
-        onProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
-          setLoadingProgress(percent);
-        }
-      });
-
-      setLoadedModels(prev => [...prev, 'TestCube']);
-      console.log('Test cube loaded successfully:', model);
-      console.log('Loaded model name:', model.name);
-      console.log('Loaded model type:', model.type);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadMultipleModels = async () => {
-    if (!sceneManager) return;
-
-    const modelNames = ['SmallCube', 'LargeCube'];
-
-    // Check if already loaded
-    const alreadyLoaded = modelNames.filter(name => loadedModels.includes(name));
-    if (alreadyLoaded.length > 0) {
-      setError(`${alreadyLoaded.join(', ')} already loaded`);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    const modelsToLoad = [
-      {
-        url: '/models/test-cube.glb',
-        options: {
-          position: { x: -3, y: 2, z: 0 },
-          scale: { x: 0.5, y: 0.5, z: 0.5 },
-          name: 'SmallCube'
-        }
-      },
-      {
-        url: '/models/test-cube.glb',
-        options: {
-          position: { x: 3, y: 2, z: 0 },
-          scale: { x: 1.5, y: 1.5, z: 1.5 },
-          name: 'LargeCube'
-        }
-      }
-    ];
-
-    try {
-      const loadedModels = await sceneManager.loadMultipleGLBModels(modelsToLoad);
-      setLoadedModels(prev => [...prev, ...modelNames]);
-      console.log('Multiple models loaded successfully:', loadedModels);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
 
   const loadCustomModel = async () => {
     if (!sceneManager) return;
@@ -262,6 +154,45 @@ export function SculptureControlPanel({
 
       setLoadedModels(prev => [...prev, modelName]);
       console.log('Custom model loaded successfully:', model);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Loading failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAllModels = async () => {
+    if (!sceneManager) return;
+
+    setIsLoading(true);
+    setError(null);
+    setLoadingProgress(0);
+
+    try {
+      const res = await fetch('/api/models');
+      if (!res.ok) {
+        throw new Error('Failed to list models');
+      }
+      const data: { files?: Array<{ name: string; url: string }>; error?: string } = await res.json();
+      const files = data.files || [];
+
+      if (files.length === 0) {
+        setError('No models found in /public/models');
+        return;
+      }
+
+      const modelsToLoad = files.map((file, index) => ({
+        url: file.url,
+        options: {
+          name: file.name.replace(/\.(glb|gltf)$/i, ''),
+          position: { x: (index - Math.floor(files.length / 2)) * 2.5, y: 1.5, z: 0 },
+        },
+      }));
+
+      const groups = await sceneManager.loadMultipleGLBModels(modelsToLoad);
+      const modelNames = modelsToLoad.map((m) => (m.options as { name: string }).name);
+      setLoadedModels(prev => [...prev, ...modelNames]);
+      console.log(`Loaded ${groups.length} models from /public/models`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Loading failed');
     } finally {
@@ -608,24 +539,6 @@ export function SculptureControlPanel({
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={loadTestCube}
-                    disabled={isLoading}
-                    className="px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded transition-colors"
-                  >
-                    {isLoading ? 'Loading...' : 'Test Cube'}
-                  </button>
-
-                  <button
-                    onClick={loadMultipleModels}
-                    disabled={isLoading}
-                    className="px-3 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded transition-colors"
-                  >
-                    {isLoading ? 'Loading...' : 'Multiple Models'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
                     onClick={loadCustomModel}
                     disabled={isLoading}
                     className="px-3 py-2 text-sm bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded transition-colors"
@@ -638,6 +551,16 @@ export function SculptureControlPanel({
                     className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
                   >
                     Clear Models
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={loadAllModels}
+                    disabled={isLoading}
+                    className="px-3 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded transition-colors col-span-2"
+                  >
+                    {isLoading ? 'Loading...' : 'Load All Models (from /public/models)'}
                   </button>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SceneManager } from '../lib/three/SceneManager';
 
 interface GLBLoaderProps {
@@ -11,61 +11,39 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Load test cube
-  const loadTestCube = async () => {
+  
+
+  // Load all models from public/models via API
+  const loadAllModels = async () => {
     setIsLoading(true);
     setError(null);
     setLoadingProgress(0);
 
     try {
-      const model = await sceneManager.loadGLBModel('/models/test-cube.glb', {
-        position: { x: 0, y: 2, z: 0 },
-        name: 'TestCube',
-        onProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
-          setLoadingProgress(percent);
-        }
-      });
-
-      setLoadedModels(prev => [...prev, 'TestCube']);
-      console.log('Test cube loaded successfully:', model);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Load multiple models
-  const loadMultipleModels = async () => {
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    const modelsToLoad = [
-      {
-        url: '/models/test-cube.glb',
-        options: {
-          position: { x: -3, y: 2, z: 0 },
-          scale: { x: 0.5, y: 0.5, z: 0.5 },
-          name: 'SmallCube1'
-        }
-      },
-      {
-        url: '/models/test-cube.glb',
-        options: {
-          position: { x: 3, y: 2, z: 0 },
-          scale: { x: 1.5, y: 1.5, z: 1.5 },
-          name: 'LargeCube1'
-        }
+      const res = await fetch('/api/models');
+      if (!res.ok) {
+        throw new Error('Failed to list models');
       }
-    ];
+      const data: { files?: Array<{ name: string; url: string }>; error?: string } = await res.json();
+      const files = data.files || [];
 
-    try {
-      const loadedModels = await sceneManager.loadMultipleGLBModels(modelsToLoad);
-      const modelNames = loadedModels.map((_, index) => modelsToLoad[index].options.name);
-      setLoadedModels(prev => [...prev, ...modelNames]);
-      console.log('Multiple models loaded successfully:', loadedModels);
+      if (files.length === 0) {
+        setError('No models found in /public/models');
+        return;
+      }
+
+      const modelsToLoad = files.map((file, index) => ({
+        url: file.url,
+        options: {
+          name: file.name.replace(/\.(glb|gltf)$/i, ''),
+          position: { x: (index - Math.floor(files.length / 2)) * 2.5, y: 1.5, z: 0 },
+        },
+      }));
+
+      const groups = await sceneManager.loadMultipleGLBModels(modelsToLoad);
+      const modelNames = modelsToLoad.map((m) => (m.options as { name: string }).name);
+      setLoadedModels((prev) => [...prev, ...modelNames]);
+      console.log(`Loaded ${groups.length} models from /public/models`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Loading failed');
     } finally {
@@ -116,20 +94,13 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
       <h2 className="text-xl font-bold mb-4 text-gray-800">GLB Model Loader</h2>
 
       <div className="space-y-3">
-        <button
-          onClick={loadTestCube}
-          disabled={isLoading}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded transition-colors"
-        >
-          {isLoading ? 'Loading...' : 'Load Test Cube'}
-        </button>
 
         <button
-          onClick={loadMultipleModels}
+          onClick={loadAllModels}
           disabled={isLoading}
-          className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded transition-colors"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white px-4 py-2 rounded transition-colors"
         >
-          {isLoading ? 'Loading...' : 'Load Multiple Models'}
+          {isLoading ? 'Loading...' : 'Load All Models (from /public/models)'}
         </button>
 
         <button
@@ -184,6 +155,7 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
         <p><strong>Supported Features:</strong></p>
         <ul className="mt-1 space-y-1">
           <li>• Local file loading (/models/...)</li>
+          <li>• Load all models from /public/models via API</li>
           <li>• External URL loading</li>
           <li>• Model caching and cloning</li>
           <li>• Custom position, rotation, scale</li>
