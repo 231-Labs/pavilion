@@ -4,6 +4,7 @@ import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { ReactNode } from 'react';
+import { elegantTheme } from '../styles/dappKitTheme';
 
 // Create QueryClient
 const queryClient = new QueryClient();
@@ -14,6 +15,7 @@ const networks = {
   mainnet: { url: getFullnodeUrl('mainnet') },
 };
 
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -22,7 +24,7 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networks} defaultNetwork="testnet">
-        <WalletProvider>
+        <WalletProvider theme={elegantTheme}>
           {children}
         </WalletProvider>
       </SuiClientProvider>

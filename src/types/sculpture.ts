@@ -69,7 +69,7 @@ export const defaultSculptures: SculptureConfig[] = [
 // Geometry creation functions corresponding to sculpture types
 export const sculptureGeometryFactories = {
   torusKnot: (config: SculptureConfig) => 
-    new THREE.TorusKnotGeometry(1, 0.3, 100, 16),
+    new THREE.TorusKnotGeometry(1, 0.3, 20, 16, 51, 13),
   
   icosahedron: (config: SculptureConfig) => 
     new THREE.IcosahedronGeometry(config.geometry?.radius || 1.5),

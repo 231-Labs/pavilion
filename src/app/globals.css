@@ -2,18 +2,36 @@
 
 :root {
   --background: #000000;
-  --foreground: #00ccff; /* 亮藍色主要文字 */
-  --secondary-text: #66ddff; /* 淺藍色次要文字 */
-  --accent-text: #ffbb66; /* 橘色強調文字 - 更亮的橘色 */
-  --glass-bg: linear-gradient(135deg, rgba(0, 136, 255, 0.25), rgba(255, 136, 0, 0.25)); /* 藍橘漸層玻璃背景 */
-  --glass-border: rgba(0, 136, 255, 0.2); /* 藍色邊框 */
-  --glass-shadow: rgba(0, 136, 255, 0.4); /* 藍色陰影 */
-  --neon-blue: #00aaff; /* 主要霓虹藍 */
-  --neon-light-blue: #66ddff; /* 淺藍色霓虹 */
-  --neon-orange: #ffaa44; /* 橘色霓虹 */
-  --panel-gradient: linear-gradient(135deg, rgba(0, 136, 255, 0.35), rgba(255, 136, 0, 0.35)); /* 面板主漸層 */
-  --button-gradient: linear-gradient(135deg, rgba(0, 136, 255, 0.4), rgba(255, 136, 0, 0.4)); /* 按鈕漸層 */
-  --liquid-blur: blur(20px);
+  
+  /* Elegant Silver-Gray Color System */
+  --primary-text: rgba(240, 245, 250, 0.95); /* Primary text - Light silver */
+  --secondary-text: rgba(220, 230, 240, 0.85); /* Secondary text - Silver gray */
+  --tertiary-text: rgba(200, 215, 230, 0.75); /* Tertiary text */
+  --quaternary-text: rgba(180, 200, 220, 0.65); /* Quaternary text */
+  --muted-text: rgba(160, 180, 200, 0.55); /* Muted text */
+  
+  /* Glass Panel - Elegant Silver Gradient */
+  --glass-gradient: linear-gradient(135deg, 
+    rgba(240, 245, 250, 0.08) 0%, 
+    rgba(200, 220, 240, 0.12) 50%, 
+    rgba(180, 200, 220, 0.08) 100%);
+  --glass-border: rgba(220, 230, 240, 0.15);
+  --glass-shadow: rgba(180, 200, 220, 0.2);
+  
+  /* Surface Colors */
+  --surface-subtle: rgba(240, 245, 250, 0.06);
+  --surface-light: rgba(220, 230, 240, 0.08);
+  --surface-medium: rgba(200, 215, 230, 0.10);
+  
+  /* Border Colors */
+  --border-light: rgba(220, 230, 240, 0.12);
+  --border-medium: rgba(200, 215, 230, 0.18);
+  --border-strong: rgba(180, 200, 220, 0.25);
+  
+  /* Interactive States */
+  --hover-overlay: rgba(240, 245, 250, 0.08);
+  --focus-border: rgba(220, 230, 240, 0.35);
+  --focus-shadow: rgba(200, 215, 230, 0.15);
 }
 
 * {
@@ -22,7 +40,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--primary-text);
   font-family: 'Courier New', monospace;
   overflow-x: hidden;
   position: relative;
@@ -36,221 +54,31 @@ body::before {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(circle at 20% 20%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(128, 128, 128, 0.05) 0%, transparent 50%);
+    radial-gradient(circle at 25% 25%, rgba(240, 245, 250, 0.03) 0%, transparent 60%),
+    radial-gradient(circle at 75% 75%, rgba(200, 220, 240, 0.02) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(220, 230, 240, 0.01) 0%, transparent 80%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 70%);
   pointer-events: none;
   z-index: -1;
 }
 
-/* Blue-Orange Gradient Glass Effect - Enhanced */
-.glass-panel {
-  background: var(--panel-gradient);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(0, 136, 255, 0.08);
-  border-radius: 0px;
-  box-shadow:
-    0 0 6px rgba(0, 136, 255, 0.05),
-    0 0 12px rgba(255, 136, 0, 0.03),
-    inset 0 1px 0 rgba(0, 136, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 136, 0, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.glass-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(0, 136, 255, 0.15), rgba(255, 136, 0, 0.12), transparent);
-}
-
-.glass-panel::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 136, 0, 0.12), rgba(0, 136, 255, 0.1), transparent);
-}
-
-/* Blue-Orange Neon Text Effect - Subtle */
-.neon-text {
-  color: var(--neon-blue);
-  text-shadow:
-    0 0 1px rgba(0, 170, 255, 0.6),
-    0 0 3px rgba(0, 170, 255, 0.4),
-    0 0 6px rgba(255, 170, 68, 0.3);
-  font-weight: 600;
-  letter-spacing: 1px;
+/* Elegant Text Styles */
+.elegant-text {
+  color: var(--primary-text);
+  font-weight: 500;
+  letter-spacing: 0.5px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Blue-Orange Button Effect - Enhanced */
-.liquid-button {
-  background: var(--button-gradient);
-  border: 1px solid rgba(0, 136, 255, 0.1);
-  border-radius: 0px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    0 0 4px rgba(0, 136, 255, 0.08),
-    0 0 8px rgba(255, 136, 0, 0.05),
-    inset 0 1px 0 rgba(0, 136, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 136, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  color: var(--neon-blue);
-  font-weight: 600;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Force ConnectButton to match our button styles - Comprehensive */
-.liquid-button *,
-.liquid-button button,
-.liquid-button [role="button"],
-.liquid-button div,
-.liquid-button span,
-.liquid-button button:focus,
-.liquid-button [role="button"]:focus,
-.liquid-button button:hover,
-.liquid-button [role="button"]:hover {
-  background: var(--button-gradient) !important;
-  border: 1px solid rgba(0, 136, 255, 0.1) !important;
-  border-radius: 0px !important;
-  box-shadow:
-    0 0 4px rgba(0, 136, 255, 0.08),
-    0 0 8px rgba(255, 136, 0, 0.05),
-    inset 0 1px 0 rgba(0, 136, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 136, 0, 0.1) !important;
-  color: var(--neon-blue) !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  letter-spacing: 1px !important;
-  text-transform: uppercase !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-}
-
-/* Specific ConnectButton dropdown and connected state styles */
-.liquid-button [data-radix-popper-content-wrapper],
-.liquid-button [data-radix-dropdown-menu-content],
-.liquid-button [role="menu"],
-.liquid-button [role="listbox"],
-.liquid-button ul,
-.liquid-button li,
-.liquid-button select,
-.liquid-button option {
-  background: var(--thermal-bg) !important;
-  border: 1px solid rgba(0, 136, 255, 0.2) !important;
-  border-radius: 0px !important;
-  box-shadow:
-    0 0 12px rgba(0, 136, 255, 0.15),
-    0 0 20px rgba(255, 136, 0, 0.1) !important;
-  backdrop-filter: blur(15px) !important;
-  -webkit-backdrop-filter: blur(15px) !important;
-}
-
-.liquid-button li,
-.liquid-button [role="menuitem"],
-.liquid-button option {
-  color: var(--secondary-text) !important;
-  padding: 8px 12px !important;
-  border-radius: 0px !important;
-  transition: all 0.2s ease !important;
-}
-
-.liquid-button li:hover,
-.liquid-button [role="menuitem"]:hover,
-.liquid-button option:hover {
-  background: rgba(0, 136, 255, 0.1) !important;
-  color: var(--neon-light-blue) !important;
-}
-
-/* Additional comprehensive overrides for ConnectButton */
-.liquid-button * {
-  font-family: 'Courier New', monospace !important;
-  font-weight: inherit !important;
-  text-rendering: optimizeLegibility !important;
-  -webkit-font-smoothing: antialiased !important;
-}
-
-.liquid-button svg,
-.liquid-button img {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(74%) saturate(1352%) hue-rotate(178deg) brightness(105%) contrast(101%) !important;
-  /* This inverts the icon to match our blue color scheme */
-}
-
-/* Override any potential text truncation or overflow issues */
-.liquid-button [class*="truncate"],
-.liquid-button [class*="ellipsis"] {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
-
-/* Ensure all interactive elements have proper cursor */
-.liquid-button [role="button"],
-.liquid-button button,
-.liquid-button li {
-  cursor: pointer !important;
-}
-
-.liquid-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 8px rgba(0, 136, 255, 0.15),
-    0 0 16px rgba(255, 136, 0, 0.1),
-    inset 0 1px 0 rgba(0, 136, 255, 0.4),
-    inset 0 -1px 0 rgba(255, 136, 0, 0.2);
-  background: linear-gradient(135deg,
-    rgba(0, 170, 255, 0.5) 0%,
-    rgba(255, 170, 0, 0.45) 50%,
-    rgba(0, 170, 255, 0.5) 100%);
-  color: var(--neon-light-blue);
-}
-
-/* Force ConnectButton hover styles - Comprehensive */
-.liquid-button:hover *,
-.liquid-button:hover button,
-.liquid-button:hover [role="button"],
-.liquid-button:hover div,
-.liquid-button:hover span {
-  background: linear-gradient(135deg,
-    rgba(0, 170, 255, 0.5) 0%,
-    rgba(255, 170, 0, 0.45) 50%,
-    rgba(0, 170, 255, 0.5) 100%) !important;
-  color: var(--neon-light-blue) !important;
-  transform: translateY(-2px) !important;
-  box-shadow:
-    0 0 8px rgba(0, 136, 255, 0.15),
-    0 0 16px rgba(255, 136, 0, 0.1),
-    inset 0 1px 0 rgba(0, 136, 255, 0.4),
-    inset 0 -1px 0 rgba(255, 136, 0, 0.2) !important;
-}
-
-.liquid-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 136, 255, 0.3), rgba(255, 136, 0, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.liquid-button:hover::before {
-  left: 100%;
-}
 
 /* Control Panel Animation */
 @keyframes float {
@@ -259,13 +87,200 @@ body::before {
 }
 
 .control-panel {
-  animation: float 6s ease-in-out infinite;
+  animation: none;
 }
 
 /* Glow Effect */
 .glow {
   filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.3));
 }
+
+/* Modernist architectural frame - subtle outer lines */
+.architect-frame {
+  position: absolute;
+  inset: 32px;
+  border: 1px solid rgba(255,255,255,0.08);
+  pointer-events: none;
+}
+
+.architect-frame::before,
+.architect-frame::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+
+.architect-frame::before { top: 48px; }
+.architect-frame::after { bottom: 48px; }
+
+/* Large architectural grid */
+.architect-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 64px 64px, 64px 64px;
+  opacity: 0.8;
+  mask-image: radial-gradient(circle at center, black 65%, transparent 95%);
+  pointer-events: none;
+}
+
+/* Horizontal glass ribbon */
+.glass-ribbon {
+  background: linear-gradient(
+    180deg,
+    rgba(240, 245, 250, 0.06),
+    rgba(200, 215, 230, 0.08)
+  );
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(220, 230, 240, 0.15);
+  border-bottom: 1px solid rgba(220, 230, 240, 0.12);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+/* Terminal overlay grid */
+.terminal-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+  mask-image: radial-gradient(circle at center, black 50%, transparent 85%);
+  pointer-events: none;
+}
+
+/* Noise film */
+.film-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Silver text glow utility */
+.silver-glow {
+  text-shadow: 0 0 10px rgba(220,230,240,0.35), 0 0 22px rgba(200,210,220,0.2);
+}
+
+/* Frosted glass slab for grouped actions */
+.glass-slab {
+  position: relative;
+  background: linear-gradient(180deg, rgba(240,245,250,0.02), rgba(200,215,230,0.03));
+  -webkit-backdrop-filter: blur(28px) saturate(110%);
+  backdrop-filter: blur(28px) saturate(110%);
+  border: 1px solid rgba(220,230,240,0.08);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.12);
+}
+
+.glass-slab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+  pointer-events: none;
+}
+
+.glass-slab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Thermal transparent variant (merged) */
+.glass-slab--thermal {
+  background: transparent;
+  border: 0;
+  --mx: 50;
+  --my: 50;
+}
+
+.glass-slab--thermal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 65%),
+    linear-gradient(135deg, rgba(255, 204, 140, 0.02) 0%, rgba(255, 166, 80, 0.015) 50%, rgba(255, 236, 200, 0.02) 100%),
+    radial-gradient(60% 80% at calc(var(--mx, 50) * 1%) calc(var(--my, 50) * 1%), rgba(255, 196, 120, 0.10), transparent 60%),
+    radial-gradient(55% 75% at calc((100 - var(--mx, 50)) * 1%) calc(var(--my, 50) * 1%), rgba(64, 200, 255, 0.08), transparent 62%),
+    radial-gradient(130% 150% at 85% 20%, rgba(64, 200, 255, 0.05), transparent 24%),
+    radial-gradient(140% 160% at 20% 85%, rgba(170, 120, 255, 0.045), transparent 26%),
+    radial-gradient(120% 140% at 30% 20%, rgba(255, 196, 120, 0.06), transparent 22%),
+    radial-gradient(110% 130% at 75% 35%, rgba(255, 140, 64, 0.05), transparent 24%),
+    radial-gradient(140% 160% at 60% 80%, rgba(255, 234, 190, 0.045), transparent 24%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-blend-mode: screen, screen, screen, screen, screen, screen, screen, screen, normal;
+  pointer-events: none;
+}
+
+/* Subtle interactive feedback */
+/* Removed interactive feedback per latest design */
+
+/* In-slab elegant double divider */
+.slab-divider {
+  position: relative;
+  height: 12px;
+}
+
+.slab-divider::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-0.5px);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  opacity: 0.35;
+}
+
+/* Slab segment with integrated double divider (no gap) */
+.slab-segment {
+  position: relative;
+  display: block;
+}
+
+.slab-segment:not(:last-child)::before,
+.slab-segment:not(:last-child)::after {
+  content: none;
+}
+
+/* Elegant double divider */
+.double-divider {
+  position: relative;
+  height: 14px; /* Spacer height */
+}
+
+.double-divider::before,
+.double-divider::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+}
+
+.double-divider::before { top: 4px; opacity: 0.45; }
+.double-divider::after { bottom: 4px; opacity: 0.25; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
@@ -303,16 +318,17 @@ body::before {
   z-index: 25;
 }
 
-/* Input styling for liquid glass effect */
+/* Range slider styling - match dark glass theme */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, rgba(0, 136, 255, 0.3), rgba(255, 136, 0, 0.4), rgba(0, 136, 255, 0.3));
+  width: 100%;
   height: 6px;
-  border-radius: 0px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgba(220,230,240,0.18), rgba(220,230,240,0.28), rgba(220,230,240,0.18));
   outline: none;
   cursor: pointer;
-  box-shadow: 0 0 2px rgba(0, 136, 255, 0.08);
+  box-shadow: 0 0 4px rgba(200, 210, 220, 0.12);
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -320,47 +336,39 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
-  background: linear-gradient(135deg, rgba(0, 136, 255, 0.9), rgba(255, 136, 0, 0.7));
-  border-radius: 0px;
-  box-shadow: 0 0 4px rgba(0, 136, 255, 0.25), 0 0 6px rgba(255, 136, 0, 0.15);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(220,230,240,0.7));
+  box-shadow: 0 0 6px rgba(220,230,240,0.35), 0 0 10px rgba(200,210,220,0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 6px rgba(0, 136, 255, 0.4), 0 0 8px rgba(255, 136, 0, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(220,230,240,0.5), 0 0 14px rgba(200,210,220,0.3);
 }
 
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgba(220,230,240,0.18), rgba(220,230,240,0.28), rgba(220,230,240,0.18));
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(220,230,240,0.7));
+  box-shadow: 0 0 6px rgba(220,230,240,0.35), 0 0 10px rgba(200,210,220,0.2);
+  border: none;
+}
+
+/* Input reset only: let component classes control look */
 input[type="number"],
 input[type="text"],
 select {
-  background: linear-gradient(135deg, rgba(0, 136, 255, 0.15), rgba(255, 136, 0, 0.12));
-  border: 1px solid rgba(0, 136, 255, 0.08);
-  border-radius: 0px;
-  color: var(--secondary-text);
-  padding: 5px 8px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  font-weight: 500;
-  box-shadow: 0 0 2px rgba(0, 136, 255, 0.06), inset 0 1px 0 rgba(0, 136, 255, 0.04);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-input[type="number"]:focus,
-input[type="text"]:focus,
-select:focus {
-  outline: none;
-  border-color: rgba(0, 136, 255, 0.9);
-  box-shadow:
-    0 0 6px rgba(0, 136, 255, 0.15),
-    0 0 8px rgba(255, 136, 0, 0.1),
-    inset 0 1px 0 rgba(0, 136, 255, 0.1);
-  color: var(--neon-blue);
-  background: linear-gradient(135deg, rgba(0, 136, 255, 0.2), rgba(255, 136, 0, 0.18));
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 /* Hide number input spinners */
@@ -379,4 +387,112 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"]::-moz-number-spin-box {
   -moz-appearance: none;
+}
+
+/* Control Panel Component Styles */
+.control-label-primary {
+  color: var(--primary-text);
+  font-size: 15px;
+}
+
+.control-label-secondary {
+  color: var(--tertiary-text);
+  font-size: 14px;
+}
+
+.control-label-axis {
+  color: var(--quaternary-text);
+  font-size: 13px;
+}
+
+/* Elegant Panel Styles */
+.elegant-title {
+  color: var(--primary-text);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.elegant-expand-text {
+  color: var(--quaternary-text);
+  font-size: 13px;
+}
+
+.elegant-expand-arrow {
+  color: var(--quaternary-text);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.elegant-expand-arrow:hover {
+  color: var(--secondary-text);
+}
+
+/* Ensure proper spacing in wallet terminal */
+.wallet-terminal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wallet-terminal-buttons > * {
+  margin: 0 !important;
+}
+
+/* Walrus icon button glow (match landing glass backlight hues) */
+.walrus-icon-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgba(255,255,255,0.05);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+}
+.walrus-icon-button:hover {
+  background:
+    radial-gradient(120% 120% at 50% 50%, rgba(255,196,120,0.28) 0%, rgba(64,200,255,0.26) 54%, rgba(255,255,255,0.08) 74%),
+    rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.42);
+  box-shadow: inset 0 0 0 1px rgba(220,230,240,0.38);
+}
+.walrus-icon-button:hover img.walrus-icon { filter: hue-rotate(18deg) saturate(1.45) brightness(1.15); }
+
+/* Neon border marquee inside button bounds */
+.walrus-icon-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1px; /* border thickness */
+  background: linear-gradient(90deg,
+    rgba(255,196,120,0.0),
+    rgba(255,196,120,0.85),
+    rgba(64,200,255,0.85),
+    rgba(170,120,255,0.8),
+    rgba(255,196,120,0.85),
+    rgba(255,196,120,0.0)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; 
+  mask-composite: exclude;
+  opacity: 0;
+}
+.walrus-icon-button:hover::before { opacity: 1; animation: neonRun 2.4s linear infinite; }
+
+@keyframes neonRun {
+  0% { background-position: 0% 50%; background-size: 300% 100%; }
+  100% { background-position: 300% 50%; background-size: 300% 100%; }
+}
+
+/* CSS glyph to allow colorizing a monochrome PNG via mask */
+.walrus-glyph {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: rgba(240,245,250,0.9);
+  -webkit-mask: url('/3_icon_walrus_white_RGB.png') center / contain no-repeat;
+  mask: url('/3_icon_walrus_white_RGB.png') center / contain no-repeat;
+  transition: background 200ms ease, filter 200ms ease;
+}
+.walrus-icon-button:hover .walrus-glyph {
+  background: linear-gradient(135deg, rgba(255,196,120,0.95), rgba(64,200,255,0.95));
+  filter: saturate(1.25);
 }
