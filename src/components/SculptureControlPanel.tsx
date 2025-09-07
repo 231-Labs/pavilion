@@ -122,45 +122,6 @@ export function SculptureControlPanel({
   // (removed) getExternalObjects was unused
 
   // GLB loading handler functions
-  
-
-  const loadCustomModel = async () => {
-    if (!sceneManager) return;
-
-    const url = prompt('Please enter the URL or relative path of the GLB file:');
-    if (!url) return;
-
-    const modelName = `CustomModel_${Date.now()}`;
-
-    // Check if too many custom models are already loaded
-    const customModelsCount = loadedModels.filter(name => name.startsWith('CustomModel_')).length;
-    if (customModelsCount >= 5) {
-      setError('Too many custom models loaded, please clear some models first');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    try {
-      const model = await sceneManager.loadGLBModel(url, {
-        position: { x: 0, y: 2, z: 0 },
-        name: modelName,
-        onProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
-          setLoadingProgress(percent);
-        }
-      });
-
-      setLoadedModels(prev => [...prev, modelName]);
-      console.log('Custom model loaded successfully:', model);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadAllModels = async () => {
     if (!sceneManager) return;
@@ -237,6 +198,7 @@ export function SculptureControlPanel({
 
       setLoadedModels(prev => [...prev, modelName]);
       console.log('Walrus model loaded successfully:', modelName);
+      setWalrusBlobId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Walrus loading failed');
     } finally {
@@ -581,23 +543,6 @@ export function SculptureControlPanel({
             <div className="p-3 space-y-3">
               {/* GLB Loading Buttons */}
               <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={loadCustomModel}
-                    disabled={isLoading}
-                    className="px-3 py-2 text-sm bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded transition-colors"
-                  >
-                    {isLoading ? 'Loading...' : 'Custom Model'}
-                  </button>
-
-                  <button
-                    onClick={clearAllModels}
-                    className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                  >
-                    Clear Models
-                  </button>
-                </div>
-
                 {/* Walrus Blob Loader */}
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -612,6 +557,15 @@ export function SculptureControlPanel({
                     className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded transition-colors col-span-1"
                   >
                     {isLoading ? 'Loading...' : 'Load Walrus Blob'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    onClick={clearAllModels}
+                    className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                  >
+                    Clear Models
                   </button>
                 </div>
 
