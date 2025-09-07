@@ -555,19 +555,26 @@ export function SculptureControlPanel({
               {/* GLB Loading Buttons */}
               <div className="space-y-2">
                 {/* Walrus Blob Loader */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-stretch gap-2">
                   <input
                     value={walrusBlobId}
                     onChange={(e) => setWalrusBlobId(e.target.value)}
                     placeholder="Walrus Blob ID"
-                    className="px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 col-span-1"
+                    className="flex-1 px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40"
                   />
                   <button
+                    type="button"
                     onClick={loadWalrusModel}
                     disabled={isLoading || !walrusBlobId.trim()}
-                    className="px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 text-white/80 border border-white/20 uppercase tracking-widest transition-colors col-span-1"
+                    className="walrus-icon-button w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 border border-white/20 flex items-center justify-center transition-colors"
+                    aria-label="Load Walrus Blob"
+                    title="Load Walrus Blob"
                   >
-                    {isLoading ? 'Loading...' : 'Load Walrus Blob'}
+                    {isLoading ? (
+                      <span className="text-xs text-white/70">...</span>
+                    ) : (
+                      <span className="walrus-glyph" aria-hidden="true"></span>
+                    )}
                   </button>
                 </div>
 
