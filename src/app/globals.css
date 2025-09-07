@@ -496,3 +496,47 @@ input[type="number"]::-moz-number-spin-box {
   background: linear-gradient(135deg, rgba(255,196,120,0.95), rgba(64,200,255,0.95));
   filter: saturate(1.25);
 }
+
+/* Align disconnected Connect button text style to connected account style */
+button[data-dapp-kit]:not([aria-haspopup]) {
+  font-family: "Courier New", monospace !important;
+  font-weight: 600 !important; /* match bold weight */
+  font-size: 13px !important;  /* align to sm */
+  letter-spacing: 0.4px !important; /* match connected */
+  text-transform: uppercase !important;
+}
+
+/* --- Dapp Kit: normalize Connect/Account button style to match theme --- */
+/* Connected (AccountDropdown trigger) */
+button[data-dapp-kit][aria-haspopup="menu"][data-state] {
+  height: 40px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(220,230,240,0.28) !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,0.06) !important;
+  color: var(--secondary-text) !important;
+  font-family: "Courier New", monospace !important;
+  letter-spacing: 0.4px !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+/* Base style for both disconnected and connected buttons */
+button[data-dapp-kit] {
+  height: 40px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(220,230,240,0.28) !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,0.06) !important;
+  color: var(--secondary-text) !important;
+  font-family: "Courier New", monospace !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+/* Icon color inside button for consistency */
+button[data-dapp-kit] svg path { stroke: var(--quaternary-text) !important; }

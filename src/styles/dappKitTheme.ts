@@ -5,8 +5,8 @@ export const elegantTheme: ThemeVars = {
     modalOverlay: 'blur(20px)',
   },
   backgroundColors: {
-    primaryButton: 'rgba(220, 230, 240, 0.08)',
-    primaryButtonHover: 'rgba(200, 215, 230, 0.10)',
+    primaryButton: 'rgba(255, 255, 255, 0.06)',
+    primaryButtonHover: 'rgba(255, 255, 255, 0.10)',
     outlineButtonHover: 'rgba(240, 245, 250, 0.08)',
     modalOverlay: 'rgba(0, 0, 0, 0.6)',
     modalPrimary: 'rgba(20, 20, 20, 0.95)',
@@ -19,10 +19,10 @@ export const elegantTheme: ThemeVars = {
     walletItemHover: 'rgba(240, 245, 250, 0.08)',
   },
   borderColors: {
-    outlineButton: 'rgba(220, 230, 240, 0.15)',
+    outlineButton: 'rgba(220, 230, 240, 0.28)',
   },
   colors: {
-    primaryButton: 'rgba(240, 245, 250, 0.95)',
+    primaryButton: 'rgba(240, 245, 250, 0.88)',
     outlineButton: 'rgba(220, 230, 240, 0.85)',
     iconButton: 'rgba(240, 245, 250, 0.95)',
     body: 'rgba(220, 230, 240, 0.85)',
@@ -31,12 +31,12 @@ export const elegantTheme: ThemeVars = {
   },
   radii: {
     small: '8px',
-    medium: '10px',
-    large: '12px',
-    xlarge: '14px',
+    medium: '8px',
+    large: '8px',
+    xlarge: '10px',
   },
   shadows: {
-    primaryButton: '0 4px 12px rgba(180, 200, 220, 0.2)',
+    primaryButton: 'none',
     walletItemSelected: '0 2px 8px rgba(200, 215, 230, 0.15)',
   },
   fontWeights: {
@@ -45,16 +45,16 @@ export const elegantTheme: ThemeVars = {
     bold: '600',
   },
   fontSizes: {
-    small: '12px',
-    medium: '14px',
+    small: '14px',
+    medium: '15px',
     large: '16px',
     xlarge: '18px',
   },
   typography: {
     fontFamily: '"Courier New", monospace',
     fontStyle: 'normal',
-    lineHeight: '1.4',
-    letterSpacing: '0.5px',
+    lineHeight: '1.5',
+    letterSpacing: '1px',
   },
 };
 
