@@ -318,16 +318,17 @@ body::before {
   z-index: 25;
 }
 
-/* Input styling for elegant monochrome effect */
+/* Range slider styling - match dark glass theme */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  width: 100%;
   height: 6px;
-  border-radius: 0px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgba(220,230,240,0.18), rgba(220,230,240,0.28), rgba(220,230,240,0.18));
   outline: none;
   cursor: pointer;
-  box-shadow: 0 0 2px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 4px rgba(200, 210, 220, 0.12);
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -335,47 +336,39 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
-  border-radius: 0px;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.15), 0 0 6px rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(220,230,240,0.7));
+  box-shadow: 0 0 6px rgba(220,230,240,0.35), 0 0 10px rgba(200,210,220,0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.25), 0 0 8px rgba(255, 255, 255, 0.15);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(220,230,240,0.5), 0 0 14px rgba(200,210,220,0.3);
 }
 
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgba(220,230,240,0.18), rgba(220,230,240,0.28), rgba(220,230,240,0.18));
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(220,230,240,0.7));
+  box-shadow: 0 0 6px rgba(220,230,240,0.35), 0 0 10px rgba(200,210,220,0.2);
+  border: none;
+}
+
+/* Input reset only: let component classes control look */
 input[type="number"],
 input[type="text"],
 select {
-  background: var(--surface-subtle);
-  border: 1px solid var(--border-light);
-  border-radius: 4px;
-  color: var(--secondary-text);
-  padding: 5px 8px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  font-weight: 500;
-  box-shadow: 0 0 2px var(--glass-shadow), inset 0 1px 0 var(--border-light);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-input[type="number"]:focus,
-input[type="text"]:focus,
-select:focus {
-  outline: none;
-  border-color: var(--focus-border);
-  box-shadow:
-    0 0 6px var(--focus-shadow),
-    0 0 8px var(--glass-shadow),
-    inset 0 1px 0 var(--border-light);
-  color: var(--secondary-text);
-  background: var(--surface-light);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 /* Hide number input spinners */
@@ -412,16 +405,6 @@ input[type="number"]::-moz-number-spin-box {
   font-size: 13px;
 }
 
-/* (removed) legacy helpers: .control-input, .control-reset-button */
-
-.control-select {
-  color: var(--secondary-text);
-  background-color: var(--surface-subtle);
-  border: 1px solid var(--border-medium);
-  border-radius: 6px;
-  font-size: 13px;
-}
-
 /* Elegant Panel Styles */
 .elegant-title {
   color: var(--primary-text);
@@ -441,120 +424,6 @@ input[type="number"]::-moz-number-spin-box {
 
 .elegant-expand-arrow:hover {
   color: var(--secondary-text);
-}
-
-.elegant-button {
-  background: var(--surface-light);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  color: var(--primary-text);
-  font-weight: 500;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.elegant-button:hover {
-  background: var(--surface-medium);
-  border-color: var(--border-medium);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--glass-shadow);
-}
-
-/* ConnectButton Overrides - Force elegant styling with high specificity */
-.elegant-button[data-dapp-kit="connectButton"],
-.elegant-button[data-dapp-kit="connectButton"] button,
-.elegant-button[data-dapp-kit="connectButton"] [role="button"],
-.elegant-button[data-dapp-kit="connectButton"] > *,
-[data-dapp-kit="connectButton"].elegant-button,
-[data-dapp-kit="connectButton"].elegant-button button,
-[data-dapp-kit="connectButton"].elegant-button [role="button"],
-[data-dapp-kit="connectButton"].elegant-button > * {
-  background: var(--surface-light) !important;
-  border: 1px solid var(--border-light) !important;
-  border-radius: 6px !important;
-  color: var(--primary-text) !important;
-  font-family: "Courier New", monospace !important;
-  font-weight: 500 !important;
-  font-size: 14px !important;
-  letter-spacing: 0.5px !important;
-  text-transform: uppercase !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  transition: all 0.3s ease !important;
-  padding: 12px 16px !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 48px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.elegant-button[data-dapp-kit="connectButton"]:hover,
-.elegant-button[data-dapp-kit="connectButton"] button:hover,
-.elegant-button[data-dapp-kit="connectButton"] [role="button"]:hover,
-.elegant-button[data-dapp-kit="connectButton"] > *:hover,
-[data-dapp-kit="connectButton"].elegant-button:hover,
-[data-dapp-kit="connectButton"].elegant-button button:hover,
-[data-dapp-kit="connectButton"].elegant-button [role="button"]:hover,
-[data-dapp-kit="connectButton"].elegant-button > *:hover,
-[data-dapp-kit="connectButton"]:hover,
-[data-dapp-kit="connectButton"] *:hover {
-  background: var(--surface-medium) !important;
-  border: 1px solid var(--border-medium) !important;
-  border-color: var(--border-medium) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px var(--glass-shadow) !important;
-  outline: none !important;
-}
-
-/* ConnectButton Dropdown Menu Overrides */
-[data-dapp-kit="connectButton"] [data-radix-popper-content-wrapper],
-[data-dapp-kit="connectButton"] [data-radix-dropdown-menu-content],
-[data-dapp-kit="connectButton"] [role="menu"],
-[data-dapp-kit="connectButton"] [role="listbox"] {
-  background: rgba(20, 20, 20, 0.95) !important;
-  border: 1px solid var(--border-medium) !important;
-  border-radius: 8px !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: 0 8px 24px var(--glass-shadow) !important;
-}
-
-[data-dapp-kit="connectButton"] [role="menuitem"],
-[data-dapp-kit="connectButton"] li {
-  color: var(--secondary-text) !important;
-  font-family: "Courier New", monospace !important;
-  font-size: 14px !important;
-  padding: 12px 16px !important;
-  border-radius: 6px !important;
-  margin: 4px !important;
-  transition: all 0.2s ease !important;
-}
-
-[data-dapp-kit="connectButton"] [role="menuitem"]:hover,
-[data-dapp-kit="connectButton"] li:hover {
-  background: var(--surface-light) !important;
-  color: var(--primary-text) !important;
-}
-
-/* Wallet icons styling */
-[data-dapp-kit="connectButton"] img,
-[data-dapp-kit="connectButton"] svg {
-  filter: brightness(0.8) !important;
-  opacity: 0.9 !important;
-}
-
-/* Additional ConnectButton fixes - target all nested elements */
-[data-dapp-kit="connectButton"] *,
-[data-dapp-kit="connectButton"] *::before,
-[data-dapp-kit="connectButton"] *::after {
-  font-family: "Courier New", monospace !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px !important;
-  text-transform: uppercase !important;
 }
 
 /* Ensure proper spacing in wallet terminal */

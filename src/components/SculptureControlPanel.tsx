@@ -291,7 +291,7 @@ export function SculptureControlPanel({
             <select
               value={selectedSculpture || ''}
               onChange={(e) => setSelectedSculpture(e.target.value)}
-              className="w-full p-3 rounded-lg bg-transparent border border-white/10 focus:outline-none focus:border-white/40 control-select"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 control-select"
             >
               {/* Group sculptures */}
               {controllableObjects.filter(obj => obj.type === 'sculpture').length > 0 && (
@@ -343,7 +343,7 @@ export function SculptureControlPanel({
                     handleExternalPositionUpdate(currentObject.id, { x: 0, y: 1, z: 0 });
                   }
                 }}
-                className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
+                className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
               >
                 Reset
               </button>
@@ -386,7 +386,7 @@ export function SculptureControlPanel({
                         handleExternalPositionUpdate(currentObject.id, newPosition);
                       }
                     }}
-                    className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                   />
                 </div>
               ))}
@@ -408,7 +408,7 @@ export function SculptureControlPanel({
                       handleExternalRotationUpdate(currentObject.id, { x: 0, y: 0, z: 0 });
                     }
                   }}
-                  className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
+                  className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
                 >
                   Reset
                 </button>
@@ -453,7 +453,7 @@ export function SculptureControlPanel({
                           handleExternalRotationUpdate(currentObject.id, newRotation);
                         }
                       }}
-                      className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                     />
                   </div>
                 ))}
@@ -476,7 +476,7 @@ export function SculptureControlPanel({
                       handleExternalScaleUpdate(currentObject.id, { x: 1, y: 1, z: 1 });
                     }
                   }}
-                  className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
+                  className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
                 >
                   Reset
                 </button>
@@ -518,7 +518,7 @@ export function SculptureControlPanel({
                       handleExternalScaleUpdate(currentObject.id, newScale);
                     }
                   }}
-                  className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                 />
               </div>
             </div>
