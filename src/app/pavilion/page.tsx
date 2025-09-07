@@ -48,12 +48,6 @@ export default function PavilionPage() {
         />
       </div>
 
-      {/* Corner Decorative Elements */}
-      <div className="absolute top-4 left-4 w-32 h-32 opacity-20 pointer-events-none">
-        <div className="w-full h-full border border-white/20"></div>
-        <div className="absolute top-2 left-2 w-full h-full border border-white/10"></div>
-      </div>
-
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
         <div className="w-full h-full border border-white/15"></div>
         <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>

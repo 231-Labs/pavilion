@@ -80,14 +80,14 @@ export function WalletTerminal() {
   };
 
   return (
-    <div className="absolute top-6 left-6 z-20 glass-panel control-panel max-w-xs min-w-[320px] overflow-hidden glow">
+    <div className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden">
       <div className="relative z-10">
         {/* Title bar */}
         <div
           className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h3 className="elegant-title tracking-wider uppercase">
+          <h3 className="elegant-title tracking-wider uppercase silver-glow">
             Wallet
           </h3>
           <div className="flex items-center space-x-2">
@@ -113,10 +113,10 @@ export function WalletTerminal() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: '1px solid var(--border-light)',
-                  borderRadius: '6px',
-                  background: 'var(--surface-light)',
-                  color: 'var(--primary-text)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.85)',
                   fontFamily: '"Courier New", monospace',
                   fontSize: '14px',
                   fontWeight: '500',
@@ -129,18 +129,18 @@ export function WalletTerminal() {
               />
               <button
                 onClick={handleCallSuiFunction}
-                className="elegant-button w-full py-3 px-4 text-sm tracking-wide uppercase"
+                className="w-full py-3 px-4 text-sm tracking-widest uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 transition-colors"
               >
                 Call Sui Function
               </button>
             </div>
 
             {currentAccount && (
-              <div className="p-3 rounded-lg mt-4" style={{ backgroundColor: 'var(--surface-subtle)', border: '1px solid var(--border-light)', borderRadius: '6px' }}>
+              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 <div className="space-y-2">
                   <div>
                     <p className="text-sm font-medium mb-1 tracking-wide uppercase control-label-secondary">WALLET ADDRESS</p>
-                    <p className="text-sm font-mono break-all leading-relaxed font-medium control-input" style={{ padding: '8px', borderRadius: '4px' }}>
+                    <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       {currentAccount.address}
                     </p>
                   </div>
@@ -155,11 +155,11 @@ export function WalletTerminal() {
             )}
 
             {error && (
-              <div className="p-3 rounded-lg mt-4" style={{ backgroundColor: 'var(--surface-subtle)', border: '1px solid var(--border-medium)', borderRadius: '6px' }}>
+              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <div className="flex justify-between items-start">
                   <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
                 </div>
-                <p className="text-sm font-mono break-all leading-relaxed font-medium control-input" style={{ padding: '8px', borderRadius: '4px' }}>
+                <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   {error}
                 </p>
               </div>

@@ -261,13 +261,13 @@ export function SculptureControlPanel({
   }
 
   return (
-    <div className="glass-panel control-panel max-w-xs min-w-[320px] overflow-hidden glow" style={{ fontSize: '14px' }}>
+    <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       {/* Title bar */}
       <div
         className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="elegant-title tracking-wider uppercase">
+        <h3 className="elegant-title tracking-wider uppercase silver-glow">
           Objects
         </h3>
         <div className="flex items-center space-x-2">
@@ -291,7 +291,7 @@ export function SculptureControlPanel({
             <select
               value={selectedSculpture || ''}
               onChange={(e) => setSelectedSculpture(e.target.value)}
-              className="w-full p-3 rounded-lg bg-transparent control-select"
+              className="w-full p-3 rounded-lg bg-transparent border border-white/10 focus:outline-none focus:border-white/40 control-select"
             >
               {/* Group sculptures */}
               {controllableObjects.filter(obj => obj.type === 'sculpture').length > 0 && (
@@ -343,7 +343,7 @@ export function SculptureControlPanel({
                     handleExternalPositionUpdate(currentObject.id, { x: 0, y: 1, z: 0 });
                   }
                 }}
-                className="text-xs transition-colors cursor-pointer hover:opacity-80 control-reset-button"
+                className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
               >
                 Reset
               </button>
@@ -370,18 +370,23 @@ export function SculptureControlPanel({
                     style={{ height: '6px' }}
                   />
                   <input
-                    type="number"
-                    step="0.1"
-                    value={currentObject.position[axis]}
-                    onChange={(e) => {
-                      const newPosition = { ...currentObject.position, [axis]: parseFloat(e.target.value) || 0 };
+                    key={`${currentObject.id}-pos-${axis}-${currentObject.position[axis]}`}
+                    type="text"
+                    inputMode="decimal"
+                    pattern="^-?\\d*(\\.\\d+)?$"
+                    defaultValue={currentObject.position[axis]}
+                    onBlur={(e) => {
+                      const raw = e.target.value.trim();
+                      const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                      const valueToUse = Number.isFinite(parsed) ? parsed : currentObject.position[axis];
+                      const newPosition = { ...currentObject.position, [axis]: valueToUse };
                       if (currentObject.type === 'sculpture') {
                         onUpdatePosition(currentObject.id, newPosition);
                       } else {
                         handleExternalPositionUpdate(currentObject.id, newPosition);
                       }
                     }}
-                    className="w-full p-2 text-center control-input"
+                    className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                   />
                 </div>
               ))}
@@ -403,7 +408,7 @@ export function SculptureControlPanel({
                       handleExternalRotationUpdate(currentObject.id, { x: 0, y: 0, z: 0 });
                     }
                   }}
-                  className="text-xs transition-colors cursor-pointer hover:opacity-80 control-reset-button"
+                  className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
                 >
                   Reset
                 </button>
@@ -431,11 +436,15 @@ export function SculptureControlPanel({
                       className="w-full"
                     />
                     <input
-                      type="number"
-                      step="1"
-                      value={Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
-                      onChange={(e) => {
-                        const degrees = parseFloat(e.target.value) || 0;
+                      key={`${currentObject.id}-rot-${axis}-${Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}`}
+                      type="text"
+                      inputMode="decimal"
+                      pattern="^-?\\d*(\\.\\d+)?$"
+                      defaultValue={Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
+                      onBlur={(e) => {
+                        const raw = e.target.value.trim();
+                        const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                        const degrees = Number.isFinite(parsed) ? parsed : Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360);
                         const radians = degrees * Math.PI / 180;
                         const newRotation = { ...currentObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
                         if (currentObject.type === 'sculpture' && onUpdateRotation) {
@@ -444,7 +453,7 @@ export function SculptureControlPanel({
                           handleExternalRotationUpdate(currentObject.id, newRotation);
                         }
                       }}
-                      className="w-full p-2 text-center control-input"
+                      className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                     />
                   </div>
                 ))}
@@ -467,7 +476,7 @@ export function SculptureControlPanel({
                       handleExternalScaleUpdate(currentObject.id, { x: 1, y: 1, z: 1 });
                     }
                   }}
-                  className="text-xs transition-colors cursor-pointer hover:opacity-80 control-reset-button"
+                  className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors cursor-pointer"
                 >
                   Reset
                 </button>
@@ -493,13 +502,15 @@ export function SculptureControlPanel({
                   style={{ height: '6px' }}
                 />
                 <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="3"
-                  value={currentObject.scale?.x || 1}
-                  onChange={(e) => {
-                    const scaleValue = parseFloat(e.target.value) || 1;
+                  key={`${currentObject.id}-scale-${currentObject.scale?.x || 1}`}
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^-?\\d*(\\.\\d+)?$"
+                  defaultValue={currentObject.scale?.x || 1}
+                  onBlur={(e) => {
+                    const raw = e.target.value.trim();
+                    const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                    const scaleValue = Number.isFinite(parsed) ? parsed : (currentObject.scale?.x || 1);
                     const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
                     if (currentObject.type === 'sculpture' && onUpdateScale) {
                       onUpdateScale(currentObject.id, newScale);
@@ -507,7 +518,7 @@ export function SculptureControlPanel({
                       handleExternalScaleUpdate(currentObject.id, newScale);
                     }
                   }}
-                  className="w-full p-2 text-center control-input"
+                  className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                 />
               </div>
             </div>
@@ -549,12 +560,12 @@ export function SculptureControlPanel({
                     value={walrusBlobId}
                     onChange={(e) => setWalrusBlobId(e.target.value)}
                     placeholder="Walrus Blob ID"
-                    className="px-3 py-2 text-sm rounded bg-transparent control-input col-span-1"
+                    className="px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 col-span-1"
                   />
                   <button
                     onClick={loadWalrusModel}
                     disabled={isLoading || !walrusBlobId.trim()}
-                    className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded transition-colors col-span-1"
+                    className="px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 text-white/80 border border-white/20 uppercase tracking-widest transition-colors col-span-1"
                   >
                     {isLoading ? 'Loading...' : 'Load Walrus Blob'}
                   </button>
@@ -563,7 +574,7 @@ export function SculptureControlPanel({
                 <div className="grid grid-cols-1 gap-2">
                   <button
                     onClick={clearAllModels}
-                    className="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                    className="px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
                   >
                     Clear Models
                   </button>
@@ -573,7 +584,7 @@ export function SculptureControlPanel({
                   <button
                     onClick={loadAllModels}
                     disabled={isLoading}
-                    className="px-3 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded transition-colors col-span-2"
+                    className="px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 text-white/80 border border-white/20 uppercase tracking-widest transition-colors col-span-2"
                   >
                     {isLoading ? 'Loading...' : 'Load All Models (from /public/models)'}
                   </button>
@@ -597,7 +608,7 @@ export function SculptureControlPanel({
 
               {/* Error Display */}
               {error && (
-                <div className="p-2 bg-red-500/20 border border-red-500/30 text-red-300 rounded text-xs">
+                <div className="p-2 bg-red-500/20 border border-red-500/30 text-red-300 rounded-xl text-xs">
                   <p>{error}</p>
                 </div>
               )}
