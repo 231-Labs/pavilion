@@ -24,7 +24,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       sceneManager.createGalleryEnvironment();
     }
 
-    if (options.addSculptures !== false) {
+    if (options.addSculptures) {
       sceneManager.addSculptures();
       // Update sculpture status
       setSculptures(sceneManager.getSculptures());

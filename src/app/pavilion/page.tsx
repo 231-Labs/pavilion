@@ -19,7 +19,6 @@ export default function PavilionPage() {
     // backgroundColor: 0xFFFFFF,
     cameraPosition: [0, 1, 20],
     createGallery: true,
-    addSculptures: true,
   });
 
   return (

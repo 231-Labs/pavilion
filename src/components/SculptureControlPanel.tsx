@@ -256,9 +256,6 @@ export function SculptureControlPanel({
 
   const currentObject = controllableObjects.find(obj => obj.id === selectedSculpture);
 
-  if (!currentObject) {
-    return null;
-  }
 
   return (
     <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
@@ -329,198 +326,206 @@ export function SculptureControlPanel({
             </select>
           </div>
 
-          {/* Position control */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                Position Vector
-              </label>
-              <button
-                onClick={() => {
-                  if (currentObject.type === 'sculpture') {
-                    onUpdatePosition(currentObject.id, { x: 0, y: 1, z: 0 });
-                  } else {
-                    handleExternalPositionUpdate(currentObject.id, { x: 0, y: 1, z: 0 });
-                  }
-                }}
-                className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-              >
-                Reset
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {(['x', 'y', 'z'] as const).map(axis => (
-                <div key={axis} className="space-y-1">
-                  <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
-                  <input
-                    type="range"
-                    min="-10"
-                    max="10"
-                    step="0.1"
-                    value={currentObject.position[axis]}
-                    onChange={(e) => {
-                      const newPosition = { ...currentObject.position, [axis]: parseFloat(e.target.value) };
+          {/* When an object is selected, show controls; else show empty state */}
+          {currentObject ? (
+            <>
+              {/* Position control */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                    Position Vector
+                  </label>
+                  <button
+                    onClick={() => {
                       if (currentObject.type === 'sculpture') {
-                        onUpdatePosition(currentObject.id, newPosition);
+                        onUpdatePosition(currentObject.id, { x: 0, y: 1, z: 0 });
                       } else {
-                        handleExternalPositionUpdate(currentObject.id, newPosition);
+                        handleExternalPositionUpdate(currentObject.id, { x: 0, y: 1, z: 0 });
                       }
                     }}
-                    className="w-full"
-                    style={{ height: '6px' }}
-                  />
-                  <input
-                    key={`${currentObject.id}-pos-${axis}-${currentObject.position[axis]}`}
-                    type="text"
-                    inputMode="decimal"
-                    pattern="^-?\\d*(\\.\\d+)?$"
-                    defaultValue={currentObject.position[axis]}
-                    onBlur={(e) => {
-                      const raw = e.target.value.trim();
-                      const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                      const valueToUse = Number.isFinite(parsed) ? parsed : currentObject.position[axis];
-                      const newPosition = { ...currentObject.position, [axis]: valueToUse };
-                      if (currentObject.type === 'sculpture') {
-                        onUpdatePosition(currentObject.id, newPosition);
-                      } else {
-                        handleExternalPositionUpdate(currentObject.id, newPosition);
-                      }
-                    }}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
-                  />
+                    className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                  >
+                    Reset
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Rotation control */}
-          {((onUpdateRotation && currentObject.type === 'sculpture') || currentObject.type === 'external') && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                  Rotation Matrix
-                </label>
-                <button
-                  onClick={() => {
-                    if (currentObject.type === 'sculpture' && onUpdateRotation) {
-                      onUpdateRotation(currentObject.id, { x: 0, y: 0, z: 0 });
-                    } else {
-                      handleExternalRotationUpdate(currentObject.id, { x: 0, y: 0, z: 0 });
-                    }
-                  }}
-                  className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-                >
-                  Reset
-                </button>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['x', 'y', 'z'] as const).map(axis => (
+                    <div key={axis} className="space-y-1">
+                      <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
+                      <input
+                        type="range"
+                        min="-10"
+                        max="10"
+                        step="0.1"
+                        value={currentObject.position[axis]}
+                        onChange={(e) => {
+                          const newPosition = { ...currentObject.position, [axis]: parseFloat(e.target.value) };
+                          if (currentObject.type === 'sculpture') {
+                            onUpdatePosition(currentObject.id, newPosition);
+                          } else {
+                            handleExternalPositionUpdate(currentObject.id, newPosition);
+                          }
+                        }}
+                        className="w-full"
+                        style={{ height: '6px' }}
+                      />
+                      <input
+                        key={`${currentObject.id}-pos-${axis}-${currentObject.position[axis]}`}
+                        type="text"
+                        inputMode="decimal"
+                        pattern="^-?\\d*(\\.\\d+)?$"
+                        defaultValue={currentObject.position[axis]}
+                        onBlur={(e) => {
+                          const raw = e.target.value.trim();
+                          const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                          const valueToUse = Number.isFinite(parsed) ? parsed : currentObject.position[axis];
+                          const newPosition = { ...currentObject.position, [axis]: valueToUse };
+                          if (currentObject.type === 'sculpture') {
+                            onUpdatePosition(currentObject.id, newPosition);
+                          } else {
+                            handleExternalPositionUpdate(currentObject.id, newPosition);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(['x', 'y', 'z'] as const).map(axis => (
-                  <div key={axis} className="space-y-1">
-                    <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
+
+              {/* Rotation control */}
+              {((onUpdateRotation && currentObject.type === 'sculpture') || currentObject.type === 'external') && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                      Rotation Matrix
+                    </label>
+                    <button
+                      onClick={() => {
+                        if (currentObject.type === 'sculpture' && onUpdateRotation) {
+                          onUpdateRotation(currentObject.id, { x: 0, y: 0, z: 0 });
+                        } else {
+                          handleExternalRotationUpdate(currentObject.id, { x: 0, y: 0, z: 0 });
+                        }
+                      }}
+                      className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['x', 'y', 'z'] as const).map(axis => (
+                      <div key={axis} className="space-y-1">
+                        <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          step="1"
+                          value={((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360}
+                          onChange={(e) => {
+                            const degrees = parseFloat(e.target.value);
+                            const radians = degrees * Math.PI / 180;
+                            const newRotation = { ...currentObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
+                            if (currentObject.type === 'sculpture' && onUpdateRotation) {
+                              onUpdateRotation(currentObject.id, newRotation);
+                            } else {
+                              handleExternalRotationUpdate(currentObject.id, newRotation);
+                            }
+                          }}
+                          className="w-full"
+                        />
+                        <input
+                          key={`${currentObject.id}-rot-${axis}-${Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}`}
+                          type="text"
+                          inputMode="decimal"
+                          pattern="^-?\\d*(\\.\\d+)?$"
+                          defaultValue={Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim();
+                            const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                            const degrees = Number.isFinite(parsed) ? parsed : Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360);
+                            const radians = degrees * Math.PI / 180;
+                            const newRotation = { ...currentObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
+                            if (currentObject.type === 'sculpture' && onUpdateRotation) {
+                              onUpdateRotation(currentObject.id, newRotation);
+                            } else {
+                              handleExternalRotationUpdate(currentObject.id, newRotation);
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Scale control */}
+              {((onUpdateScale && currentObject.type === 'sculpture') || currentObject.type === 'external') && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                      Scale Factor
+                    </label>
+                    <button
+                      onClick={() => {
+                        if (currentObject.type === 'sculpture' && onUpdateScale) {
+                          onUpdateScale(currentObject.id, { x: 1, y: 1, z: 1 });
+                        } else {
+                          handleExternalScaleUpdate(currentObject.id, { x: 1, y: 1, z: 1 });
+                        }
+                      }}
+                      className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <div className="space-y-2">
                     <input
                       type="range"
-                      min="0"
-                      max="360"
-                      step="1"
-                      value={((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360}
+                      min="0.1"
+                      max="3"
+                      step="0.1"
+                      value={currentObject.scale?.x || 1}
                       onChange={(e) => {
-                        const degrees = parseFloat(e.target.value);
-                        const radians = degrees * Math.PI / 180;
-                        const newRotation = { ...currentObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
-                        if (currentObject.type === 'sculpture' && onUpdateRotation) {
-                          onUpdateRotation(currentObject.id, newRotation);
+                        const scaleValue = parseFloat(e.target.value);
+                        const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
+                        if (currentObject.type === 'sculpture' && onUpdateScale) {
+                          onUpdateScale(currentObject.id, newScale);
                         } else {
-                          handleExternalRotationUpdate(currentObject.id, newRotation);
+                          handleExternalScaleUpdate(currentObject.id, newScale);
                         }
                       }}
                       className="w-full"
+                      style={{ height: '6px' }}
                     />
                     <input
-                      key={`${currentObject.id}-rot-${axis}-${Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}`}
+                      key={`${currentObject.id}-scale-${currentObject.scale?.x || 1}`}
                       type="text"
                       inputMode="decimal"
                       pattern="^-?\\d*(\\.\\d+)?$"
-                      defaultValue={Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
+                      defaultValue={currentObject.scale?.x || 1}
                       onBlur={(e) => {
                         const raw = e.target.value.trim();
                         const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                        const degrees = Number.isFinite(parsed) ? parsed : Math.round(((currentObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360);
-                        const radians = degrees * Math.PI / 180;
-                        const newRotation = { ...currentObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
-                        if (currentObject.type === 'sculpture' && onUpdateRotation) {
-                          onUpdateRotation(currentObject.id, newRotation);
+                        const scaleValue = Number.isFinite(parsed) ? parsed : (currentObject.scale?.x || 1);
+                        const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
+                        if (currentObject.type === 'sculpture' && onUpdateScale) {
+                          onUpdateScale(currentObject.id, newScale);
                         } else {
-                          handleExternalRotationUpdate(currentObject.id, newRotation);
+                          handleExternalScaleUpdate(currentObject.id, newScale);
                         }
                       }}
                       className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
                     />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Scale control */}
-          {((onUpdateScale && currentObject.type === 'sculpture') || currentObject.type === 'external') && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                  Scale Factor
-                </label>
-                <button
-                  onClick={() => {
-                    if (currentObject.type === 'sculpture' && onUpdateScale) {
-                      onUpdateScale(currentObject.id, { x: 1, y: 1, z: 1 });
-                    } else {
-                      handleExternalScaleUpdate(currentObject.id, { x: 1, y: 1, z: 1 });
-                    }
-                  }}
-                  className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-                >
-                  Reset
-                </button>
-              </div>
-              <div className="space-y-2">
-
-                <input
-                  type="range"
-                  min="0.1"
-                  max="3"
-                  step="0.1"
-                  value={currentObject.scale?.x || 1}
-                  onChange={(e) => {
-                    const scaleValue = parseFloat(e.target.value);
-                    const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
-                    if (currentObject.type === 'sculpture' && onUpdateScale) {
-                      onUpdateScale(currentObject.id, newScale);
-                    } else {
-                      handleExternalScaleUpdate(currentObject.id, newScale);
-                    }
-                  }}
-                  className="w-full"
-                  style={{ height: '6px' }}
-                />
-                <input
-                  key={`${currentObject.id}-scale-${currentObject.scale?.x || 1}`}
-                  type="text"
-                  inputMode="decimal"
-                  pattern="^-?\\d*(\\.\\d+)?$"
-                  defaultValue={currentObject.scale?.x || 1}
-                  onBlur={(e) => {
-                    const raw = e.target.value.trim();
-                    const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                    const scaleValue = Number.isFinite(parsed) ? parsed : (currentObject.scale?.x || 1);
-                    const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
-                    if (currentObject.type === 'sculpture' && onUpdateScale) {
-                      onUpdateScale(currentObject.id, newScale);
-                    } else {
-                      handleExternalScaleUpdate(currentObject.id, newScale);
-                    }
-                  }}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
-                />
-              </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-white/60">
+              No objects available. Load external models to begin.
             </div>
           )}
         </div>
