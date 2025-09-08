@@ -13,7 +13,6 @@ export function WalletTerminal() {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   
-
   // When wallet connection status changes
   useEffect(() => {
     if (!currentAccount) return;
