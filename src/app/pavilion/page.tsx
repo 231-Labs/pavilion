@@ -1,11 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useThreeScene } from '../../hooks/useThreeScene';
 import { SculptureControlPanel } from '../../components/SculptureControlPanel';
 import { WalletTerminal } from '../../components/WalletTerminal';
+import { useKioskState } from '../../components/KioskStateProvider';
 
 export default function PavilionPage() {
+  const searchParams = useSearchParams();
+  const kioskId = searchParams.get('kioskId');
+  const kioskState = useKioskState();
+
+  // Handle kioskId parameter - update kiosk state for WalletTerminal display
+  useEffect(() => {
+    if (kioskId) {
+      console.log('Demo Pavilion loaded with kioskId:', kioskId);
+      kioskState.setKioskFromIds({ kioskId });
+      // TODO: Use kioskId to load specific kiosk data
+      // This is a mock implementation for now
+    }
+  }, [kioskId, kioskState]);
+
   // Use Three.js scene management hook
   const {
     canvasRef,

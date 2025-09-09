@@ -12,51 +12,42 @@ import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
 //   return kioskOwnerCaps[0];
 // }
 
-export async function buildCreatePavilionTx(params: {
-  kioskClient: KioskClient;
-  packageId: string;
-  pavilionName: string;
-  ownerAddress: string;
-}): Promise<Transaction> {
-  const { kioskClient, packageId, pavilionName, ownerAddress } = params;
+type PavilionTxConfig =
+  | {
+      mode: 'create';
+      kioskClient: KioskClient;
+      packageId: string;
+      pavilionName: string;
+      ownerAddress: string;
+    }
+  | {
+      mode: 'existing';
+      kioskClient: KioskClient;
+      packageId: string;
+      pavilionName: string;
+      ownerAddress: string;
+      kioskId: string;
+      kioskOwnerCapId: string;
+    };
+
+/**
+ * Build a transaction to initialize a pavilion on an existing kiosk
+ */
+async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transaction> {
+  const { kioskClient, packageId, pavilionName, ownerAddress } = config;
 
   const tx = new Transaction();
   const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
 
-  kioskTx.create();
+  // according to mode initialize kiosk
+  if (config.mode === 'create') {
+    kioskTx.create();
+  } else {
+    kioskTx.setKiosk(tx.object(config.kioskId));
+    kioskTx.setKioskCap(tx.object(config.kioskOwnerCapId));
+  }
 
-  tx.moveCall({
-    target: `${packageId}::pavilion::initialize_pavilion`,
-    arguments: [
-      kioskTx.getKiosk(),
-      kioskTx.getKioskCap(),
-      tx.pure.string(pavilionName),
-      tx.pure.address(ownerAddress),
-    ],
-  })
-  
-  kioskTx.shareAndTransferCap(ownerAddress);
-  kioskTx.finalize();
-
-  return tx;
-}
-
-export async function buildInitializePavilionWithExistingKioskTx(params: {
-  kioskClient: KioskClient;
-  packageId: string;
-  pavilionName: string;
-  ownerAddress: string;
-  kioskId: string;
-  kioskOwnerCapId: string;
-}): Promise<Transaction> {
-  const { kioskClient, packageId, pavilionName, ownerAddress, kioskId, kioskOwnerCapId } = params;
-
-  const tx = new Transaction();
-  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
-
-  kioskTx.setKiosk(tx.object(kioskId));
-  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
-
+  // common initialize_pavilion call
   tx.moveCall({
     target: `${packageId}::pavilion::initialize_pavilion`,
     arguments: [
@@ -67,8 +58,39 @@ export async function buildInitializePavilionWithExistingKioskTx(params: {
     ],
   });
 
+  // only need to share and transfer cap when creating new kiosk
+  if (config.mode === 'create') {
+    kioskTx.shareAndTransferCap(ownerAddress);
+  }
+
   kioskTx.finalize();
   return tx;
+}
+
+export async function buildCreatePavilionTx(params: {
+  kioskClient: KioskClient;
+  packageId: string;
+  pavilionName: string;
+  ownerAddress: string;
+}): Promise<Transaction> {
+  return buildPavilionTxInternal({
+    mode: 'create',
+    ...params,
+  });
+}
+
+export async function buildInitializePavilionWithExistingKioskTx(params: {
+  kioskClient: KioskClient;
+  packageId: string;
+  pavilionName: string;
+  ownerAddress: string;
+  kioskId: string;
+  kioskOwnerCapId: string;
+}): Promise<Transaction> {
+  return buildPavilionTxInternal({
+    mode: 'existing',
+    ...params,
+  });
 }
 
 /**

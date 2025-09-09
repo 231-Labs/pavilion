@@ -56,10 +56,52 @@ export default function Home() {
         setFetchingKiosks(true);
         const res = await kioskClient.getOwnedKiosks({ address: currentAccount.address });
         if (aborted) return;
-        const list = (res.kioskOwnerCaps ?? []).map((c: any) => ({ objectId: c.objectId, kioskId: c.kioskId, isPersonal: c.isPersonal }));
-        setOwnedKiosks(list);
+
+        // Filter out kiosks that already have PavilionExtension installed
+        const pavilionExtensionType = process.env.NEXT_PUBLIC_PAVILION_EXTENSION_TYPE as string | undefined;
+        if (!pavilionExtensionType) {
+          console.error('Missing NEXT_PUBLIC_PAVILION_EXTENSION_TYPE environment variable');
+          setOwnedKiosks(null);
+          return;
+        }
+        const initialList = (res.kioskOwnerCaps ?? []).map((c: any) => ({
+          objectId: c.objectId,
+          kioskId: c.kioskId,
+          isPersonal: c.isPersonal
+        }));
+
+        // Check each kiosk for PavilionExtension
+        const filteredList = [];
+        for (const kiosk of initialList) {
+          if (aborted) return;
+          try {
+            // Try to get the extension
+            const extension = await kioskClient.getKioskExtension({
+              kioskId: kiosk.kioskId,
+              type: pavilionExtensionType
+            });
+            console.log(`Kiosk ${kiosk.kioskId} - PavilionExtension result:`, extension);
+
+            // Check if extension exists (not null)
+            if (extension && extension.isEnabled !== false) {
+              // Extension exists and is enabled, skip this kiosk
+              console.log(`Skipping kiosk ${kiosk.kioskId} - PavilionExtension already installed`);
+            } else {
+              // Extension doesn't exist or is disabled, include this kiosk
+              console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension not found or disabled`);
+              filteredList.push(kiosk);
+            }
+          } catch (extensionError) {
+            // If there's an error, assume extension doesn't exist and include the kiosk
+            console.log(`Kiosk ${kiosk.kioskId} - Error checking PavilionExtension, including in list. Error:`, extensionError);
+            filteredList.push(kiosk);
+          }
+        }
+
+        setOwnedKiosks(filteredList);
       } catch (e) {
         if (aborted) return;
+        console.error('Failed to fetch kiosks:', e);
       } finally {
         if (!aborted) setFetchingKiosks(false);
       }
@@ -241,6 +283,42 @@ export default function Home() {
               <p className="mt-5 text-white/70 max-w-md">
                 A glass house for on-chain artifacts. Curate, compose, and transform kiosks into immersive pavilions.
               </p>
+
+              {/* Demo Pavilion Section */}
+              <div className="mt-6">
+                <Link
+                  href="/pavilion?kioskId=0x1"
+                  className="group inline-flex items-center space-x-3 text-white/70 hover:text-white/90 transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="relative">
+                    <div className="text-sm font-medium tracking-wide silver-glow relative">
+                      Demo Pavilion
+                      {/* Elegant underline */}
+                      <div className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    {/* Subtle glow effect on hover */}
+                    <div className="absolute inset-0 text-sm font-medium tracking-wide text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]">
+                      Demo Pavilion
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 border border-white/20 group-hover:bg-white/20 group-hover:border-white/30 transition-all duration-300 group-hover:shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-3 h-3 text-current group-hover:translate-x-0.5 transition-transform duration-200"
+                    >
+                      <path
+                        d="M5 12h14M13 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </Link>
+              </div>
             </div>
 
             {/* Right: Actions - Single Frosted Glass Area (no inner panel) */}
@@ -290,7 +368,7 @@ export default function Home() {
                 </div>
 
                 {/* Create Pavilion */}
-                <div className="w-full px-5 py-4 slab-segment">
+                <div className="w-full px-5 py-4 slab-segment min-h-[200px]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div>
@@ -312,28 +390,30 @@ export default function Home() {
                             Existing Kiosk
                           </button>
                         </div>
-                        <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
-                          {txDigest ? (
-                            <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">Click to enter Pavilion</span>
-                          ) : (
+                        {txDigest ? (
+                          <div className="mt-5 mb-5">
+                            <div className="flex items-center justify-center">
+                              <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">Pavilion Created</span>
+                              <a
+                                href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label="View on SuiScan"
+                                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
+                              >
+                                <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
                             <span>
                               {createSubMode === 'new'
                                 ? (creating ? 'Processing...' : 'Creates a new Kiosk and initializes it')
                                 : (creating ? 'Processing...' : (fetchingKiosks ? 'Fetching kiosks...' : 'Select an existing Kiosk to initialize'))}
                             </span>
-                          )}
-                          {txDigest && (
-                            <a
-                              href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label="View on SuiScan"
-                              className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
-                            >
-                              <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
-                            </a>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         {createSubMode === 'new' && !txDigest ? (
                           <div className="mt-5 mb-5">
                             <label className="text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name: </label>
@@ -430,19 +510,23 @@ export default function Home() {
                 {/* Divider */}
                 <div className="slab-divider" />
 
-                {/* Turn Kiosk into Pavilion */}
+                {/* Visit Pavilion */}
                 <div className="w-full px-5 py-4 slab-segment">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-base md:text-lg font-semibold tracking-wide">Turn a Kiosk into a Pavilion</div>
-                      <div className="text-white/70 text-xs mt-1 tracking-widest uppercase">Initialize an existing Kiosk</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-base md:text-lg font-semibold tracking-wide">Visit Pavilion</div>
+                        <span className="text-xs tracking-widest uppercase text-white/50 bg-white/10 px-2 py-0.5 rounded border border-white/20">coming soon</span>
+                      </div>
+                      <div className="text-white/70 text-xs mt-1 tracking-widest uppercase">Enter an existing Pavilion by Kiosk ID</div>
                       <div className="mt-3">
-                        <label className="text-[14px] uppercase tracking-widest text-white/70">Kiosk Object ID: </label>
+                        <label className="text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Kiosk Object ID: </label>
                         <input
                           value={kioskId}
                           onChange={(e) => setKioskId(e.target.value)}
                           placeholder="0x..."
-                          className="w-[280px] bg-transparent px-0 py-1 border-0 border-b border-white/40 focus:outline-none focus:border-white/70 text-white text-sm placeholder:text-xs placeholder:text-white/45"
+                          disabled
+                          className="mt-1 w-[240px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -463,15 +547,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="slab-divider" />
-
-                {/* Dev: Demo Pavilion */}
-                <Link href="/pavilion" className="block px-5 py-4 slab-segment">
-                  <div className="text-xs tracking-widest uppercase text-white/70 mb-1">Developer</div>
-                  <div className="text-base md:text-lg font-extrabold tracking-wide text-white">Enter Demo Pavilion</div>
-                  <div className="text-white/60 text-xs mt-1">Temporary entry for development</div>
-                </Link>
 
                 {/* Kiosk items list (if available) */}
                 {kioskItems && kioskItems.length > 0 && (
