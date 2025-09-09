@@ -41,6 +41,36 @@ export async function buildCreatePavilionTx(params: {
   return tx;
 }
 
+export async function buildInitializePavilionWithExistingKioskTx(params: {
+  kioskClient: KioskClient;
+  packageId: string;
+  pavilionName: string;
+  ownerAddress: string;
+  kioskId: string;
+  kioskOwnerCapId: string;
+}): Promise<Transaction> {
+  const { kioskClient, packageId, pavilionName, ownerAddress, kioskId, kioskOwnerCapId } = params;
+
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
+
+  kioskTx.setKiosk(tx.object(kioskId));
+  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
+
+  tx.moveCall({
+    target: `${packageId}::pavilion::initialize_pavilion`,
+    arguments: [
+      kioskTx.getKiosk(),
+      kioskTx.getKioskCap(),
+      tx.pure.string(pavilionName),
+      tx.pure.address(ownerAddress),
+    ],
+  });
+
+  kioskTx.finalize();
+  return tx;
+}
+
 /**
  * Parse the transaction result (or fetch by digest) and return created kiosk & kiosk cap object ids.
  */

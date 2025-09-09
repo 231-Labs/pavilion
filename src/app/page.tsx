@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../components/KioskClientProvider';
-import { buildCreatePavilionTx, fetchKioskContents } from '../lib/tx/pavilion';
+import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../lib/tx/pavilion';
 import { useKioskState } from '../components/KioskStateProvider';
 
 export default function Home() {
@@ -18,6 +18,10 @@ export default function Home() {
   const [createdKioskId, setCreatedKioskId] = useState<string | null>(null);
   const [createdKioskCapId, setCreatedKioskCapId] = useState<string | null>(null);
   const [kioskItems, setKioskItems] = useState<any[] | null>(null);
+  const [createSubMode, setCreateSubMode] = useState<'new' | 'existing'>('new');
+  const [ownedKiosks, setOwnedKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean }[] | null>(null);
+  const [fetchingKiosks, setFetchingKiosks] = useState(false);
+  const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
   const kioskState = useKioskState();
 
   const router = useRouter();
@@ -39,6 +43,31 @@ export default function Home() {
 
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
 
+  // Auto-fetch owned kiosks when wallet connects/changes
+  useEffect(() => {
+    let aborted = false;
+    const run = async () => {
+      if (!currentAccount) {
+        setOwnedKiosks(null);
+        setSelectedKioskId(null);
+        return;
+      }
+      try {
+        setFetchingKiosks(true);
+        const res = await kioskClient.getOwnedKiosks({ address: currentAccount.address });
+        if (aborted) return;
+        const list = (res.kioskOwnerCaps ?? []).map((c: any) => ({ objectId: c.objectId, kioskId: c.kioskId, isPersonal: c.isPersonal }));
+        setOwnedKiosks(list);
+      } catch (e) {
+        if (aborted) return;
+      } finally {
+        if (!aborted) setFetchingKiosks(false);
+      }
+    };
+    void run();
+    return () => { aborted = true; };
+  }, [currentAccount, kioskClient]);
+
   const onCreatePavilion = async () => {
     setError(null);
     setTxDigest(null);
@@ -50,7 +79,7 @@ export default function Home() {
       setError('Missing NEXT_PUBLIC_PAVILION_PACKAGE_ID environment variable');
       return;
     }
-    if (!pavilionName.trim()) {
+    if (createSubMode === 'new' && !pavilionName.trim()) {
       setError('Pavilion name is required');
       return;
     }
@@ -109,11 +138,59 @@ export default function Home() {
       router.push('/pavilion');
       return;
     }
-    if (!pavilionName.trim()) {
+    if (createSubMode === 'new' && !pavilionName.trim()) {
       setError('Pavilion name is required');
       return;
     }
+    if (createSubMode === 'existing') {
+      if (!currentAccount) {
+        setError('Please connect your wallet');
+        return;
+      }
+      if (!selectedKioskId) {
+        setError('Please select a kiosk');
+        return;
+      }
+      const cap = (ownedKiosks || []).find((k) => k.kioskId === selectedKioskId)?.objectId;
+      if (!cap) {
+        setError('Missing kiosk cap for selected kiosk');
+        return;
+      }
+      setCreating(true);
+      try {
+        setError(null);
+        const tx = await buildInitializePavilionWithExistingKioskTx({
+          kioskClient,
+          packageId: PAVILION_PACKAGE_ID!,
+          pavilionName: pavilionName || 'Pavilion',
+          ownerAddress: currentAccount.address,
+          kioskId: selectedKioskId,
+          kioskOwnerCapId: cap,
+        });
+        const result = await signAndExecuteTransaction({ transaction: tx });
+        const digest = (result as any)?.digest ?? null;
+        setTxDigest(digest);
+        // set global kiosk state so /pavilion and Wallet panel can reflect selection
+        kioskState.setKioskFromIds({ kioskId: selectedKioskId, kioskOwnerCapId: cap });
+        // parse kiosk items for preview
+        try {
+          const data = await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
+          setKioskItems(data.items ?? []);
+        } catch {}
+      } catch (e) {
+        setError((e as Error).message || 'Failed to initialize pavilion with existing kiosk');
+      } finally {
+        setCreating(false);
+      }
+      return;
+    }
     await onCreatePavilion();
+  };
+
+  const onSlabClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, a, svg, select, textarea, [role="button"]')) return;
+    if (error) setError(null);
   };
 
   return (
@@ -169,6 +246,7 @@ export default function Home() {
             {/* Right: Actions - Single Frosted Glass Area (no inner panel) */}
             <div
               className="glass-slab glass-slab--thermal rounded-xl overflow-hidden p-6 md:p-8 self-center w-full min-h-[420px] md:min-h-[520px] lg:min-h-[560px]"
+              onClick={onSlabClick}
               onMouseMove={(e) => {
                 const target = e.currentTarget as HTMLDivElement;
                 const rect = target.getBoundingClientRect();
@@ -217,8 +295,33 @@ export default function Home() {
                     <div className="flex items-center">
                       <div>
                         <div className="text-base md:text-lg font-semibold tracking-wide">Create Pavilion</div>
+                        {/* Sub-mode toggle - small capsule buttons */}
+                        <div className="mt-2 mb-3 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
+                          <button
+                            onClick={() => setCreateSubMode('new')}
+                            aria-pressed={createSubMode === 'new'}
+                            className={`px-2 py-[2px] rounded-full border transition-colors ${createSubMode === 'new' ? 'bg-white/15 border-white/30 text-white/90' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80'}`}
+                          >
+                            New Kiosk
+                          </button>
+                          <button
+                            onClick={() => setCreateSubMode('existing')}
+                            aria-pressed={createSubMode === 'existing'}
+                            className={`px-2 py-[2px] rounded-full border transition-colors ${createSubMode === 'existing' ? 'bg-white/15 border-white/30 text-white/90' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80'}`}
+                          >
+                            Existing Kiosk
+                          </button>
+                        </div>
                         <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
-                          <span>{creating ? 'Processing...' : (txDigest ? 'Enter pavilion' : 'Creates a new Kiosk and initializes it')}</span>
+                          {txDigest ? (
+                            <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">Click to enter Pavilion</span>
+                          ) : (
+                            <span>
+                              {createSubMode === 'new'
+                                ? (creating ? 'Processing...' : 'Creates a new Kiosk and initializes it')
+                                : (creating ? 'Processing...' : (fetchingKiosks ? 'Fetching kiosks...' : 'Select an existing Kiosk to initialize'))}
+                            </span>
+                          )}
                           {txDigest && (
                             <a
                               href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
@@ -231,49 +334,94 @@ export default function Home() {
                             </a>
                           )}
                         </div>
-                        <div className="mt-3">
-                          <label className="text-[14px] uppercase tracking-widest text-white/70">Pavilion Name: </label>
-                          <input
-                            value={pavilionName}
-                            onChange={(e) => setPavilionName(e.target.value)}
-                            placeholder=" ≤ 20 chars"
-                            maxLength={20}
-                            required
-                            aria-required="true"
-                            className="mt-1 w-[200px] bg-transparent px-0 py-1 border-0 border-b border-white/40 focus:outline-none focus:border-white/70 text-white text-sm placeholder:text-xs placeholder:text-white/45"
-                          />
-                        </div>
+                        {createSubMode === 'new' && !txDigest ? (
+                          <div className="mt-5 mb-5">
+                            <label className="text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name: </label>
+                            <input
+                              value={pavilionName}
+                              onChange={(e) => setPavilionName(e.target.value)}
+                              placeholder=" ≤ 20 chars"
+                              maxLength={20}
+                              required
+                              aria-required="true"
+                              className="mt-1 w-[240px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                            />
+                          </div>
+                        ) : null}
+                        {createSubMode !== 'new' && !txDigest ? (
+                          <div className="mt-3 space-y-2">
+                            <label className="text-[14px] uppercase tracking-widest text-white/70">Owned Kiosks</label>
+                            <div className="h-12 overflow-auto rounded border border-white/10">
+                              {(ownedKiosks && ownedKiosks.length > 0) ? (
+                                <ul className="divide-y divide-white/10">
+                                  {ownedKiosks.map((k) => (
+                                    <li key={k.objectId} className={`px-3 py-1 cursor-pointer ${selectedKioskId === k.kioskId ? 'bg-white/10' : 'hover:bg-white/5'}`} onClick={() => setSelectedKioskId(k.kioskId)}>
+                                      <div className="text-[11px] leading-tight text-white/85 truncate">
+                                        {k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : ''}
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                fetchingKiosks ? (
+                                  <div className="px-3 py-2 text-[12px] text-white/60">Loading...</div>
+                                ) : (
+                                  !currentAccount ? (
+                                    <div className="px-3 py-2 text-[12px] text-white/60">Connect wallet to fetch Kiosks.</div>
+                                  ) : (
+                                    <div className="px-3 py-2 text-[12px] text-white/60">No Kiosk Found.</div>
+                                  )
+                                )
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       
                     </div>
-                    <button
-                      onClick={onMainAction}
-                      disabled={creating}
-                      title={!pavilionName.trim() ? 'Pavilion name is required' : undefined}
-                      aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
-                      className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
-                    >
-                      {txDigest ? (
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-4 h-4 text-white/85 transition-transform duration-200 group-hover:scale-110"
-                        >
-                          <rect x="6" y="4" width="12" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <circle cx="14" cy="12" r="1" fill="currentColor" />
-                        </svg>
-                      ) : (
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
-                        >
-                          <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                    <div className="flex items-center gap-2">
+                      {txDigest && (
+                        <div className="w-10 h-10 flex items-center justify-center animate-wiggle-x" aria-hidden>
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6 text-white/70"
+                          >
+                            <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
                       )}
-                    </button>
+                      <button
+                        onClick={onMainAction}
+                        disabled={creating}
+                        title={createSubMode === 'new' && !pavilionName.trim() ? 'Pavilion name is required' : undefined}
+                        aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
+                        className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
+                      >
+                        {txDigest ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-4 h-4 text-white/85 transition-transform duration-200 group-hover:scale-110"
+                          >
+                            <rect x="6" y="4" width="12" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                            <circle cx="14" cy="12" r="1" fill="currentColor" />
+                          </svg>
+                        ) : (
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
+                          >
+                            <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                      {/* no trailing arrow */}
+                    </div>
                   </div>
                 </div>
                 {error && (
