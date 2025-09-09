@@ -33,6 +33,10 @@ export default function Home() {
       setError('Missing NEXT_PUBLIC_PAVILION_PACKAGE_ID environment variable');
       return;
     }
+    if (!pavilionName.trim()) {
+      setError('Pavilion name is required');
+      return;
+    }
 
     setCreating(true);
     try {
@@ -57,6 +61,10 @@ export default function Home() {
   const onMainAction = async () => {
     if (txDigest) {
       router.push('/pavilion');
+      return;
+    }
+    if (!pavilionName.trim()) {
+      setError('Pavilion name is required');
       return;
     }
     await onCreatePavilion();
@@ -184,6 +192,8 @@ export default function Home() {
                             onChange={(e) => setPavilionName(e.target.value)}
                             placeholder=" ≤ 20 chars"
                             maxLength={20}
+                            required
+                            aria-required="true"
                             className="mt-1 w-[200px] bg-transparent px-0 py-1 border-0 border-b border-white/40 focus:outline-none focus:border-white/70 text-white text-sm placeholder:text-xs placeholder:text-white/45"
                           />
                         </div>
@@ -193,6 +203,7 @@ export default function Home() {
                     <button
                       onClick={onMainAction}
                       disabled={creating}
+                      title={!pavilionName.trim() ? 'Pavilion name is required' : undefined}
                       aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
                       className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
                     >
