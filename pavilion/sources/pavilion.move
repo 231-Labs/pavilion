@@ -48,7 +48,7 @@ module pavilion::pavilion {
     /// Initialize pavilion functionality on an existing kiosk
     /// If already a pavilion, will update the name and scene manager
     /// Creates and transfers SceneManagerCap to the specified manager
-    entry fun initialize_pavilion(
+    public fun initialize_pavilion(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         name: String,

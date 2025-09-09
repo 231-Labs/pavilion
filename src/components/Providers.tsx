@@ -25,7 +25,7 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networks} defaultNetwork={defaultNetwork}>
-        <WalletProvider theme={elegantTheme}>
+        <WalletProvider theme={elegantTheme} autoConnect={true}>
           <KioskClientProvider networkName={defaultNetwork}>
             {children}
           </KioskClientProvider>
