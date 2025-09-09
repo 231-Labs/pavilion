@@ -6,6 +6,7 @@ import { getFullnodeUrl } from '@mysten/sui/client';
 import { ReactNode } from 'react';
 import { elegantTheme } from '../styles/dappKitTheme';
 import { KioskClientProvider } from './KioskClientProvider';
+import { KioskStateProvider } from './KioskStateProvider';
 
 // Create QueryClient
 const queryClient = new QueryClient();
@@ -27,7 +28,9 @@ export function Providers({ children }: ProvidersProps) {
       <SuiClientProvider networks={networks} defaultNetwork={defaultNetwork}>
         <WalletProvider theme={elegantTheme} autoConnect={true}>
           <KioskClientProvider networkName={defaultNetwork}>
-            {children}
+            <KioskStateProvider>
+              {children}
+            </KioskStateProvider>
           </KioskClientProvider>
         </WalletProvider>
       </SuiClientProvider>

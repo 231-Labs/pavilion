@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../components/KioskClientProvider';
-import { buildCreatePavilionTx } from '../lib/tx/pavilion';
+import { buildCreatePavilionTx, fetchKioskContents } from '../lib/tx/pavilion';
+import { useKioskState } from '../components/KioskStateProvider';
 
 export default function Home() {
   const [kioskId, setKioskId] = useState('');
@@ -14,11 +15,27 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [txDigest, setTxDigest] = useState<string | null>(null);
   const [pavilionName, setPavilionName] = useState('');
+  const [createdKioskId, setCreatedKioskId] = useState<string | null>(null);
+  const [createdKioskCapId, setCreatedKioskCapId] = useState<string | null>(null);
+  const [kioskItems, setKioskItems] = useState<any[] | null>(null);
+  const kioskState = useKioskState();
 
   const router = useRouter();
   const currentAccount = useCurrentAccount();
   const kioskClient = useKioskClient();
-  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const suiClient = useSuiClient();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) =>
+      await suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+          showObjectChanges: true,
+          showEvents: false,
+        },
+      }),
+  });
 
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
 
@@ -50,7 +67,36 @@ export default function Home() {
       const result = await signAndExecuteTransaction({ transaction: tx });
       const digest = (result as any)?.digest ?? null;
       setTxDigest(digest);
-      console.log('Create Pavilion tx result:', result);
+      // console.log('Create Pavilion tx result:', result);
+
+      // Extract new kiosk & cap ids directly from objectChanges and fetch kiosk contents
+      // TODO: find simpler way to do this
+      try {
+        const changes = (result as any)?.objectChanges ?? [];
+        let kioskIdNew: string | undefined;
+        let kioskOwnerCapIdNew: string | undefined;
+        for (const ch of changes) {
+          if (ch.type !== 'created') continue;
+          const t = (ch as any).objectType as string | undefined;
+          const id = (ch as any).objectId as string | undefined;
+          if (!t || !id) continue;
+          if (t.endsWith('::kiosk::Kiosk')) kioskIdNew = id;
+          if (t.endsWith('::kiosk::KioskOwnerCap')) kioskOwnerCapIdNew = id;
+        }
+        if (kioskIdNew) setCreatedKioskId(kioskIdNew);
+        if (kioskOwnerCapIdNew) setCreatedKioskCapId(kioskOwnerCapIdNew);
+        if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
+        if (kioskIdNew) {
+          const data = await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
+          setKioskItems(data.items ?? []);
+        // TODO: to be removed
+        // console.log(kioskIdNew);
+        // console.log(kioskOwnerCapIdNew);
+        console.log(data.items);
+        }
+      } catch (parseErr) {
+        console.warn('Failed to parse kiosk ids from tx:', parseErr);
+      }
     } catch (e) {
       setError((e as Error).message ?? 'Create Pavilion transaction failed');
     } finally {
@@ -230,11 +276,9 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-
                 {error && (
                   <div className="px-5 py-3 text-[12px] text-red-300">{error}</div>
                 )}
-
                 {/* Divider */}
                 <div className="slab-divider" />
 
@@ -280,6 +324,21 @@ export default function Home() {
                   <div className="text-base md:text-lg font-extrabold tracking-wide text-white">Enter Demo Pavilion</div>
                   <div className="text-white/60 text-xs mt-1">Temporary entry for development</div>
                 </Link>
+
+                {/* Kiosk items list (if available) */}
+                {kioskItems && kioskItems.length > 0 && (
+                  <div className="px-5 py-4 slab-segment">
+                    <div className="text-xs tracking-widest uppercase text-white/70 mb-2">Kiosk Items</div>
+                    <ul className="space-y-2 text-white/85 text-[12px]">
+                      {kioskItems.map((it, idx) => (
+                        <li key={idx} className="flex items-center justify-between">
+                          <span className="truncate max-w-[70%]">{it.objectId}</span>
+                          <span className="opacity-75 truncate max-w-[30%]">{it.type}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
           </div>
         </section>

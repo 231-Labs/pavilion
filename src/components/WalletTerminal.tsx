@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useKioskState } from './KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 
 export function WalletTerminal() {
   const [error, setError] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { kioskId } = useKioskState();
   const SUI_TO_MIST = 1000000000;
 
   // Use DappKit hooks
@@ -34,6 +36,8 @@ export function WalletTerminal() {
 
     return () => { isCancelled = true; };
   }, [currentAccount, suiClient]);
+
+  // KioskId is provided by global state now
 
   
 
@@ -93,6 +97,17 @@ export function WalletTerminal() {
                   <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">BALANCE</span>
                   <span className="font-medium control-label-primary">{balance} SUI</span>
                 </div>
+              </div>
+            )}
+
+            {kioskId && (
+              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">KIOSK ID</span>
+                </div>
+                <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  {kioskId}
+                </p>
               </div>
             )}
 
