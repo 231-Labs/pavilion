@@ -1,5 +1,5 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { KioskTransaction } from '@mysten/kiosk';
+import { KioskTransaction } from '@mysten/kiosk'; 
 import type { KioskClient } from '@mysten/kiosk';
 
 export async function buildCreatePavilionTx(params: {

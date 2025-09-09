@@ -130,6 +130,7 @@ export function SculptureControlPanel({
     setError(null);
     setLoadingProgress(0);
 
+    // TODO: turn this into a walrus uploader later
     try {
       const res = await fetch('/api/models');
       if (!res.ok) {
