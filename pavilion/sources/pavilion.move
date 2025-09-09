@@ -33,7 +33,7 @@ module pavilion::pavilion {
 
     /// Permission bitmap: place (1) + lock (2) = 3
     const PAVILION_PERMISSIONS: u128 = 3;
-    const MAX_NAME_LENGTH: u64 = 10;
+    const MAX_NAME_LENGTH: u64 = 20;
     const MIN_NAME_LENGTH: u64 = 1;
     
     // Error codes

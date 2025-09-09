@@ -2,11 +2,65 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ConnectButton } from '@mysten/dapp-kit';
+import { useRouter } from 'next/navigation';
+import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useKioskClient } from '../components/KioskClientProvider';
+import { buildCreatePavilionTx } from '../lib/tx/pavilion';
 
 export default function Home() {
   const [kioskId, setKioskId] = useState('');
   const [mode, setMode] = useState<'collector' | 'designer'>('collector');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [txDigest, setTxDigest] = useState<string | null>(null);
+  const [pavilionName, setPavilionName] = useState('');
+
+  const router = useRouter();
+  const currentAccount = useCurrentAccount();
+  const kioskClient = useKioskClient();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+
+  const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
+
+  const onCreatePavilion = async () => {
+    setError(null);
+    setTxDigest(null);
+    if (!currentAccount) {
+      setError('Please connect your wallet');
+      return;
+    }
+    if (!PAVILION_PACKAGE_ID) {
+      setError('Missing NEXT_PUBLIC_PAVILION_PACKAGE_ID environment variable');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const tx = await buildCreatePavilionTx({
+        kioskClient,
+        packageId: PAVILION_PACKAGE_ID,
+        pavilionName,
+        ownerAddress: currentAccount.address,
+      });
+
+      const result = await signAndExecuteTransaction({ transaction: tx });
+      const digest = (result as any)?.digest ?? null;
+      setTxDigest(digest);
+      console.log('Create Pavilion tx result:', result);
+    } catch (e) {
+      setError((e as Error).message ?? 'Create Pavilion transaction failed');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const onMainAction = async () => {
+    if (txDigest) {
+      router.push('/pavilion');
+      return;
+    }
+    await onCreatePavilion();
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden film-noise flex flex-col">
@@ -104,31 +158,105 @@ export default function Home() {
                 </div>
 
                 {/* Create Pavilion */}
-                <button className="w-full text-left px-5 py-4 slab-segment">
+                <div className="w-full px-5 py-4 slab-segment">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-base md:text-lg font-semibold tracking-wide">Create Pavilion</div>
-                      <div className="text-white/60 text-xs mt-1 tracking-widest uppercase">Coming soon</div>
+                    <div className="flex items-center">
+                      <div>
+                        <div className="text-base md:text-lg font-semibold tracking-wide">Create Pavilion</div>
+                        <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
+                          <span>{creating ? 'Processing...' : (txDigest ? 'Enter pavilion' : 'Creates a new Kiosk and initializes it')}</span>
+                          {txDigest && (
+                            <a
+                              href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="View on SuiScan"
+                              className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
+                            >
+                              <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
+                            </a>
+                          )}
+                        </div>
+                        <div className="mt-3">
+                          <label className="text-[14px] uppercase tracking-widest text-white/70">Pavilion Name: </label>
+                          <input
+                            value={pavilionName}
+                            onChange={(e) => setPavilionName(e.target.value)}
+                            placeholder=" ≤ 20 chars"
+                            maxLength={20}
+                            className="mt-1 w-[200px] bg-transparent px-0 py-1 border-0 border-b border-white/40 focus:outline-none focus:border-white/70 text-white text-sm placeholder:text-xs placeholder:text-white/45"
+                          />
+                        </div>
+                      </div>
+                      
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-white/10 text-white/80 border border-white/20 text-[10px] tracking-widest">NEW</div>
+                    <button
+                      onClick={onMainAction}
+                      disabled={creating}
+                      aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
+                      className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
+                    >
+                      {txDigest ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4 text-white/85 transition-transform duration-200 group-hover:scale-110"
+                        >
+                          <rect x="6" y="4" width="12" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                          <circle cx="14" cy="12" r="1" fill="currentColor" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
+                        >
+                          <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </button>
                   </div>
-                </button>
+                </div>
+
+                {error && (
+                  <div className="px-5 py-3 text-[12px] text-red-300">{error}</div>
+                )}
 
                 {/* Divider */}
                 <div className="slab-divider" />
 
                 {/* Turn Kiosk into Pavilion */}
-                <div className="px-5 py-4 slab-segment">
-                  <div className="text-base md:text-lg font-semibold tracking-wide">Turn a Kiosk into a Pavilion</div>
-                  <div className="mt-3 space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/60">Kiosk Object Id</label>
-                    <input
-                      value={kioskId}
-                      onChange={(e) => setKioskId(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full p-2 rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40"
-                    />
-                    <button className="w-full px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest">Coming soon</button>
+                <div className="w-full px-5 py-4 slab-segment">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-base md:text-lg font-semibold tracking-wide">Turn a Kiosk into a Pavilion</div>
+                      <div className="text-white/70 text-xs mt-1 tracking-widest uppercase">Initialize an existing Kiosk</div>
+                      <div className="mt-3">
+                        <label className="text-[14px] uppercase tracking-widest text-white/70">Kiosk Object ID: </label>
+                        <input
+                          value={kioskId}
+                          onChange={(e) => setKioskId(e.target.value)}
+                          placeholder="0x..."
+                          className="w-[280px] bg-transparent px-0 py-1 border-0 border-b border-white/40 focus:outline-none focus:border-white/70 text-white text-sm placeholder:text-xs placeholder:text-white/45"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      disabled
+                      aria-label="Coming soon"
+                      className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4 text-white/80"
+                      >
+                        <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
                   </div>
                 </div>
 
