@@ -1,19 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useKioskState } from './KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 
 export function WalletTerminal() {
   const [error, setError] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { kioskId } = useKioskState();
   const SUI_TO_MIST = 1000000000;
+  const router = useRouter();
 
   // Use DappKit hooks
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   
-
   // When wallet connection status changes
   useEffect(() => {
     if (!currentAccount) return;
@@ -35,6 +38,8 @@ export function WalletTerminal() {
 
     return () => { isCancelled = true; };
   }, [currentAccount, suiClient]);
+
+  // KioskId is provided by global state now
 
   
 
@@ -63,10 +68,10 @@ export function WalletTerminal() {
         {isExpanded && (
           <div className="p-3" style={{ fontSize: '13px' }}>
             
-            <div className="wallet-terminal-buttons">
+            <div className="wallet-terminal-buttons space-y-3">
               <ConnectButton
                 className="elegant-button w-full text-sm tracking-wide uppercase"
-                style={{ 
+                style={{
                   padding: '12px 16px',
                   minHeight: '48px',
                   display: 'flex',
@@ -86,6 +91,42 @@ export function WalletTerminal() {
                   boxShadow: 'none'
                 }}
               />
+
+              <button
+                onClick={() => router.push('/')}
+                className="elegant-button w-full text-sm tracking-wide uppercase"
+                style={{
+                  padding: '12px 16px',
+                  minHeight: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.85)',
+                  fontFamily: '"Courier New", monospace',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                }}
+              >
+                ← BACK TO HOME
+              </button>
             </div>
 
             {currentAccount && (
@@ -94,6 +135,17 @@ export function WalletTerminal() {
                   <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">BALANCE</span>
                   <span className="font-medium control-label-primary">{balance} SUI</span>
                 </div>
+              </div>
+            )}
+
+            {kioskId && (
+              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">KIOSK ID</span>
+                </div>
+                <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  {kioskId}
+                </p>
               </div>
             )}
 

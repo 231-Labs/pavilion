@@ -11,8 +11,6 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  
-
   // Load all models from public/models via API
   const loadAllModels = async () => {
     setIsLoading(true);
@@ -62,7 +60,7 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
 
     try {
       const model = await sceneManager.loadGLBModel(url, {
-        position: { x: 0, y: 2, z: 0 },
+        position: { x: 0, y: 0, z: 0 },
         name: `CustomModel_${Date.now()}`,
         onProgress: (progress) => {
           const percent = Math.round((progress.loaded / progress.total) * 100);
@@ -81,9 +79,7 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
 
   // Clear all loaded models
   const clearAllModels = () => {
-    // Remove all loaded models from SceneManager
     sceneManager.removeAllLoadedModels();
-    // Clear local state
     setLoadedModels([]);
     setError(null);
     console.log('All loaded models cleared');

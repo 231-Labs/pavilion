@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { ReactNode } from 'react';
 import { elegantTheme } from '../styles/dappKitTheme';
+import { KioskClientProvider } from './KioskClientProvider';
+import { KioskStateProvider } from './KioskStateProvider';
 
 // Create QueryClient
 const queryClient = new QueryClient();
@@ -15,17 +17,21 @@ const networks = {
   mainnet: { url: getFullnodeUrl('mainnet') },
 };
 
-
 interface ProvidersProps {
   children: ReactNode;
 }
 
 export function Providers({ children }: ProvidersProps) {
+  const defaultNetwork: 'testnet' | 'mainnet' = 'testnet';
   return (
     <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networks} defaultNetwork="testnet">
-        <WalletProvider theme={elegantTheme}>
-          {children}
+      <SuiClientProvider networks={networks} defaultNetwork={defaultNetwork}>
+        <WalletProvider theme={elegantTheme} autoConnect={true}>
+          <KioskClientProvider networkName={defaultNetwork}>
+            <KioskStateProvider>
+              {children}
+            </KioskStateProvider>
+          </KioskClientProvider>
         </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>
