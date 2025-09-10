@@ -17,13 +17,15 @@ export default function Home() {
   const [pavilionName, setPavilionName] = useState('');
   const [createdKioskId, setCreatedKioskId] = useState<string | null>(null);
   const [createdKioskCapId, setCreatedKioskCapId] = useState<string | null>(null);
-  const [kioskItems, setKioskItems] = useState<any[] | null>(null);
   const [createSubMode, setCreateSubMode] = useState<'new' | 'existing'>('new');
   const [ownedKiosks, setOwnedKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean }[] | null>(null);
   const [fetchingKiosks, setFetchingKiosks] = useState(false);
   const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
+  const [visitSubMode, setVisitSubMode] = useState<'my' | 'external'>('my');
+  const [selectedVisitKioskId, setSelectedVisitKioskId] = useState<string | null>(null);
+  const [pavilionKiosks, setPavilionKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean }[] | null>(null);
+  const [fetchingPavilionKiosks, setFetchingPavilionKiosks] = useState(false);
   const kioskState = useKioskState();
-
   const router = useRouter();
   const currentAccount = useCurrentAccount();
   const kioskClient = useKioskClient();
@@ -49,21 +51,26 @@ export default function Home() {
     const run = async () => {
       if (!currentAccount) {
         setOwnedKiosks(null);
+        setPavilionKiosks(null);
         setSelectedKioskId(null);
+        setSelectedVisitKioskId(null);
         return;
       }
       try {
         setFetchingKiosks(true);
+        setFetchingPavilionKiosks(true);
         const res = await kioskClient.getOwnedKiosks({ address: currentAccount.address });
         if (aborted) return;
 
         // Filter out kiosks that already have PavilionExtension installed
         const pavilionExtensionType = process.env.NEXT_PUBLIC_PAVILION_EXTENSION_TYPE as string | undefined;
-        if (!pavilionExtensionType) {
-          console.error('Missing NEXT_PUBLIC_PAVILION_EXTENSION_TYPE environment variable');
-          setOwnedKiosks(null);
-          return;
-        }
+        const pavilionPackageId = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
+
+        // Temporary fallback for development - use default values if env vars are not set
+        const finalPavilionExtensionType = pavilionExtensionType ||
+          `${pavilionPackageId || '0x0'}::pavilion::PavilionExtension`;
+
+        console.log('Using pavilion extension type:', finalPavilionExtensionType);
         const initialList = (res.kioskOwnerCaps ?? []).map((c: any) => ({
           objectId: c.objectId,
           kioskId: c.kioskId,
@@ -72,38 +79,44 @@ export default function Home() {
 
         // Check each kiosk for PavilionExtension
         const filteredList = [];
+        const pavilionList = [];
         for (const kiosk of initialList) {
           if (aborted) return;
           try {
             // Try to get the extension
             const extension = await kioskClient.getKioskExtension({
               kioskId: kiosk.kioskId,
-              type: pavilionExtensionType
+              type: finalPavilionExtensionType
             });
-            console.log(`Kiosk ${kiosk.kioskId} - PavilionExtension result:`, extension);
+            // console.log(`Kiosk ${kiosk.kioskId} - PavilionExtension result:`, extension);
 
             // Check if extension exists (not null)
             if (extension && extension.isEnabled !== false) {
-              // Extension exists and is enabled, skip this kiosk
-              console.log(`Skipping kiosk ${kiosk.kioskId} - PavilionExtension already installed`);
+              // Extension exists and is enabled, include in pavilion list
+              // console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension found and enabled`);
+              pavilionList.push(kiosk);
             } else {
-              // Extension doesn't exist or is disabled, include this kiosk
-              console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension not found or disabled`);
+              // Extension doesn't exist or is disabled, include in owned list
+              //console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension not found or disabled`);
               filteredList.push(kiosk);
             }
           } catch (extensionError) {
-            // If there's an error, assume extension doesn't exist and include the kiosk
-            console.log(`Kiosk ${kiosk.kioskId} - Error checking PavilionExtension, including in list. Error:`, extensionError);
+            // If there's an error, assume extension doesn't exist and include in owned list
+            // console.log(`Kiosk ${kiosk.kioskId} - Error checking PavilionExtension, including in owned list. Error:`, extensionError);
             filteredList.push(kiosk);
           }
         }
 
         setOwnedKiosks(filteredList);
+        setPavilionKiosks(pavilionList);
       } catch (e) {
         if (aborted) return;
         console.error('Failed to fetch kiosks:', e);
       } finally {
-        if (!aborted) setFetchingKiosks(false);
+        if (!aborted) {
+          setFetchingKiosks(false);
+          setFetchingPavilionKiosks(false);
+        }
       }
     };
     void run();
@@ -159,11 +172,10 @@ export default function Home() {
         if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
         if (kioskIdNew) {
           const data = await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
-          setKioskItems(data.items ?? []);
-        // TODO: to be removed
-        // console.log(kioskIdNew);
-        // console.log(kioskOwnerCapIdNew);
-        console.log(data.items);
+          // TODO: to be removed
+          // console.log(kioskIdNew);
+          // console.log(kioskOwnerCapIdNew);
+          console.log(data.items);
         }
       } catch (parseErr) {
         console.warn('Failed to parse kiosk ids from tx:', parseErr);
@@ -177,7 +189,13 @@ export default function Home() {
 
   const onMainAction = async () => {
     if (txDigest) {
-      router.push('/pavilion');
+      // Navigate to pavilion page with the created kiosk ID
+      const targetKioskId = createdKioskId || kioskState.kioskId;
+      if (targetKioskId) {
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
+      } else {
+        router.push('/pavilion');
+      }
       return;
     }
     if (createSubMode === 'new' && !pavilionName.trim()) {
@@ -217,7 +235,6 @@ export default function Home() {
         // parse kiosk items for preview
         try {
           const data = await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
-          setKioskItems(data.items ?? []);
         } catch {}
       } catch (e) {
         setError((e as Error).message || 'Failed to initialize pavilion with existing kiosk');
@@ -233,6 +250,27 @@ export default function Home() {
     const target = e.target as HTMLElement;
     if (target.closest('button, input, a, svg, select, textarea, [role="button"]')) return;
     if (error) setError(null);
+  };
+
+  const onVisitPavilion = () => {
+    let targetKioskId = '';
+
+    if (visitSubMode === 'my') {
+      if (!selectedVisitKioskId) {
+        setError('Please select a pavilion kiosk');
+        return;
+      }
+      targetKioskId = selectedVisitKioskId;
+    } else {
+      if (!kioskId.trim()) {
+        setError('Please enter a kiosk ID');
+        return;
+      }
+      targetKioskId = kioskId.trim();
+    }
+
+    // Navigate to pavilion page with the selected kiosk ID
+    router.push(`/pavilion?kioskId=${targetKioskId}`);
   };
 
   return (
@@ -340,7 +378,7 @@ export default function Home() {
               }}
             >
                 {/* Mode Toggle (Collector / Designer) */}
-                <div className="px-5 py-4 slab-segment">
+                <div className="px-5 py-2 slab-segment">
                   <div className="relative mx-auto w-[200px] sm:w-[220px] rounded-lg border border-white/20 bg-white/5 overflow-hidden">
                     <div
                       className="absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-8px)] rounded-md bg-white/10 transition-transform duration-300"
@@ -415,8 +453,8 @@ export default function Home() {
                           </div>
                         )}
                         {createSubMode === 'new' && !txDigest ? (
-                          <div className="mt-5 mb-5">
-                            <label className="text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name: </label>
+                          <div className="mt-4 space-y-2">
+                            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name:</label>
                             <input
                               value={pavilionName}
                               onChange={(e) => setPavilionName(e.target.value)}
@@ -424,14 +462,14 @@ export default function Home() {
                               maxLength={20}
                               required
                               aria-required="true"
-                              className="mt-1 w-[240px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                              className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
                             />
                           </div>
                         ) : null}
                         {createSubMode !== 'new' && !txDigest ? (
-                          <div className="mt-3 space-y-2">
+                          <div className="mt-4 space-y-2">
                             <label className="text-[14px] uppercase tracking-widest text-white/70">Owned Kiosks</label>
-                            <div className="h-12 overflow-auto rounded border border-white/10">
+                            <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
                               {(ownedKiosks && ownedKiosks.length > 0) ? (
                                 <ul className="divide-y divide-white/10">
                                   {ownedKiosks.map((k) => (
@@ -511,57 +549,94 @@ export default function Home() {
                 <div className="slab-divider" />
 
                 {/* Visit Pavilion */}
-                <div className="w-full px-5 py-4 slab-segment">
+                <div className="w-full px-5 py-4 slab-segment min-h-[200px]">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div>
                         <div className="text-base md:text-lg font-semibold tracking-wide">Visit Pavilion</div>
-                        <span className="text-xs tracking-widest uppercase text-white/50 bg-white/10 px-2 py-0.5 rounded border border-white/20">coming soon</span>
+                        {/* Visit sub-mode toggle - small capsule buttons */}
+                        <div className="mt-2 mb-3 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
+                          <button
+                            onClick={() => setVisitSubMode('my')}
+                            aria-pressed={visitSubMode === 'my'}
+                            className={`px-2 py-[2px] rounded-full border transition-colors ${visitSubMode === 'my' ? 'bg-white/15 border-white/30 text-white/90' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80'}`}
+                          >
+                            My Pavilions
+                          </button>
+                          <button
+                            onClick={() => setVisitSubMode('external')}
+                            aria-pressed={visitSubMode === 'external'}
+                            className={`px-2 py-[2px] rounded-full border transition-colors ${visitSubMode === 'external' ? 'bg-white/15 border-white/30 text-white/90' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80'}`}
+                          >
+                            External
+                          </button>
+                        </div>
+                        <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
+                          <span>
+                            {visitSubMode === 'my'
+                              ? (fetchingPavilionKiosks ? 'Loading pavilions...' : 'Select a pavilion from your address')
+                              : 'Enter an existing Pavilion by Kiosk ID'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-white/70 text-xs mt-1 tracking-widest uppercase">Enter an existing Pavilion by Kiosk ID</div>
-                      <div className="mt-3">
-                        <label className="text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Kiosk Object ID: </label>
-                        <input
-                          value={kioskId}
-                          onChange={(e) => setKioskId(e.target.value)}
-                          placeholder="0x..."
-                          disabled
-                          className="mt-1 w-[240px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </div>
+
+                      {visitSubMode === 'my' ? (
+                        <div className="mt-3 space-y-2">
+                          <label className="text-[14px] uppercase tracking-widest text-white/70">Owned Pavilions</label>
+                          <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
+                            {(pavilionKiosks && pavilionKiosks.length > 0) ? (
+                              <ul className="divide-y divide-white/10">
+                                {pavilionKiosks.map((k) => (
+                                  <li key={k.objectId} className={`px-3 py-1 cursor-pointer ${selectedVisitKioskId === k.kioskId ? 'bg-white/10' : 'hover:bg-white/5'}`} onClick={() => setSelectedVisitKioskId(k.kioskId)}>
+                                    <div className="text-[11px] leading-tight text-white/85 truncate">
+                                      {k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : ''}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              fetchingPavilionKiosks ? (
+                                <div className="px-3 py-2 text-[12px] text-white/60">Loading...</div>
+                              ) : (
+                                !currentAccount ? (
+                                  <div className="px-3 py-2 text-[12px] text-white/60">Connect wallet to view pavilions.</div>
+                                ) : (
+                                  <div className="px-3 py-2 text-[12px] text-white/60">No pavilions found.</div>
+                                )
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Kiosk Object ID:</label>
+                          <input
+                            value={kioskId}
+                            onChange={(e) => setKioskId(e.target.value)}
+                            placeholder="0x..."
+                            className="w-[320px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                          />
+                        </div>
+                      )}
                     </div>
+
                     <button
-                      disabled
-                      aria-label="Coming soon"
-                      className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20"
+                      onClick={onVisitPavilion}
+                      disabled={(visitSubMode === 'my' && !selectedVisitKioskId) || (visitSubMode === 'external' && !kioskId.trim())}
+                      aria-label="Visit pavilion"
+                      className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/30"
                     >
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
-                        className="w-4 h-4 text-white/80"
+                        className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
                       >
                         <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                   </div>
                 </div>
-
-
-                {/* Kiosk items list (if available) */}
-                {kioskItems && kioskItems.length > 0 && (
-                  <div className="px-5 py-4 slab-segment">
-                    <div className="text-xs tracking-widest uppercase text-white/70 mb-2">Kiosk Items</div>
-                    <ul className="space-y-2 text-white/85 text-[12px]">
-                      {kioskItems.map((it, idx) => (
-                        <li key={idx} className="flex items-center justify-between">
-                          <span className="truncate max-w-[70%]">{it.objectId}</span>
-                          <span className="opacity-75 truncate max-w-[30%]">{it.type}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
             </div>
           </div>
         </section>

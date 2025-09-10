@@ -11,6 +11,7 @@ interface SculptureControlPanelProps {
   onUpdatePosition: (id: string, position: { x: number; y: number; z: number }) => void;
   onUpdateRotation?: (id: string, rotation: { x: number; y: number; z: number }) => void;
   onUpdateScale?: (id: string, scale: { x: number; y: number; z: number }) => void;
+  autoLoadBlobIds?: string[]; // Blob IDs to auto-load from kiosk items
 }
 
 // Interface for controllable objects
@@ -29,7 +30,8 @@ export function SculptureControlPanel({
   sceneManager,
   onUpdatePosition,
   onUpdateRotation,
-  onUpdateScale
+  onUpdateScale,
+  autoLoadBlobIds = []
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -40,6 +42,33 @@ export function SculptureControlPanel({
   const [error, setError] = useState<string | null>(null);
   const [controllableObjects, setControllableObjects] = useState<ControllableObject[]>([]);
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
+
+  // Auto-load blob IDs from kiosk items
+  useEffect(() => {
+    if (autoLoadBlobIds.length > 0 && sceneManager && !isLoading) {
+      console.log('Auto-loading blob IDs from kiosk items:', autoLoadBlobIds);
+
+      // Load each blob ID sequentially to avoid overwhelming the system
+      const loadBlobIdsSequentially = async () => {
+        for (const blobId of autoLoadBlobIds) {
+          if (!blobId.trim()) continue;
+
+          // Check if this blob ID is already loaded
+          const modelName = `Walrus_${blobId.slice(0, 8)}`;
+          if (loadedModels.includes(modelName)) {
+            console.log(`Blob ID ${blobId} already loaded as ${modelName}`);
+            continue;
+          }
+
+          console.log(`Auto-loading blob ID: ${blobId}`);
+          setWalrusBlobId(blobId);
+          await loadWalrusModel();
+        }
+      };
+
+      loadBlobIdsSequentially();
+    }
+  }, [autoLoadBlobIds, sceneManager, isLoading, loadedModels]);
 
   // Update controllable objects list
   useEffect(() => {
