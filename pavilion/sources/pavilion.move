@@ -14,7 +14,7 @@ module pavilion::pavilion {
     public struct PavilionName has copy, store, drop {}
 
     /// Dynamic field key for scene configuration blob ID
-    public struct SceneConfigBlob has copy, store, drop {}
+    public struct SceneConfig has copy, store, drop {}
 
     /// Dynamic field key for scene manager address
     public struct SceneManager has copy, store, drop {}
@@ -124,8 +124,8 @@ module pavilion::pavilion {
     }
 
     /// Set scene configuration blob ID (points to Walrus storage)
-    public fun set_scene_config_blob(self: &mut Kiosk, cap: &KioskOwnerCap, blob_id: String) {
-        set_dynamic_field(self, cap, SceneConfigBlob {}, blob_id);
+    public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
+        set_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
     /// Remove pavilion functionality from kiosk
@@ -133,8 +133,8 @@ module pavilion::pavilion {
         if (df::exists_(self.uid(), PavilionName {})) {
             let _name: String = df::remove(self.uid_mut_as_owner(cap), PavilionName {});
         };
-        if (df::exists_(self.uid(), SceneConfigBlob {})) {
-            let _blob: String = df::remove(self.uid_mut_as_owner(cap), SceneConfigBlob {});
+        if (df::exists_(self.uid(), SceneConfig {})) {
+            let _blob: String = df::remove(self.uid_mut_as_owner(cap), SceneConfig {});
         };
         if (df::exists_(self.uid(), SceneManager {})) {
             let _manager: address = df::remove(self.uid_mut_as_owner(cap), SceneManager {});
@@ -200,8 +200,8 @@ module pavilion::pavilion {
 
     /// Get scene configuration blob ID
     public fun scene_config_blob(self: &Kiosk): Option<String> {
-        if (df::exists_(self.uid(), SceneConfigBlob {})) {
-            option::some(*df::borrow(self.uid(), SceneConfigBlob {}))
+        if (df::exists_(self.uid(), SceneConfig {})) {
+            option::some(*df::borrow(self.uid(), SceneConfig {}))
         } else {
             option::none()
         }

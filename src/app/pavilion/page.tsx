@@ -147,6 +147,7 @@ export default function PavilionPage() {
           onUpdateRotation={updateSculptureRotation}
           onUpdateScale={updateSculptureScale}
           autoLoadBlobIds={walrusItems?.map(item => item.blobId!).filter(Boolean) || []}
+          kioskItems={kioskState.kioskItems || []}
         />
 
         {/* Kiosk Items Status Panel */}

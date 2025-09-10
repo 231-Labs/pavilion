@@ -12,6 +12,7 @@ interface SculptureControlPanelProps {
   onUpdateRotation?: (id: string, rotation: { x: number; y: number; z: number }) => void;
   onUpdateScale?: (id: string, scale: { x: number; y: number; z: number }) => void;
   autoLoadBlobIds?: string[]; // Blob IDs to auto-load from kiosk items
+  kioskItems?: any[]; // Kiosk items from the current kiosk
 }
 
 // Interface for controllable objects
@@ -31,7 +32,8 @@ export function SculptureControlPanel({
   onUpdatePosition,
   onUpdateRotation,
   onUpdateScale,
-  autoLoadBlobIds = []
+  autoLoadBlobIds = [],
+  kioskItems = []
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -42,6 +44,55 @@ export function SculptureControlPanel({
   const [error, setError] = useState<string | null>(null);
   const [controllableObjects, setControllableObjects] = useState<ControllableObject[]>([]);
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
+  const [kioskNftItems, setKioskNftItems] = useState<any[]>([]);
+  const [displayedNftItems, setDisplayedNftItems] = useState<Set<string>>(new Set());
+
+  // Extract NFT items with glb_file from kiosk items
+  useEffect(() => {
+    if (kioskItems.length > 0) {
+      const nftItems = kioskItems
+        .filter((item: any) => {
+          // Check if item has display data with glb_file
+          const displayData = item.data?.display?.data;
+          if (displayData && typeof displayData === 'object') {
+            return displayData.glb_file || displayData.blob_id || displayData.walrus_blob_id;
+          }
+
+          // Check if item has content fields with glb_file
+          const contentFields = item.data?.content?.fields;
+          if (contentFields && typeof contentFields === 'object') {
+            return contentFields.glb_file || contentFields.blob_id || contentFields.walrus_blob_id;
+          }
+
+          return false;
+        })
+        .map((item: any) => {
+          const displayData = item.data?.display?.data || {};
+          const contentFields = item.data?.content?.fields || {};
+
+          // Extract name from display data or content fields
+          const name = displayData.name || contentFields.name || `NFT ${item.objectId.slice(-8)}`;
+
+          // Extract blob ID from various possible fields
+          const blobId = displayData.glb_file || displayData.blob_id || displayData.walrus_blob_id ||
+                        contentFields.glb_file || contentFields.blob_id || contentFields.walrus_blob_id;
+
+          return {
+            id: item.objectId,
+            name,
+            blobId,
+            displayData,
+            contentFields,
+            fullItem: item
+          };
+        });
+
+      console.log('Found NFT items with 3D models:', nftItems.length);
+      setKioskNftItems(nftItems);
+    } else {
+      setKioskNftItems([]);
+    }
+  }, [kioskItems]);
 
   // Auto-load blob IDs from kiosk items
   useEffect(() => {
@@ -284,6 +335,79 @@ export function SculptureControlPanel({
     }
   };
 
+  // Handle NFT item display toggle
+  const handleNftItemDisplayToggle = async (nftItem: any, show: boolean) => {
+    if (!sceneManager) return;
+
+    const itemId = nftItem.id;
+    const modelName = `NFT_${itemId.slice(-8)}`;
+
+    if (show) {
+      // Add to displayed items
+      setDisplayedNftItems(prev => new Set([...prev, itemId]));
+
+      // Check if model is already loaded
+      if (loadedModels.includes(modelName)) {
+        console.log(`NFT model ${modelName} already loaded`);
+        return;
+      }
+
+      // Load from Walrus
+      setIsLoading(true);
+      setError(null);
+      setLoadingProgress(0);
+
+      try {
+        const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
+        console.log(`Loading NFT model from Walrus: ${url}`);
+
+        await sceneManager.loadGLBModel(url, {
+          position: { x: 0, y: 2, z: 0 },
+          name: modelName,
+          onProgress: (progress) => {
+            if (progress.lengthComputable) {
+              const percent = Math.round((progress.loaded / progress.total) * 100);
+              setLoadingProgress(percent);
+            }
+          }
+        });
+
+        setLoadedModels(prev => [...prev, modelName]);
+        console.log(`NFT model loaded successfully: ${modelName}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load NFT model from Walrus');
+        // Remove from displayed items on error
+        setDisplayedNftItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Hide/remove from scene
+      setDisplayedNftItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+
+      // Remove model from scene if it exists
+      if (loadedModels.includes(modelName)) {
+        // Find and remove the model from scene
+        const scene = sceneManager.getScene();
+        scene.traverse((child) => {
+          if (child.name === modelName && child.parent) {
+            child.parent.remove(child);
+            console.log(`Removed NFT model: ${modelName}`);
+          }
+        });
+        setLoadedModels(prev => prev.filter(name => name !== modelName));
+      }
+    }
+  };
+
   const currentObject = controllableObjects.find(obj => obj.id === selectedSculpture);
 
 
@@ -355,6 +479,55 @@ export function SculptureControlPanel({
               )}
             </select>
           </div>
+
+          {/* Kiosk NFT Items Section */}
+          {kioskNftItems.length > 0 && (
+            <div className="space-y-2">
+              <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                Kiosk NFT Items
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {kioskNftItems.map((nftItem) => {
+                  const isDisplayed = displayedNftItems.has(nftItem.id);
+                  const isLoadingThisItem = isLoading && selectedSculpture === `nft_${nftItem.id}`;
+
+                  return (
+                    <div
+                      key={nftItem.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/10"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white/90 truncate">
+                          {nftItem.name}
+                        </div>
+                        <div className="text-xs text-white/60 truncate">
+                          {nftItem.blobId.slice(0, 16)}...
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2">
+                        {isLoadingThisItem && (
+                          <div className="text-xs text-blue-400">
+                            {loadingProgress}%
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleNftItemDisplayToggle(nftItem, !isDisplayed)}
+                          disabled={isLoading}
+                          className={`px-3 py-1 text-xs rounded uppercase tracking-wide transition-colors ${
+                            isDisplayed
+                              ? 'bg-red-600/80 hover:bg-red-600 text-white'
+                              : 'bg-green-600/80 hover:bg-green-600 text-white'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {isDisplayed ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* When an object is selected, show controls; else show empty state */}
           {currentObject ? (
@@ -555,7 +728,7 @@ export function SculptureControlPanel({
             </>
           ) : (
             <div className="text-sm text-white/60">
-              No objects available. Load external models to begin.
+              No objects available
             </div>
           )}
         </div>
