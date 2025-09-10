@@ -739,7 +739,7 @@ export class KioskItemConverter {
   }
 
   /**
-   * 根據 objectId 獲取特定的 3D 物件
+   * get item by objectId
    */
   getItemById(objectId: string): KioskItem3DResult | undefined {
     return this.loadedItems.get(objectId);
