@@ -492,21 +492,35 @@ export function SculptureControlPanel({
                       </div>
                       <div className="flex items-center space-x-2 ml-2">
                         {isLoadingThisItem && (
-                          <div className="text-xs text-blue-400">
+                          <div className="text-sm text-white/70">
                             {loadingProgress}%
                           </div>
                         )}
-                        <button
-                          onClick={() => handleNftItemDisplayToggle(nftItem, !isDisplayed)}
-                          disabled={isLoading}
-                          className={`px-3 py-1 text-xs rounded uppercase tracking-wide transition-colors ${
-                            isDisplayed
-                              ? 'bg-red-600/80 hover:bg-red-600 text-white'
-                              : 'bg-green-600/80 hover:bg-green-600 text-white'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {isDisplayed ? 'Hide' : 'Show'}
-                        </button>
+                        <label className="flex items-center cursor-pointer">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={isDisplayed}
+                              onChange={(e) => handleNftItemDisplayToggle(nftItem, e.target.checked)}
+                              disabled={isLoading}
+                              className="sr-only"
+                            />
+                            <div
+                              className={`w-8 h-4 rounded-full transition-colors duration-200 ${
+                                isDisplayed ? 'bg-white/30' : 'bg-white/10'
+                              } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                              <div
+                                className={`w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
+                                  isDisplayed ? 'translate-x-4' : 'translate-x-0.5'
+                                }`}
+                              ></div>
+                            </div>
+                          </div>
+                          <span className="ml-3 text-xs font-medium tracking-wide uppercase text-white/80">
+                            Show
+                          </span>
+                        </label>
                       </div>
                     </div>
                   );
@@ -537,7 +551,7 @@ export function SculptureControlPanel({
                         value={nftItem.id}
                         className="bg-black text-white"
                       >
-                        {nftItem.name} {nftItem.id.slice(-8)}
+                        {nftItem.name} | 0x{nftItem.id.slice(-6)}
                       </option>
                     );
                   })}
@@ -1021,7 +1035,7 @@ export function SculptureControlPanel({
                 <div className="space-y-2">
                   <div className="bg-white/10 rounded-full h-2">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-white/80 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${loadingProgress}%` }}
                     ></div>
                   </div>
