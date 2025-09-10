@@ -38,6 +38,7 @@ export function SculptureControlPanel({
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [glbPanelExpanded, setGlbPanelExpanded] = useState(false);
+  const [transformControlsExpanded, setTransformControlsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
@@ -144,17 +145,23 @@ export function SculptureControlPanel({
 
     if (sceneManager) {
       const scene = sceneManager.getScene();
+      if (!scene) return;
 
       // Debug: Log all objects in scene
       const allSceneObjects: string[] = [];
-      scene.traverse((child) => {
-        if (child.name) {
-          allSceneObjects.push(`${child.type}: ${child.name}`);
-        }
-      });
+      try {
+        scene.traverse((child) => {
+          if (child && child.name) {
+            allSceneObjects.push(`${child.type}: ${child.name}`);
+          }
+        });
+      } catch (error) {
+        console.warn('Error traversing scene for logging:', error);
+      }
       // console.log('All objects in scene:', allSceneObjects);
 
-      scene.traverse((child) => {
+      try {
+        scene.traverse((child) => {
         // console.log('Checking object:', child.type, child.name, child instanceof THREE.Group);
 
         if (child instanceof THREE.Group &&
@@ -189,6 +196,9 @@ export function SculptureControlPanel({
           });
         }
       });
+      } catch (error) {
+        console.warn('Error traversing scene for external objects:', error);
+      }
     }
 
     const allObjects = [...sculptureObjects, ...externalObjects];
@@ -205,17 +215,18 @@ export function SculptureControlPanel({
 
     // Auto-select first object if none selected or if selected object no longer exists
     const selectedExistsInControllableObjects = allObjects.some(obj => obj.id === selectedSculpture);
-    const selectedExistsInKioskNfts = kioskNftItems.some(item => item.id === selectedSculpture);
+    const displayedKioskNftItems = kioskNftItems.filter(item => displayedNftItems.has(item.id));
+    const selectedExistsInKioskNfts = displayedKioskNftItems.some(item => item.id === selectedSculpture);
 
     // Only auto-select if selected object doesn't exist in either controllable objects or kiosk NFTs
     if (!selectedSculpture || (!selectedExistsInControllableObjects && !selectedExistsInKioskNfts)) {
       if (allObjects.length > 0) {
         setSelectedSculpture(allObjects[0].id);
-      } else if (kioskNftItems.length > 0) {
-        setSelectedSculpture(kioskNftItems[0].id);
+      } else if (displayedKioskNftItems.length > 0) {
+        setSelectedSculpture(displayedKioskNftItems[0].id);
       }
     }
-  }, [sculptures, sceneManager, loadedModels, selectedSculpture, kioskNftItems]);
+  }, [sculptures, sceneManager, loadedModels, selectedSculpture, kioskNftItems, displayedNftItems]);
 
   // (removed) getExternalObjects was unused
 
@@ -403,25 +414,29 @@ export function SculptureControlPanel({
         if (storedTransform) {
           const scene = sceneManager.getScene();
           if (scene) {
-            scene.traverse((child) => {
-              if (child.name === modelName && child instanceof THREE.Group) {
-                if (storedTransform.rotation) {
-                  child.rotation.set(
-                    storedTransform.rotation.x,
-                    storedTransform.rotation.y,
-                    storedTransform.rotation.z
-                  );
+            try {
+              scene.traverse((child) => {
+                if (child && child.name === modelName && child instanceof THREE.Group) {
+                  if (storedTransform.rotation) {
+                    child.rotation.set(
+                      storedTransform.rotation.x,
+                      storedTransform.rotation.y,
+                      storedTransform.rotation.z
+                    );
+                  }
+                  if (storedTransform.scale) {
+                    child.scale.set(
+                      storedTransform.scale.x,
+                      storedTransform.scale.y,
+                      storedTransform.scale.z
+                    );
+                  }
+                  // console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
                 }
-                if (storedTransform.scale) {
-                  child.scale.set(
-                    storedTransform.scale.x,
-                    storedTransform.scale.y,
-                    storedTransform.scale.z
-                  );
-                }
-                // console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
-              }
-            });
+              });
+            } catch (error) {
+              console.warn('Error applying stored transforms:', error);
+            }
           }
         }
 
@@ -470,12 +485,18 @@ export function SculptureControlPanel({
       if (loadedModels.includes(modelName)) {
         // Find and remove the model from scene
         const scene = sceneManager.getScene();
-        scene.traverse((child) => {
-          if (child.name === modelName && child.parent) {
-            child.parent.remove(child);
-            // console.log(`Removed NFT model: ${modelName}`);
+        if (scene) {
+          try {
+            scene.traverse((child) => {
+              if (child && child.name === modelName && child.parent) {
+                child.parent.remove(child);
+                // console.log(`Removed NFT model: ${modelName}`);
+              }
+            });
+          } catch (error) {
+            console.warn('Error removing model from scene:', error);
           }
-        });
+        }
         setLoadedModels(prev => prev.filter(name => name !== modelName));
       }
     }
@@ -483,7 +504,9 @@ export function SculptureControlPanel({
 
   // Find current object - could be sculpture, external model, or kiosk NFT
   const currentObject = controllableObjects.find(obj => obj.id === selectedSculpture);
-  const currentNftItem = kioskNftItems.find(item => item.id === selectedSculpture);
+  const currentNftItem = kioskNftItems
+    .filter(item => displayedNftItems.has(item.id))
+    .find(item => item.id === selectedSculpture);
 
   // Create a unified object for controls
   const currentControllableObject = currentObject || (currentNftItem ? {
@@ -528,7 +551,9 @@ export function SculptureControlPanel({
               <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
                 Kiosk NFT Items
               </label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div
+                className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide"
+              >
                 {kioskNftItems.map((nftItem) => {
                   const isDisplayed = displayedNftItems.has(nftItem.id);
                   const isLoadingThisItem = isLoading && selectedSculpture === nftItem.id;
@@ -596,21 +621,22 @@ export function SculptureControlPanel({
               className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 control-select"
             >
               {/* Group Kiosk NFT models */}
-              {kioskNftItems.length > 0 && (
+              {kioskNftItems.filter(nftItem => displayedNftItems.has(nftItem.id)).length > 0 && (
                 <optgroup label="🎨 Kiosk NFTs">
-                  {kioskNftItems.map((nftItem) => {
-                    const modelName = `KioskNFT_${nftItem.name}_${nftItem.id.slice(-8)}`;
-                    const isDisplayed = displayedNftItems.has(nftItem.id);
-                    return (
-                      <option
-                        key={nftItem.id}
-                        value={nftItem.id}
-                        className="bg-black text-white"
-                      >
-                        {nftItem.name} | 0x{nftItem.id.slice(-6)}
-                      </option>
-                    );
-                  })}
+                  {kioskNftItems
+                    .filter(nftItem => displayedNftItems.has(nftItem.id))
+                    .map((nftItem) => {
+                      const modelName = `KioskNFT_${nftItem.name}_${nftItem.id.slice(-8)}`;
+                      return (
+                        <option
+                          key={nftItem.id}
+                          value={nftItem.id}
+                          className="bg-black text-white"
+                        >
+                          {nftItem.name} | 0x{nftItem.id.slice(-6)}
+                        </option>
+                      );
+                    })}
                 </optgroup>
               )}
 
@@ -653,388 +679,474 @@ export function SculptureControlPanel({
           {/* When an object is selected, show controls; else show empty state */}
           {currentControllableObject ? (
             <>
-              {/* Position control */}
+              {/* Transform Controls */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                    Position Vector
-                  </label>
-                    <button
-                      onClick={() => {
-                        if (currentControllableObject.type === 'sculpture') {
-                          onUpdatePosition(currentControllableObject.id, { x: 0, y: 1, z: 0 });
-                        } else if (currentControllableObject.type === 'kiosk_nft') {
-                          // Reset position for kiosk NFT
-                          const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                          const scene = sceneManager?.getScene();
-                          if (scene) {
-                            scene.traverse((child) => {
-                              if (child.name === modelName && child instanceof THREE.Group) {
-                                child.position.set(0, 2, 0);
-                              }
-                            });
-                          }
-                          // Update local state for UI display
-                          setKioskNftTransforms(prev => {
-                            const newMap = new Map(prev);
-                            newMap.set(currentControllableObject.id, {
-                              position: { x: 0, y: 2, z: 0 },
-                              rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
-                              scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
-                            });
-                            return newMap;
-                          });
-                        } else {
-                          handleExternalPositionUpdate(currentControllableObject.id, { x: 0, y: 1, z: 0 });
-                        }
-                      }}
-                    className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                  <div
+                    className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setTransformControlsExpanded(!transformControlsExpanded)}
                   >
-                    Reset
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['x', 'y', 'z'] as const).map(axis => (
-                    <div key={axis} className="space-y-1">
-                      <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
-                      <input
-                        type="range"
-                        min="-10"
-                        max="10"
-                        step="0.1"
-                        value={currentControllableObject.position[axis]}
-                        onChange={(e) => {
-                          const newPosition = { ...currentControllableObject.position, [axis]: parseFloat(e.target.value) };
-                          if (currentControllableObject.type === 'sculpture') {
-                            onUpdatePosition(currentControllableObject.id, newPosition);
-                          } else if (currentControllableObject.type === 'kiosk_nft') {
-                            // Update kiosk NFT position
-                            const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                            const scene = sceneManager?.getScene();
-                            if (scene) {
-                              scene.traverse((child) => {
-                                if (child.name === modelName && child instanceof THREE.Group) {
-                                  child.position[axis] = newPosition[axis];
-                                }
-                              });
-                            }
-                            // Update local state
-                            setKioskNftTransforms(prev => {
-                              const newMap = new Map(prev);
-                              const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
-                              newMap.set(currentControllableObject.id, {
-                                ...current,
-                                position: newPosition
-                              });
-                              return newMap;
-                            });
-                          } else {
-                            handleExternalPositionUpdate(currentControllableObject.id, newPosition);
-                          }
-                        }}
-                        className="w-full"
-                        style={{ height: '6px' }}
-                      />
-                      <input
-                        key={`${currentControllableObject.id}-pos-${axis}-${currentControllableObject.position[axis]}`}
-                        type="text"
-                        inputMode="decimal"
-                        pattern="^-?\\d*(\\.\\d+)?$"
-                        defaultValue={currentControllableObject.position[axis]}
-                        onBlur={(e) => {
-                          const raw = e.target.value.trim();
-                          const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                          const valueToUse = Number.isFinite(parsed) ? parsed : currentControllableObject.position[axis];
-                          const newPosition = { ...currentControllableObject.position, [axis]: valueToUse };
-                          if (currentControllableObject.type === 'sculpture') {
-                            onUpdatePosition(currentControllableObject.id, newPosition);
-                          } else if (currentControllableObject.type === 'kiosk_nft') {
-                            // Update kiosk NFT position
-                            const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                            const scene = sceneManager?.getScene();
-                            if (scene) {
-                              scene.traverse((child) => {
-                                if (child.name === modelName && child instanceof THREE.Group) {
-                                  child.position[axis] = valueToUse;
-                                }
-                              });
-                            }
-                            // Update local state
-                            setKioskNftTransforms(prev => {
-                              const newMap = new Map(prev);
-                              const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
-                              newMap.set(currentControllableObject.id, {
-                                ...current,
-                                position: newPosition
-                              });
-                              return newMap;
-                            });
-                          } else {
-                            handleExternalPositionUpdate(currentControllableObject.id, newPosition);
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rotation control */}
-              {((onUpdateRotation && currentControllableObject.type === 'sculpture') || currentControllableObject.type === 'external' || currentControllableObject.type === 'kiosk_nft') && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                      Rotation Matrix
+                    <label className="block text-base font-medium tracking-wide uppercase control-label-primary mr-2">
+                      Transform Controls
                     </label>
-                    <button
-                      onClick={() => {
-                        if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
-                          onUpdateRotation(currentControllableObject.id, { x: 0, y: 0, z: 0 });
-                        } else if (currentControllableObject.type === 'kiosk_nft') {
-                          // Reset rotation for kiosk NFT
-                          const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                          const scene = sceneManager?.getScene();
-                          if (scene) {
-                            scene.traverse((child) => {
-                              if (child.name === modelName && child instanceof THREE.Group) {
-                                child.rotation.set(0, 0, 0);
-                              }
-                            });
-                          }
-                          // Update local state for UI display
-                          setKioskNftTransforms(prev => {
-                            const newMap = new Map(prev);
-                            newMap.set(currentControllableObject.id, {
-                              position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
-                              rotation: { x: 0, y: 0, z: 0 },
-                              scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
-                            });
-                            return newMap;
-                          });
-                        } else {
-                          handleExternalRotationUpdate(currentControllableObject.id, { x: 0, y: 0, z: 0 });
-                        }
-                      }}
-                      className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-                    >
-                      Reset
-                    </button>
+                    <span className="elegant-expand-arrow" style={{ transform: transformControlsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                      ▼
+                    </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['x', 'y', 'z'] as const).map(axis => (
-                      <div key={axis} className="space-y-1">
-                        <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="360"
-                          step="1"
-                          value={((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360}
-                          onChange={(e) => {
-                            const degrees = parseFloat(e.target.value);
-                            const radians = degrees * Math.PI / 180;
-                            const newRotation = { ...currentControllableObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
-                            if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
-                              onUpdateRotation(currentControllableObject.id, newRotation);
+                  <div className="flex items-center space-x-2">
+                    {transformControlsExpanded && (
+                      <button
+                        onClick={() => {
+                          // Reset all transforms
+                          if (currentControllableObject.type === 'sculpture') {
+                            onUpdatePosition?.(currentControllableObject.id, { x: 0, y: 1, z: 0 });
+                            onUpdateRotation?.(currentControllableObject.id, { x: 0, y: 0, z: 0 });
+                            onUpdateScale?.(currentControllableObject.id, { x: 1, y: 1, z: 1 });
+                          } else if (currentControllableObject.type === 'kiosk_nft') {
+                            const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                            const scene = sceneManager?.getScene();
+                            if (scene) {
+                              try {
+                                scene.traverse((child) => {
+                                  if (child && child.name === modelName && child instanceof THREE.Group) {
+                                    child.position.set(0, 2, 0);
+                                    child.rotation.set(0, 0, 0);
+                                    child.scale.set(1, 1, 1);
+                                  }
+                                });
+                              } catch (error) {
+                                console.warn('Error resetting Kiosk NFT transforms:', error);
+                              }
+                            }
+                            // Update local state for UI display
+                            setKioskNftTransforms(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(currentControllableObject.id, {
+                                position: { x: 0, y: 2, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                scale: { x: 1, y: 1, z: 1 }
+                              });
+                              return newMap;
+                            });
+                          } else {
+                            handleExternalPositionUpdate(currentControllableObject.id, { x: 0, y: 1, z: 0 });
+                            handleExternalRotationUpdate(currentControllableObject.id, { x: 0, y: 0, z: 0 });
+                            handleExternalScaleUpdate(currentControllableObject.id, { x: 1, y: 1, z: 1 });
+                          }
+                        }}
+                        className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                      >
+                        Reset All
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {transformControlsExpanded && (
+                  <div className="space-y-3">
+                    {/* Position Vector */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+                          Position Vector
+                        </label>
+                        <button
+                          onClick={() => {
+                            if (currentControllableObject.type === 'sculpture') {
+                              onUpdatePosition(currentControllableObject.id, { x: 0, y: 1, z: 0 });
                             } else if (currentControllableObject.type === 'kiosk_nft') {
-                              // Update kiosk NFT rotation
                               const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
                               const scene = sceneManager?.getScene();
                               if (scene) {
-                                scene.traverse((child) => {
-                                  if (child.name === modelName && child instanceof THREE.Group) {
-                                    child.rotation[axis] = radians;
-                                  }
-                                });
+                                try {
+                                  scene.traverse((child) => {
+                                    if (child && child.name === modelName && child instanceof THREE.Group) {
+                                      child.position.set(0, 2, 0);
+                                    }
+                                  });
+                                } catch (error) {
+                                  console.warn('Error resetting Kiosk NFT position:', error);
+                                }
                               }
-                              // Update local state
                               setKioskNftTransforms(prev => {
                                 const newMap = new Map(prev);
-                                const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
                                 newMap.set(currentControllableObject.id, {
-                                  ...current,
-                                  rotation: newRotation
+                                  position: { x: 0, y: 2, z: 0 },
+                                  rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
+                                  scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
                                 });
                                 return newMap;
                               });
                             } else {
-                              handleExternalRotationUpdate(currentControllableObject.id, newRotation);
+                              handleExternalPositionUpdate(currentControllableObject.id, { x: 0, y: 1, z: 0 });
                             }
                           }}
-                          className="w-full"
-                        />
-                        <input
-                          key={`${currentControllableObject.id}-rot-${axis}-${Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}`}
-                          type="text"
-                          inputMode="decimal"
-                          pattern="^-?\\d*(\\.\\d+)?$"
-                          defaultValue={Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
-                          onBlur={(e) => {
-                            const raw = e.target.value.trim();
-                            const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                            const degrees = Number.isFinite(parsed) ? parsed : Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360);
-                            const radians = degrees * Math.PI / 180;
-                            const newRotation = { ...currentControllableObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
-                            if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
-                              onUpdateRotation(currentControllableObject.id, newRotation);
-                            } else if (currentControllableObject.type === 'kiosk_nft') {
-                              // Update kiosk NFT rotation
-                              const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                              const scene = sceneManager?.getScene();
-                              if (scene) {
-                                scene.traverse((child) => {
-                                  if (child.name === modelName && child instanceof THREE.Group) {
-                                    child.rotation[axis] = radians;
-                                  }
-                                });
-                              }
-                              // Update local state
-                              setKioskNftTransforms(prev => {
-                                const newMap = new Map(prev);
-                                const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
-                                newMap.set(currentControllableObject.id, {
-                                  ...current,
-                                  rotation: newRotation
-                                });
-                                return newMap;
-                              });
-                            } else {
-                              handleExternalRotationUpdate(currentControllableObject.id, newRotation);
-                            }
-                          }}
-                          className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
-                        />
+                          className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                        >
+                          Reset
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['x', 'y', 'z'] as const).map(axis => (
+                          <div key={axis} className="space-y-1">
+                            <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
+                            <input
+                              type="range"
+                              min="-10"
+                              max="10"
+                              step="0.1"
+                              value={currentControllableObject.position[axis]}
+                              onChange={(e) => {
+                                const newPosition = { ...currentControllableObject.position, [axis]: parseFloat(e.target.value) };
+                                if (currentControllableObject.type === 'sculpture') {
+                                  onUpdatePosition(currentControllableObject.id, newPosition);
+                                } else if (currentControllableObject.type === 'kiosk_nft') {
+                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                  const scene = sceneManager?.getScene();
+                                  if (scene) {
+                                    try {
+                                      scene.traverse((child) => {
+                                        if (child && child.name === modelName && child instanceof THREE.Group) {
+                                          child.position[axis] = newPosition[axis];
+                                        }
+                                      });
+                                    } catch (error) {
+                                      console.warn('Error updating Kiosk NFT position:', error);
+                                    }
+                                  }
+                                  setKioskNftTransforms(prev => {
+                                    const newMap = new Map(prev);
+                                    const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                    newMap.set(currentControllableObject.id, {
+                                      ...current,
+                                      position: newPosition
+                                    });
+                                    return newMap;
+                                  });
+                                } else {
+                                  handleExternalPositionUpdate(currentControllableObject.id, newPosition);
+                                }
+                              }}
+                              className="w-full"
+                              style={{ height: '5px' }}
+                            />
+                            <input
+                              key={`${currentControllableObject.id}-pos-${axis}-${currentControllableObject.position[axis]}`}
+                              type="text"
+                              inputMode="decimal"
+                              pattern="^-?\\d*(\\.\\d+)?$"
+                              defaultValue={currentControllableObject.position[axis]}
+                              onBlur={(e) => {
+                                const raw = e.target.value.trim();
+                                const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                                const valueToUse = Number.isFinite(parsed) ? parsed : currentControllableObject.position[axis];
+                                const newPosition = { ...currentControllableObject.position, [axis]: valueToUse };
+                                if (currentControllableObject.type === 'sculpture') {
+                                  onUpdatePosition(currentControllableObject.id, newPosition);
+                                } else if (currentControllableObject.type === 'kiosk_nft') {
+                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                  const scene = sceneManager?.getScene();
+                                  if (scene) {
+                                    try {
+                                      scene.traverse((child) => {
+                                        if (child && child.name === modelName && child instanceof THREE.Group) {
+                                          child.position[axis] = valueToUse;
+                                        }
+                                      });
+                                    } catch (error) {
+                                      console.warn('Error updating Kiosk NFT position from input:', error);
+                                    }
+                                  }
+                                  setKioskNftTransforms(prev => {
+                                    const newMap = new Map(prev);
+                                    const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                    newMap.set(currentControllableObject.id, {
+                                      ...current,
+                                      position: newPosition
+                                    });
+                                    return newMap;
+                                  });
+                                } else {
+                                  handleExternalPositionUpdate(currentControllableObject.id, newPosition);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-              {/* Scale control */}
-              {((onUpdateScale && currentControllableObject.type === 'sculpture') || currentControllableObject.type === 'external' || currentControllableObject.type === 'kiosk_nft') && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                      Scale Factor
-                    </label>
-                    <button
-                      onClick={() => {
-                        if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
-                          onUpdateScale(currentControllableObject.id, { x: 1, y: 1, z: 1 });
-                        } else if (currentControllableObject.type === 'kiosk_nft') {
-                          // Reset scale for kiosk NFT
-                          const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                          const scene = sceneManager?.getScene();
-                          if (scene) {
-                            scene.traverse((child) => {
-                              if (child.name === modelName && child instanceof THREE.Group) {
-                                child.scale.set(1, 1, 1);
+                    {/* Rotation Matrix */}
+                    {((onUpdateRotation && currentControllableObject.type === 'sculpture') || currentControllableObject.type === 'external' || currentControllableObject.type === 'kiosk_nft') && (
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+                            Rotation Matrix
+                          </label>
+                          <button
+                            onClick={() => {
+                              if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
+                                onUpdateRotation(currentControllableObject.id, { x: 0, y: 0, z: 0 });
+                              } else if (currentControllableObject.type === 'kiosk_nft') {
+                                const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                const scene = sceneManager?.getScene();
+                                if (scene) {
+                                  try {
+                                    scene.traverse((child) => {
+                                      if (child && child.name === modelName && child instanceof THREE.Group) {
+                                        child.rotation.set(0, 0, 0);
+                                      }
+                                    });
+                                  } catch (error) {
+                                    console.warn('Error resetting Kiosk NFT rotation:', error);
+                                  }
+                                }
+                                setKioskNftTransforms(prev => {
+                                  const newMap = new Map(prev);
+                                  newMap.set(currentControllableObject.id, {
+                                    position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
+                                    rotation: { x: 0, y: 0, z: 0 },
+                                    scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
+                                  });
+                                  return newMap;
+                                });
+                              } else {
+                                handleExternalRotationUpdate(currentControllableObject.id, { x: 0, y: 0, z: 0 });
                               }
-                            });
-                          }
-                          // Update local state for UI display
-                          setKioskNftTransforms(prev => {
-                            const newMap = new Map(prev);
-                            newMap.set(currentControllableObject.id, {
-                              position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
-                              rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
-                              scale: { x: 1, y: 1, z: 1 }
-                            });
-                            return newMap;
-                          });
-                        } else {
-                          handleExternalScaleUpdate(currentControllableObject.id, { x: 1, y: 1, z: 1 });
-                        }
-                      }}
-                      className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-                    >
-                      Reset
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="3"
-                      step="0.1"
-                      value={currentControllableObject.scale?.x || 1}
-                      onChange={(e) => {
-                        const scaleValue = parseFloat(e.target.value);
-                        const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
-                        if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
-                          onUpdateScale(currentControllableObject.id, newScale);
-                        } else if (currentControllableObject.type === 'kiosk_nft') {
-                          // Update kiosk NFT scale
-                          const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                          const scene = sceneManager?.getScene();
-                          if (scene) {
-                            scene.traverse((child) => {
-                              if (child.name === modelName && child instanceof THREE.Group) {
-                                child.scale.set(scaleValue, scaleValue, scaleValue);
-                              }
-                            });
-                          }
-                          // Update local state
-                          setKioskNftTransforms(prev => {
-                            const newMap = new Map(prev);
-                            const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
-                            newMap.set(currentControllableObject.id, {
-                              ...current,
-                              scale: newScale
-                            });
-                            return newMap;
-                          });
-                        } else {
-                          handleExternalScaleUpdate(currentControllableObject.id, newScale);
-                        }
-                      }}
-                      className="w-full"
-                      style={{ height: '6px' }}
-                    />
-                    <input
-                      key={`${currentControllableObject.id}-scale-${currentControllableObject.scale?.x || 1}`}
-                      type="text"
-                      inputMode="decimal"
-                      pattern="^-?\\d*(\\.\\d+)?$"
-                      defaultValue={currentControllableObject.scale?.x || 1}
-                      onBlur={(e) => {
-                        const raw = e.target.value.trim();
-                        const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
-                        const scaleValue = Number.isFinite(parsed) ? parsed : (currentControllableObject.scale?.x || 1);
-                        const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
-                        if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
-                          onUpdateScale(currentControllableObject.id, newScale);
-                        } else if (currentControllableObject.type === 'kiosk_nft') {
-                          // Update kiosk NFT scale
-                          const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                          const scene = sceneManager?.getScene();
-                          if (scene) {
-                            scene.traverse((child) => {
-                              if (child.name === modelName && child instanceof THREE.Group) {
-                                child.scale.set(scaleValue, scaleValue, scaleValue);
-                              }
-                            });
-                          }
-                          // Update local state
-                          setKioskNftTransforms(prev => {
-                            const newMap = new Map(prev);
-                            const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
-                            newMap.set(currentControllableObject.id, {
-                              ...current,
-                              scale: newScale
-                            });
-                            return newMap;
-                          });
-                        } else {
-                          handleExternalScaleUpdate(currentControllableObject.id, newScale);
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
-                    />
-                  </div>
+                            }}
+                            className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {(['x', 'y', 'z'] as const).map(axis => (
+                              <div key={axis} className="space-y-1">
+                                <label className="block text-sm font-medium tracking-wide text-center control-label-axis">{axis.toUpperCase()}</label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="360"
+                                  step="1"
+                                  value={((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360}
+                                  onChange={(e) => {
+                                    const degrees = parseFloat(e.target.value);
+                                    const radians = degrees * Math.PI / 180;
+                                    const newRotation = { ...currentControllableObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
+                                    if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
+                                      onUpdateRotation(currentControllableObject.id, newRotation);
+                                    } else if (currentControllableObject.type === 'kiosk_nft') {
+                                      const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                      const scene = sceneManager?.getScene();
+                                      if (scene) {
+                                        try {
+                                          scene.traverse((child) => {
+                                            if (child && child.name === modelName && child instanceof THREE.Group) {
+                                              child.rotation[axis] = radians;
+                                            }
+                                          });
+                                        } catch (error) {
+                                          console.warn('Error updating Kiosk NFT rotation:', error);
+                                        }
+                                      }
+                                      setKioskNftTransforms(prev => {
+                                        const newMap = new Map(prev);
+                                        const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                        newMap.set(currentControllableObject.id, {
+                                          ...current,
+                                          rotation: newRotation
+                                        });
+                                        return newMap;
+                                      });
+                                    } else {
+                                      handleExternalRotationUpdate(currentControllableObject.id, newRotation);
+                                    }
+                                  }}
+                                  className="w-full"
+                                  style={{ height: '5px' }}
+                                />
+                                <input
+                                  key={`${currentControllableObject.id}-rot-${axis}-${Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}`}
+                                  type="text"
+                                  inputMode="decimal"
+                                  pattern="^-?\\d*(\\.\\d+)?$"
+                                  defaultValue={Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360)}
+                                  onBlur={(e) => {
+                                    const raw = e.target.value.trim();
+                                    const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                                    const degrees = Number.isFinite(parsed) ? parsed : Math.round(((currentControllableObject.rotation?.[axis] || 0) * 180 / Math.PI) % 360);
+                                    const radians = degrees * Math.PI / 180;
+                                    const newRotation = { ...currentControllableObject.rotation || { x: 0, y: 0, z: 0 }, [axis]: radians };
+                                    if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
+                                      onUpdateRotation(currentControllableObject.id, newRotation);
+                                    } else if (currentControllableObject.type === 'kiosk_nft') {
+                                      const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                      const scene = sceneManager?.getScene();
+                                      if (scene) {
+                                        try {
+                                          scene.traverse((child) => {
+                                            if (child && child.name === modelName && child instanceof THREE.Group) {
+                                              child.rotation[axis] = radians;
+                                            }
+                                          });
+                                        } catch (error) {
+                                          console.warn('Error updating Kiosk NFT rotation:', error);
+                                        }
+                                      }
+                                      setKioskNftTransforms(prev => {
+                                        const newMap = new Map(prev);
+                                        const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                        newMap.set(currentControllableObject.id, {
+                                          ...current,
+                                          rotation: newRotation
+                                        });
+                                        return newMap;
+                                      });
+                                    } else {
+                                      handleExternalRotationUpdate(currentControllableObject.id, newRotation);
+                                    }
+                                  }}
+                                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Scale Factor */}
+                      {((onUpdateScale && currentControllableObject.type === 'sculpture') || currentControllableObject.type === 'external' || currentControllableObject.type === 'kiosk_nft') && (
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+                              Scale Factor
+                            </label>
+                            <button
+                              onClick={() => {
+                                if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
+                                  onUpdateScale(currentControllableObject.id, { x: 1, y: 1, z: 1 });
+                                } else if (currentControllableObject.type === 'kiosk_nft') {
+                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                  const scene = sceneManager?.getScene();
+                                  if (scene) {
+                                    try {
+                                      scene.traverse((child) => {
+                                        if (child && child.name === modelName && child instanceof THREE.Group) {
+                                          child.scale.set(1, 1, 1);
+                                        }
+                                      });
+                                    } catch (error) {
+                                      console.warn('Error resetting Kiosk NFT scale:', error);
+                                    }
+                                  }
+                                  setKioskNftTransforms(prev => {
+                                    const newMap = new Map(prev);
+                                    newMap.set(currentControllableObject.id, {
+                                      position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
+                                      rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
+                                      scale: { x: 1, y: 1, z: 1 }
+                                    });
+                                    return newMap;
+                                  });
+                                } else {
+                                  handleExternalScaleUpdate(currentControllableObject.id, { x: 1, y: 1, z: 1 });
+                                }
+                              }}
+                              className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                            >
+                              Reset
+                            </button>
+                          </div>
+                          <div className="space-y-1.5">
+                            <input
+                              type="range"
+                              min="0.1"
+                              max="3"
+                              step="0.1"
+                              value={currentControllableObject.scale?.x || 1}
+                              onChange={(e) => {
+                                const scaleValue = parseFloat(e.target.value);
+                                const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
+                                if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
+                                  onUpdateScale(currentControllableObject.id, newScale);
+                                } else if (currentControllableObject.type === 'kiosk_nft') {
+                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                  const scene = sceneManager?.getScene();
+                                  if (scene) {
+                                    try {
+                                      scene.traverse((child) => {
+                                        if (child && child.name === modelName && child instanceof THREE.Group) {
+                                          child.scale.set(scaleValue, scaleValue, scaleValue);
+                                        }
+                                      });
+                                    } catch (error) {
+                                      console.warn('Error updating Kiosk NFT scale:', error);
+                                    }
+                                  }
+                                  setKioskNftTransforms(prev => {
+                                    const newMap = new Map(prev);
+                                    const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                    newMap.set(currentControllableObject.id, {
+                                      ...current,
+                                      scale: newScale
+                                    });
+                                    return newMap;
+                                  });
+                                } else {
+                                  handleExternalScaleUpdate(currentControllableObject.id, newScale);
+                                }
+                              }}
+                              className="w-full"
+                              style={{ height: '5px' }}
+                            />
+                            <input
+                              key={`${currentControllableObject.id}-scale-${currentControllableObject.scale?.x || 1}`}
+                              type="text"
+                              inputMode="decimal"
+                              pattern="^-?\\d*(\\.\\d+)?$"
+                              defaultValue={currentControllableObject.scale?.x || 1}
+                              onBlur={(e) => {
+                                const raw = e.target.value.trim();
+                                const parsed = raw === '' || raw === '-' || raw === '.' || raw === '-.' ? NaN : parseFloat(raw);
+                                const scaleValue = Number.isFinite(parsed) ? parsed : (currentControllableObject.scale?.x || 1);
+                                const newScale = { x: scaleValue, y: scaleValue, z: scaleValue };
+                                if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
+                                  onUpdateScale(currentControllableObject.id, newScale);
+                                } else if (currentControllableObject.type === 'kiosk_nft') {
+                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
+                                  const scene = sceneManager?.getScene();
+                                  if (scene) {
+                                    try {
+                                      scene.traverse((child) => {
+                                        if (child && child.name === modelName && child instanceof THREE.Group) {
+                                          child.scale.set(scaleValue, scaleValue, scaleValue);
+                                        }
+                                      });
+                                    } catch (error) {
+                                      console.warn('Error updating Kiosk NFT scale:', error);
+                                    }
+                                  }
+                                  setKioskNftTransforms(prev => {
+                                    const newMap = new Map(prev);
+                                    const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
+                                    newMap.set(currentControllableObject.id, {
+                                      ...current,
+                                      scale: newScale
+                                    });
+                                    return newMap;
+                                  });
+                                } else {
+                                  handleExternalScaleUpdate(currentControllableObject.id, newScale);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
             </>
           ) : (
             <div className="text-sm text-white/60">

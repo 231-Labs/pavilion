@@ -152,30 +152,7 @@ export default function PavilionPage() {
           autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
           kioskItems={kioskState.kioskItems || []}
         />
-
-        {/* Kiosk Items Status Panel */}
-        {(kioskState.kioskItems || loadingKioskItems) && (
-          <div className="mt-4 glass-ribbon rounded-lg p-4 border border-white/10">
-            <div className="text-xs tracking-widest uppercase text-white/70 mb-2">
-              Kiosk Items Status
-            </div>
-            <div className="text-white/60 text-[11px] space-y-1">
-              {loadingKioskItems ? (
-                <div className="text-blue-300">Loading kiosk items...</div>
-              ) : (
-                <>
-                  <div>Total Items: {kioskState.kioskItems?.length || 0}</div>
-                  <div>3D Items: {kioskItems3D.length}</div>
-                  {kioskState.error && (
-                    <div className="text-red-300">Error: {kioskState.error}</div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
         <div className="w-full h-full border border-white/15"></div>
         <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>
