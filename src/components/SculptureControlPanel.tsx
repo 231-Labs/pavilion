@@ -88,7 +88,7 @@ export function SculptureControlPanel({
           };
         });
 
-      console.log('Found NFT items with 3D models:', nftItems.length);
+      // console.log('Found NFT items with 3D models:', nftItems.length);
       setKioskNftItems(nftItems);
     } else {
       setKioskNftItems([]);
@@ -98,21 +98,25 @@ export function SculptureControlPanel({
   // Auto-load blob IDs from kiosk items
   useEffect(() => {
     if (autoLoadBlobIds.length > 0 && sceneManager && !isLoading) {
-      console.log('Auto-loading blob IDs from kiosk items:', autoLoadBlobIds);
+      // console.log('Auto-loading blob IDs from kiosk items:', autoLoadBlobIds);
 
       // Load each blob ID sequentially to avoid overwhelming the system
       const loadBlobIdsSequentially = async () => {
         for (const blobId of autoLoadBlobIds) {
-          if (!blobId.trim()) continue;
+          // Skip if blobId is not a valid string
+          if (!blobId || typeof blobId !== 'string' || !blobId.trim()) {
+            // console.log('Skipping invalid blob ID:', blobId);
+            continue;
+          }
 
           // Check if this blob ID is already loaded
           const modelName = `Walrus_${blobId.slice(0, 8)}`;
           if (loadedModels.includes(modelName)) {
-            console.log(`Blob ID ${blobId} already loaded as ${modelName}`);
+            // console.log(`Blob ID ${blobId} already loaded as ${modelName}`);
             continue;
           }
 
-          console.log(`Auto-loading blob ID: ${blobId}`);
+          // console.log(`Auto-loading blob ID: ${blobId}`);
           setWalrusBlobId(blobId);
           await loadWalrusModel();
         }
@@ -148,10 +152,10 @@ export function SculptureControlPanel({
           allSceneObjects.push(`${child.type}: ${child.name}`);
         }
       });
-      console.log('All objects in scene:', allSceneObjects);
+      // console.log('All objects in scene:', allSceneObjects);
 
       scene.traverse((child) => {
-        console.log('Checking object:', child.type, child.name, child instanceof THREE.Group);
+        // console.log('Checking object:', child.type, child.name, child instanceof THREE.Group);
 
         if (child instanceof THREE.Group &&
             child.name &&
@@ -159,7 +163,7 @@ export function SculptureControlPanel({
 
           // Skip Kiosk NFT models - they should not be in external models
           if (child.name.startsWith('KioskNFT_')) {
-            console.log('Skipping Kiosk NFT model:', child.name);
+            // console.log('Skipping Kiosk NFT model:', child.name);
             return;
           }
 
@@ -167,12 +171,12 @@ export function SculptureControlPanel({
 
           // Skip if we've already seen this model
           if (seenIds.has(modelId)) {
-            console.log('Skipping duplicate model:', child.name);
+            // console.log('Skipping duplicate model:', child.name);
             return;
           }
 
           seenIds.add(modelId);
-          console.log('Found external model:', child.name);
+          // console.log('Found external model:', child.name);
 
           externalObjects.push({
             id: modelId,
@@ -191,13 +195,13 @@ export function SculptureControlPanel({
     setControllableObjects(allObjects);
 
     // Debug logging
-    console.log('SculptureControlPanel - Updated controllable objects:', {
-      sculptures: sculptureObjects.length,
-      external: externalObjects.length,
-      total: allObjects.length,
-      externalNames: externalObjects.map(obj => obj.name),
-      externalIds: externalObjects.map(obj => obj.id)
-    });
+    // console.log('SculptureControlPanel - Updated controllable objects:', {
+    //   sculptures: sculptureObjects.length,
+    //   external: externalObjects.length,
+    //   total: allObjects.length,
+    //   externalNames: externalObjects.map(obj => obj.name),
+    //   externalIds: externalObjects.map(obj => obj.id)
+    // });
 
     // Auto-select first object if none selected or if selected object no longer exists
     const selectedExistsInControllableObjects = allObjects.some(obj => obj.id === selectedSculpture);
@@ -249,7 +253,7 @@ export function SculptureControlPanel({
       const groups = await sceneManager.loadMultipleGLBModels(modelsToLoad);
       const modelNames = modelsToLoad.map((m) => (m.options as { name: string }).name);
       setLoadedModels(prev => [...prev, ...modelNames]);
-      console.log(`Loaded ${groups.length} models from /public/models`);
+      // console.log(`Loaded ${groups.length} models from /public/models`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Loading failed');
     } finally {
@@ -292,7 +296,7 @@ export function SculptureControlPanel({
       });
 
       setLoadedModels(prev => [...prev, modelName]);
-      console.log('Walrus model loaded successfully:', modelName);
+      // console.log('Walrus model loaded successfully:', modelName);
       setWalrusBlobId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Walrus loading failed');
@@ -316,7 +320,7 @@ export function SculptureControlPanel({
       setSelectedSculpture(null);
     }
 
-    console.log('All loaded models cleared');
+    // console.log('All loaded models cleared');
   };
 
   // Handle external model position updates
@@ -365,7 +369,7 @@ export function SculptureControlPanel({
 
       // Check if model is already loaded
       if (loadedModels.includes(modelName)) {
-        console.log(`NFT model ${modelName} already loaded`);
+        // console.log(`NFT model ${modelName} already loaded`);
         return;
       }
 
@@ -376,13 +380,13 @@ export function SculptureControlPanel({
 
       try {
         const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
-        console.log(`Loading NFT model from Walrus: ${url}`);
+        // console.log(`Loading NFT model from Walrus: ${url}`);
 
         // Use stored transform if available, otherwise use default position
         const storedTransform = kioskNftTransforms.get(nftItem.id);
         const position = storedTransform?.position || { x: 0, y: 2, z: 0 };
 
-        console.log(`Loading NFT model at position:`, position);
+        // console.log(`Loading NFT model at position:`, position);
 
         await sceneManager.loadGLBModel(url, {
           position: position,
@@ -415,14 +419,14 @@ export function SculptureControlPanel({
                     storedTransform.scale.z
                   );
                 }
-                console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
+                // console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
               }
             });
           }
         }
 
         setLoadedModels(prev => [...prev, modelName]);
-        console.log(`NFT model loaded successfully: ${modelName}`);
+        // console.log(`NFT model loaded successfully: ${modelName}`);
 
         // Initialize transforms if not already stored
         if (!kioskNftTransforms.has(nftItem.id)) {
@@ -469,7 +473,7 @@ export function SculptureControlPanel({
         scene.traverse((child) => {
           if (child.name === modelName && child.parent) {
             child.parent.remove(child);
-            console.log(`Removed NFT model: ${modelName}`);
+            // console.log(`Removed NFT model: ${modelName}`);
           }
         });
         setLoadedModels(prev => prev.filter(name => name !== modelName));

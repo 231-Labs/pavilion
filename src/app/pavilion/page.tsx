@@ -6,20 +6,18 @@ import { useThreeScene } from '../../hooks/useThreeScene';
 import { SculptureControlPanel } from '../../components/SculptureControlPanel';
 import { WalletTerminal } from '../../components/WalletTerminal';
 import { useKioskState } from '../../components/KioskStateProvider';
-import { useKioskClient } from '../../components/KioskClientProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 
 export default function PavilionPage() {
   const searchParams = useSearchParams();
   const kioskId = searchParams.get('kioskId');
   const kioskState = useKioskState();
-  const kioskClient = useKioskClient();
   const [walrusItems, setWalrusItems] = useState<any[]>([]);
 
   // Handle kioskId parameter - update kiosk state for WalletTerminal display
   useEffect(() => {
     if (kioskId) {
-      console.log('Demo Pavilion loaded with kioskId:', kioskId);
+      // console.log('Demo Pavilion loaded with kioskId:', kioskId);
       kioskState.setKioskFromIds({ kioskId });
     }
   }, [kioskId, kioskState]);
@@ -29,7 +27,7 @@ export default function PavilionPage() {
     const kioskItems = kioskState.kioskItems;
 
     if (kioskItems && kioskItems.length > 0) {
-      console.log(`Processing ${kioskItems.length} items from kiosk state`);
+      // console.log(`Processing ${kioskItems.length} items from kiosk state`);
 
       // Process items for 3D models - this logic can stay for additional processing
       const itemsWithPotential3D = kioskItems.filter((item: any) => {
@@ -38,20 +36,20 @@ export default function PavilionPage() {
         const hasContent = item.data?.content?.fields;
 
         if (hasDisplay) {
-          console.log('Item has display data:', item.data.display.data);
+          // console.log('Item has display data:', item.data.display.data);
         }
 
         if (hasContent) {
-          console.log('Item has content fields:', item.data.content.fields);
+          // console.log('Item has content fields:', item.data.content.fields);
         }
 
         // Consider all items as potential 3D content for now
         return true;
       });
 
-      console.log('Items with potential 3D content:', itemsWithPotential3D.length);
+      // console.log('Items with potential 3D content:', itemsWithPotential3D.length);
     } else if (kioskId && !kioskState.loading) {
-      console.log('No items found in kiosk or still loading');
+      // console.log('No items found in kiosk or still loading');
     }
   }, [kioskState.kioskItems, kioskState.loading, kioskId]);
 
@@ -82,7 +80,7 @@ export default function PavilionPage() {
     const kioskItems = kioskState.kioskItems;
 
     if (kioskItems && kioskItems.length > 0) {
-      console.log('Analyzing kiosk items for blob IDs:', kioskItems.length);
+      // console.log('Analyzing kiosk items for blob IDs:', kioskItems.length);
 
       // Analyze kiosk items to find blob IDs
       if (!sceneManager) {
@@ -97,10 +95,10 @@ export default function PavilionPage() {
       const foundWalrusItems = analyses.filter(item => item.type === 'walrus' && item.blobId);
 
       if (foundWalrusItems.length > 0) {
-        console.log('Found Walrus blob IDs:', foundWalrusItems.map(item => ({
-          name: item.name,
-          blobId: item.blobId
-        })));
+        // console.log('Found Walrus blob IDs:', foundWalrusItems.map(item => ({
+        //   name: item.name,
+        //   blobId: item.blobId
+        // })));
 
         setWalrusItems(foundWalrusItems);
       } else {
@@ -114,7 +112,12 @@ export default function PavilionPage() {
       });
 
       if (nonWalrusItems.length > 0) {
-        console.log('Loading non-Walrus kiosk items:', nonWalrusItems.length);
+        // console.log('Loading non-Walrus kiosk items:', nonWalrusItems.length);
+        // console.log('Non-Walrus items details:', nonWalrusItems.map(item => ({
+        //   objectId: item.objectId,
+        //   type: item.type,
+        //   analysis: analyses.find(a => a.kioskItem.objectId === item.objectId)?.type || 'unknown'
+        // })));
         loadKioskItems(nonWalrusItems);
       }
     } else {
@@ -146,7 +149,7 @@ export default function PavilionPage() {
           onUpdatePosition={updateSculpturePosition}
           onUpdateRotation={updateSculptureRotation}
           onUpdateScale={updateSculptureScale}
-          autoLoadBlobIds={walrusItems?.map(item => item.blobId!).filter(Boolean) || []}
+          autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
           kioskItems={kioskState.kioskItems || []}
         />
 
