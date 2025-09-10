@@ -200,11 +200,18 @@ export function SculptureControlPanel({
     });
 
     // Auto-select first object if none selected or if selected object no longer exists
-    const selectedExists = allObjects.some(obj => obj.id === selectedSculpture);
-    if (allObjects.length > 0 && (!selectedSculpture || !selectedExists)) {
-      setSelectedSculpture(allObjects[0].id);
+    const selectedExistsInControllableObjects = allObjects.some(obj => obj.id === selectedSculpture);
+    const selectedExistsInKioskNfts = kioskNftItems.some(item => item.id === selectedSculpture);
+
+    // Only auto-select if selected object doesn't exist in either controllable objects or kiosk NFTs
+    if (!selectedSculpture || (!selectedExistsInControllableObjects && !selectedExistsInKioskNfts)) {
+      if (allObjects.length > 0) {
+        setSelectedSculpture(allObjects[0].id);
+      } else if (kioskNftItems.length > 0) {
+        setSelectedSculpture(kioskNftItems[0].id);
+      }
     }
-  }, [sculptures, sceneManager, loadedModels, selectedSculpture]);
+  }, [sculptures, sceneManager, loadedModels, selectedSculpture, kioskNftItems]);
 
   // (removed) getExternalObjects was unused
 
@@ -371,8 +378,14 @@ export function SculptureControlPanel({
         const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
         console.log(`Loading NFT model from Walrus: ${url}`);
 
+        // Use stored transform if available, otherwise use default position
+        const storedTransform = kioskNftTransforms.get(nftItem.id);
+        const position = storedTransform?.position || { x: 0, y: 2, z: 0 };
+
+        console.log(`Loading NFT model at position:`, position);
+
         await sceneManager.loadGLBModel(url, {
-          position: { x: 0, y: 2, z: 0 },
+          position: position,
           name: modelName,
           onProgress: (progress) => {
             if (progress.lengthComputable) {
@@ -382,8 +395,47 @@ export function SculptureControlPanel({
           }
         });
 
+        // After loading, apply stored rotation and scale if available
+        if (storedTransform) {
+          const scene = sceneManager.getScene();
+          if (scene) {
+            scene.traverse((child) => {
+              if (child.name === modelName && child instanceof THREE.Group) {
+                if (storedTransform.rotation) {
+                  child.rotation.set(
+                    storedTransform.rotation.x,
+                    storedTransform.rotation.y,
+                    storedTransform.rotation.z
+                  );
+                }
+                if (storedTransform.scale) {
+                  child.scale.set(
+                    storedTransform.scale.x,
+                    storedTransform.scale.y,
+                    storedTransform.scale.z
+                  );
+                }
+                console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
+              }
+            });
+          }
+        }
+
         setLoadedModels(prev => [...prev, modelName]);
         console.log(`NFT model loaded successfully: ${modelName}`);
+
+        // Initialize transforms if not already stored
+        if (!kioskNftTransforms.has(nftItem.id)) {
+          setKioskNftTransforms(prev => {
+            const newMap = new Map(prev);
+            newMap.set(nftItem.id, {
+              position: { x: 0, y: 2, z: 0 },
+              rotation: { x: 0, y: 0, z: 0 },
+              scale: { x: 1, y: 1, z: 1 }
+            });
+            return newMap;
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load NFT model from Walrus');
         // Remove from displayed items on error
@@ -475,7 +527,7 @@ export function SculptureControlPanel({
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {kioskNftItems.map((nftItem) => {
                   const isDisplayed = displayedNftItems.has(nftItem.id);
-                  const isLoadingThisItem = isLoading && selectedSculpture === `nft_${nftItem.id}`;
+                  const isLoadingThisItem = isLoading && selectedSculpture === nftItem.id;
 
                   return (
                     <div
@@ -618,6 +670,16 @@ export function SculptureControlPanel({
                               }
                             });
                           }
+                          // Update local state for UI display
+                          setKioskNftTransforms(prev => {
+                            const newMap = new Map(prev);
+                            newMap.set(currentControllableObject.id, {
+                              position: { x: 0, y: 2, z: 0 },
+                              rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
+                              scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
+                            });
+                            return newMap;
+                          });
                         } else {
                           handleExternalPositionUpdate(currentControllableObject.id, { x: 0, y: 1, z: 0 });
                         }
@@ -736,6 +798,16 @@ export function SculptureControlPanel({
                               }
                             });
                           }
+                          // Update local state for UI display
+                          setKioskNftTransforms(prev => {
+                            const newMap = new Map(prev);
+                            newMap.set(currentControllableObject.id, {
+                              position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
+                              rotation: { x: 0, y: 0, z: 0 },
+                              scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
+                            });
+                            return newMap;
+                          });
                         } else {
                           handleExternalRotationUpdate(currentControllableObject.id, { x: 0, y: 0, z: 0 });
                         }
@@ -857,6 +929,16 @@ export function SculptureControlPanel({
                               }
                             });
                           }
+                          // Update local state for UI display
+                          setKioskNftTransforms(prev => {
+                            const newMap = new Map(prev);
+                            newMap.set(currentControllableObject.id, {
+                              position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
+                              rotation: newMap.get(currentControllableObject.id)?.rotation || { x: 0, y: 0, z: 0 },
+                              scale: { x: 1, y: 1, z: 1 }
+                            });
+                            return newMap;
+                          });
                         } else {
                           handleExternalScaleUpdate(currentControllableObject.id, { x: 1, y: 1, z: 1 });
                         }
