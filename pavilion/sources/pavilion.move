@@ -1,12 +1,16 @@
-/// Module: pavilion
+/// Module: pavilion - User-level pavilion functionality
 module pavilion::pavilion {
     use std::string::{Self, String};
     use sui::{
         dynamic_field as df,
-        kiosk::{Kiosk, KioskOwnerCap},
+        kiosk::{Self, Kiosk, KioskOwnerCap},
         kiosk_extension,
-        transfer_policy
+        table::{Self},
+        coin::{Coin},
+        sui::SUI,
+        transfer_policy::{Self, TransferPolicy},
     };
+    use pavilion::platform;
 
     // == Structs ==
 
@@ -16,107 +20,144 @@ module pavilion::pavilion {
     /// Dynamic field key for scene configuration blob ID
     public struct SceneConfig has copy, store, drop {}
 
-    /// Dynamic field key for scene manager address
-    public struct SceneManager has copy, store, drop {}
+    /// Dynamic field key for scene objects properties
+    public struct SceneObjects has copy, store, drop {}
 
     /// Pavilion extension witness
     public struct PavilionExtension has drop {}
 
-    /// Permission to manage scene objects (place, list, delist)
-    public struct SceneManagerCap has key, store {
-        id: UID,
-        kiosk_id: ID,
-        owner: address,
+    /// Properties for a single object in the scene
+    public struct ObjectProperties has store, drop, copy {
+        displayed: bool,
+        position: vector<u64>,
+        rotation: vector<u64>,
+        scale: u64,
+        updated_at: u64,
+    }
+
+    /// Registry of all objects and their properties in the scene
+    public struct SceneObjectRegistry has store {
+        /// Map from object ID to properties
+        objects: table::Table<ID, ObjectProperties>,
+        /// Total number of objects
+        count: u64,
     }
 
     // == Constants ==
 
-    /// Permission bitmap: place (1) + lock (2) = 3
     const PAVILION_PERMISSIONS: u128 = 3;
     const MAX_NAME_LENGTH: u64 = 20;
     const MIN_NAME_LENGTH: u64 = 1;
     
+    // Commission-related constants moved to platform module
+    
     // Error codes
-    const E_INVALID_NAME_LENGTH: u64 = 0;
-    const E_NOT_PAVILION: u64 = 1;
-    const E_INVALID_KIOSK_ID: u64 = 2;
-    const E_UNAUTHORIZED_MANAGER: u64 = 3;
+    #[error] const E_INVALID_NAME_LENGTH: u8 = 0;
+    #[error] const E_NOT_PAVILION: u8 = 1;
+    #[error] const E_INVALID_VECTOR_SIZE: u8 = 2;
+    #[error] const E_REGISTRY_NOT_INITIALIZED: u8 = 3;
 
+    // == Public Functions ==
 
-    // == Kiosk Owner Functions ==
+    // == TransferPolicy Integration Examples ==
+    
+    /// Purchase with policy-enforced commission (confirm_request phase)
+    /// Flow: purchase -> pay commission -> add receipt -> confirm_request
+    public fun purchase_with_policy_commission<T: key + store>(
+        kiosk: &mut Kiosk,
+        item_id: ID,
+        payment: Coin<SUI>,
+        policy: &TransferPolicy<T>,
+        commission_payment: Coin<SUI>,
+        commission_recipient: address,
+        _ctx: &mut TxContext
+    ): T {
+        // 1) Kiosk purchase
+        let (nft, mut transfer_request) = kiosk::purchase<T>(kiosk, item_id, payment);
+        // 2) Pay commission and add receipt for PlatformCommissionRule
+        platform::pay_commission_and_add_receipt(
+            policy,
+            &mut transfer_request,
+            commission_payment,
+            commission_recipient
+        );
+        // 3) Confirm policy (now that receipt exists)
+        transfer_policy::confirm_request(policy, transfer_request);
+        nft
+    }
+
+    // Simplified Transaction Functions (Legacy - commission now handled in TransferPolicy)
+    
+    /// Simple marketplace purchase - commission is enforced by TransferPolicy
+    /// This function just executes the purchase and confirms the transfer policy
+    public fun marketplace_purchase<T: key + store>(
+        kiosk: &mut Kiosk,
+        item_id: ID,
+        payment: Coin<SUI>,
+        transfer_policy: &TransferPolicy<T>,
+        _ctx: &mut TxContext
+    ): T {
+        // 1. Execute kiosk purchase
+        let (nft, transfer_request) = kiosk::purchase<T>(kiosk, item_id, payment);
+        
+        // 2. Confirm transfer policy (this will enforce commission via rules)
+        transfer_policy::confirm_request(transfer_policy, transfer_request);
+        
+        nft
+    }
+
+    // Standard Kiosk Functions (Use platform TransferPolicy for commission enforcement)
+    
+    /// List an item in the pavilion kiosk
+    /// Commission enforcement is handled by TransferPolicy during purchase
+    public fun list_item<T: key + store>(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        item_id: ID,
+        price: u64,
+    ) {
+        kiosk::list<T>(kiosk, cap, item_id, price);
+    }
+
+    /// Delist an item from pavilion kiosk
+    public fun delist_item<T: key + store>(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        item_id: ID,
+    ) {
+        kiosk::delist<T>(kiosk, cap, item_id)
+    }
+
+    // Kiosk Management Functions
     
     /// Initialize pavilion functionality on an existing kiosk
-    /// If already a pavilion, will update the name and scene manager
-    /// Creates and transfers SceneManagerCap to the specified manager
+    /// This function can be called multiple times - first call installs extension, subsequent calls update settings
     public fun initialize_pavilion(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         name: String,
-        manager_address: address,
         ctx: &mut TxContext
     ) { 
         // Validate name length
         validate_pavilion_name(&name);
         
-        // Check if this is the first time setting up pavilion
-        let is_new_pavilion = !df::exists_(kiosk.uid(), PavilionName {});
-        
-        // Set/update pavilion fields using helper functions
-        set_dynamic_field(kiosk, cap, PavilionName {}, name);
-        set_dynamic_field(kiosk, cap, SceneManager {}, manager_address);
-        
-        // Install extension only for new pavilions
-        if (is_new_pavilion) {
+        // Check if this kiosk already has pavilion extension installed
+        if (is_pavilion_kiosk(kiosk)) {
+            // This is already a pavilion kiosk, just update the name
+            set_dynamic_field(kiosk, cap, PavilionName {}, name);
+        } else {
+            // This is a new pavilion, install extension and initialize everything
             kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
+            set_dynamic_field(kiosk, cap, PavilionName {}, name);
+            init_scene_object_registry(kiosk, cap, ctx);
         };
-        
-        // Create and transfer scene manager capability
-        let manager_cap = SceneManagerCap {
-            id: object::new(ctx),
-            kiosk_id: object::id(kiosk),
-            owner: manager_address,
-        };
-        
-        transfer::public_transfer(manager_cap, manager_address);
     }
 
-    /// Kiosk owner can revoke scene manager by removing authorization
-    /// This makes ALL existing SceneManagerCaps for this kiosk invalid
-    entry fun revoke_scene_manager_by_owner(
-        kiosk: &mut Kiosk,
-        cap: &KioskOwnerCap,
-    ) {
-        ensure_is_pavilion(kiosk);
-        
-        // Remove the scene manager authorization entirely
-        // This invalidates ALL existing SceneManagerCaps for this kiosk
-        df::remove<SceneManager, address>(kiosk.uid_mut_as_owner(cap), SceneManager {});
-    }
-
-    /// Replace scene manager and invalidate all old caps (one-step operation)
-    entry fun replace_scene_manager(
-        kiosk: &mut Kiosk,
-        cap: &KioskOwnerCap,
-        new_manager: address,
-        ctx: &mut TxContext
-    ) {
-        ensure_is_pavilion(kiosk);
-        
-        // First revoke all existing manager caps by updating the dynamic field
-        set_dynamic_field(kiosk, cap, SceneManager {}, new_manager);
-        
-        // Create new capability for the new manager
-        let new_manager_cap = SceneManagerCap {
-            id: object::new(ctx),
-            kiosk_id: object::id(kiosk),
-            owner: new_manager,
-        };
-        
-        transfer::public_transfer(new_manager_cap, new_manager);
-    }
-
-    /// Update pavilion name
+    /// Update pavilion name (only works on existing pavilion kiosks)
     public fun update_pavilion_name(self: &mut Kiosk, cap: &KioskOwnerCap, name: String) {
+        // Ensure this is a pavilion kiosk
+        assert_is_pavilion_kiosk(self);
+        
         // Validate name length
         validate_pavilion_name(&name);
         
@@ -124,7 +165,11 @@ module pavilion::pavilion {
     }
 
     /// Set scene configuration blob ID (points to Walrus storage)
+    /// Only works on pavilion kiosks
     public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
+        // Ensure this is a pavilion kiosk
+        assert_is_pavilion_kiosk(self);
+        
         set_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
@@ -136,53 +181,25 @@ module pavilion::pavilion {
         if (df::exists_(self.uid(), SceneConfig {})) {
             let _blob: String = df::remove(self.uid_mut_as_owner(cap), SceneConfig {});
         };
-        if (df::exists_(self.uid(), SceneManager {})) {
-            let _manager: address = df::remove(self.uid_mut_as_owner(cap), SceneManager {});
+        if (df::exists_(self.uid(), SceneObjects {})) {
+            let SceneObjectRegistry { objects, count: _ } = df::remove(self.uid_mut_as_owner(cap), SceneObjects {});
+            table::destroy_empty(objects);
         };
     }
 
-    // == Scene Manager Functions ==
+    // Query Functions
 
-    /// Scene manager can place items using extension permissions
-    entry fun scene_manager_place<T: key + store>(
-        kiosk: &mut Kiosk,
-        manager_cap: &SceneManagerCap,
-        item: T,
-        policy: &transfer_policy::TransferPolicy<T>,
-        ctx: &TxContext
-    ) {
-        // Verify permissions
-        verify_scene_manager_permission(kiosk, manager_cap, ctx);
-
-        // Use extension permissions to place item
-        kiosk_extension::place(PavilionExtension {}, kiosk, item, policy);
+    /// Check if a kiosk has pavilion extension installed
+    /// This is crucial for the frontend to determine if the kiosk should be treated as a pavilion
+    public fun is_pavilion_kiosk(kiosk: &Kiosk): bool {
+        kiosk_extension::is_installed<PavilionExtension>(kiosk)
     }
 
-    /// Scene manager can lock items for display (prevents removal by owner)
-    /// This is useful for important exhibition pieces that should stay in the pavilion
-    entry fun scene_manager_lock<T: key + store>(
-        kiosk: &mut Kiosk,
-        manager_cap: &SceneManagerCap,
-        item: T,
-        policy: &transfer_policy::TransferPolicy<T>,
-        ctx: &TxContext
-    ) {
-        // Verify permissions
-        verify_scene_manager_permission(kiosk, manager_cap, ctx);
-
-        // Use extension permissions to lock item (also places it)
-        kiosk_extension::lock(PavilionExtension {}, kiosk, item, policy);
+    /// Verify that a kiosk is a pavilion kiosk (throws error if not)
+    /// Use this in functions that require pavilion functionality
+    public fun assert_is_pavilion_kiosk(kiosk: &Kiosk) {
+        assert!(is_pavilion_kiosk(kiosk), E_NOT_PAVILION);
     }
-
-    /// Scene manager can voluntarily give up their capability
-    entry fun revoke_scene_manager_cap(manager_cap: SceneManagerCap) {
-        // Simply destroy the capability to revoke permissions
-        let SceneManagerCap { id, kiosk_id: _, owner: _ } = manager_cap;
-        object::delete(id);
-    }
-
-
-    // == Read-Only Query Functions ==
 
     /// Get the name of the pavilion
     public fun pavilion_name(self: &Kiosk): Option<String> {
@@ -207,31 +224,193 @@ module pavilion::pavilion {
         }
     }
 
-    /// Check if kiosk is a pavilion
-    public fun is_pavilion(self: &Kiosk): bool {
-        df::exists_(self.uid(), PavilionName {})
+
+    // Object Properties Functions
+
+    /// Create default object properties
+    public fun create_default_properties(ctx: &mut TxContext): ObjectProperties {
+        ObjectProperties {
+            displayed: true,
+            position: vector[0, 0, 0],
+            rotation: vector[0, 0, 0],
+            scale: 1000, // Default scale of 1.0 (stored as 1000)
+            updated_at: tx_context::epoch_timestamp_ms(ctx),
+        }
     }
 
-    /// Get the current scene manager
-    public fun get_scene_manager(kiosk: &Kiosk): Option<address> {
-        if (df::exists_(kiosk.uid(), SceneManager {})) {
-            option::some(*df::borrow(kiosk.uid(), SceneManager {}))
+    /// Create object properties with specified values
+    public fun create_object_properties(
+        displayed: bool,
+        position: vector<u64>,
+        rotation: vector<u64>,
+        scale: u64,
+        ctx: &mut TxContext
+    ): ObjectProperties {
+        validate_vector3(&position);
+        validate_vector3(&rotation);
+        
+        ObjectProperties {
+            displayed,
+            position,
+            rotation,
+            scale,
+            updated_at: tx_context::epoch_timestamp_ms(ctx),
+        }
+    }
+
+    /// Set properties for a specific object (requires kiosk owner cap)
+    public fun set_object_properties(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        object_id: ID,
+        displayed: bool,
+        position: vector<u64>,
+        rotation: vector<u64>,
+        scale: u64,
+        ctx: &mut TxContext
+    ) {
+        assert_is_pavilion_kiosk(kiosk);
+        validate_vector3(&position);
+        validate_vector3(&rotation);
+
+        // Initialize registry if it doesn't exist
+        if (!df::exists_(kiosk.uid(), SceneObjects {})) {
+            init_scene_object_registry(kiosk, cap, ctx);
+        };
+
+        let registry: &mut SceneObjectRegistry = df::borrow_mut(kiosk.uid_mut_as_owner(cap), SceneObjects {});
+        let properties = ObjectProperties {
+            displayed,
+            position,
+            rotation,
+            scale,
+            updated_at: tx_context::epoch_timestamp_ms(ctx),
+        };
+
+        if (table::contains(&registry.objects, object_id)) {
+            *table::borrow_mut(&mut registry.objects, object_id) = properties;
+        } else {
+            table::add(&mut registry.objects, object_id, properties);
+            registry.count = registry.count + 1;
+        };
+    }
+
+    /// Batch update multiple object properties at once
+    /// Each update contains object_id and its new properties
+    public fun batch_update_object_properties(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        object_ids: vector<ID>,
+        properties_list: vector<ObjectProperties>,
+        ctx: &mut TxContext
+    ) {
+        assert_is_pavilion_kiosk(kiosk);
+        assert!(vector::length(&object_ids) == vector::length(&properties_list), E_INVALID_VECTOR_SIZE);
+
+        // Initialize registry if it doesn't exist
+        if (!df::exists_(kiosk.uid(), SceneObjects {})) {
+            init_scene_object_registry(kiosk, cap, ctx);
+        };
+
+        let registry: &mut SceneObjectRegistry = df::borrow_mut(kiosk.uid_mut_as_owner(cap), SceneObjects {});
+        let mut i = 0;
+        let len = vector::length(&object_ids);
+
+        while (i < len) {
+            let object_id = *vector::borrow(&object_ids, i);
+            let properties = *vector::borrow(&properties_list, i);
+            
+            validate_vector3(&properties.position);
+            validate_vector3(&properties.rotation);
+
+            if (table::contains(&registry.objects, object_id)) {
+                *table::borrow_mut(&mut registry.objects, object_id) = properties;
+            } else {
+                table::add(&mut registry.objects, object_id, properties);
+                registry.count = registry.count + 1;
+            };
+            i = i + 1;
+        };
+    }
+
+    /// Get properties for a specific object
+    public fun get_object_properties(kiosk: &Kiosk, object_id: ID): Option<ObjectProperties> {
+        if (!is_pavilion_kiosk(kiosk) || !df::exists_(kiosk.uid(), SceneObjects {})) {
+            return option::none()
+        };
+
+        let registry: &SceneObjectRegistry = df::borrow(kiosk.uid(), SceneObjects {});
+        if (table::contains(&registry.objects, object_id)) {
+            option::some(*table::borrow(&registry.objects, object_id))
         } else {
             option::none()
         }
     }
 
-    // == Internal Helper Functions ==
+    /// Remove object properties (when object is removed from kiosk)
+    public fun remove_object_properties(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        object_id: ID
+    ) {
+        assert_is_pavilion_kiosk(kiosk);
+        assert!(df::exists_(kiosk.uid(), SceneObjects {}), E_REGISTRY_NOT_INITIALIZED);
+
+        let registry: &mut SceneObjectRegistry = df::borrow_mut(kiosk.uid_mut_as_owner(cap), SceneObjects {});
+        if (table::contains(&registry.objects, object_id)) {
+            table::remove(&mut registry.objects, object_id);
+            registry.count = registry.count - 1;
+        };
+    }
+
+    /// Get the count of objects in the scene
+    public fun get_object_count(kiosk: &Kiosk): u64 {
+        if (!is_pavilion_kiosk(kiosk) || !df::exists_(kiosk.uid(), SceneObjects {})) {
+            return 0
+        };
+
+        let registry: &SceneObjectRegistry = df::borrow(kiosk.uid(), SceneObjects {});
+        registry.count
+    }
+
+    /// Toggle object display status
+    public fun toggle_object_display(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        object_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert_is_pavilion_kiosk(kiosk);
+        assert!(df::exists_(kiosk.uid(), SceneObjects {}), E_REGISTRY_NOT_INITIALIZED);
+
+        let registry: &mut SceneObjectRegistry = df::borrow_mut(kiosk.uid_mut_as_owner(cap), SceneObjects {});
+        if (table::contains(&registry.objects, object_id)) {
+            let properties = table::borrow_mut(&mut registry.objects, object_id);
+            properties.displayed = !properties.displayed;
+            properties.updated_at = tx_context::epoch_timestamp_ms(ctx);
+        };
+    }
+
+    // == Private Functions ==
+
+    /// Initialize scene object registry for a new pavilion
+    fun init_scene_object_registry(kiosk: &mut Kiosk, cap: &KioskOwnerCap, ctx: &mut TxContext) {
+        let registry = SceneObjectRegistry {
+            objects: table::new(ctx),
+            count: 0,
+        };
+        df::add(kiosk.uid_mut_as_owner(cap), SceneObjects {}, registry);
+    }
+
+    /// Validate that a vector has exactly 3 elements (for 3D coordinates)
+    fun validate_vector3(vec: &vector<u64>) {
+        assert!(vector::length(vec) == 3, E_INVALID_VECTOR_SIZE);
+    }
 
     /// Validate pavilion name length
     fun validate_pavilion_name(name: &String) {
         assert!(string::length(name) > MIN_NAME_LENGTH, E_INVALID_NAME_LENGTH);
         assert!(string::length(name) <= MAX_NAME_LENGTH, E_INVALID_NAME_LENGTH);
-    }
-
-    /// Ensure the kiosk is a pavilion
-    fun ensure_is_pavilion(kiosk: &Kiosk) {
-        assert!(is_pavilion(kiosk), E_NOT_PAVILION);
     }
 
     /// Generic function to set or update a dynamic field
@@ -246,25 +425,5 @@ module pavilion::pavilion {
         } else {
             df::add(kiosk.uid_mut_as_owner(cap), key, value);
         }
-    }
-
-    /// Verify scene manager capability and permissions
-    fun verify_scene_manager_permission(
-        kiosk: &Kiosk,
-        manager_cap: &SceneManagerCap,
-        ctx: &TxContext
-    ) {
-        // Verify the manager cap is for this kiosk
-        assert!(manager_cap.kiosk_id == object::id(kiosk), E_INVALID_KIOSK_ID);
-        
-        // Verify manager is authorized
-        if (df::exists_(kiosk.uid(), SceneManager {})) {
-            let scene_manager: &address = df::borrow(kiosk.uid(), SceneManager {});
-            assert!(
-                *scene_manager == manager_cap.owner || 
-                manager_cap.owner == ctx.sender(),
-                E_UNAUTHORIZED_MANAGER
-            );
-        };
     }
 }
