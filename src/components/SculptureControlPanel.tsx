@@ -13,18 +13,23 @@ interface SculptureControlPanelProps {
   onUpdateScale?: (id: string, scale: { x: number; y: number; z: number }) => void;
   autoLoadBlobIds?: string[]; // Blob IDs to auto-load from kiosk items
   kioskItems?: any[]; // Kiosk items from the current kiosk
+  kioskId?: string; // Current kiosk ID
+  kioskOwnerCapId?: string; // Current kiosk owner cap ID
+  // Change tracking props
+  onTrackChange?: (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => void;
 }
 
 // Interface for controllable objects
 interface ControllableObject {
   id: string;
   name: string;
-  type: 'sculpture' | 'external';
+  type: 'sculpture' | 'external' | 'kiosk_nft';
   position: { x: number; y: number; z: number };
   rotation?: { x: number; y: number; z: number };
   scale?: { x: number; y: number; z: number };
   object?: THREE.Object3D;
 }
+
 
 export function SculptureControlPanel({
   sculptures,
@@ -33,7 +38,10 @@ export function SculptureControlPanel({
   onUpdateRotation,
   onUpdateScale,
   autoLoadBlobIds = [],
-  kioskItems = []
+  kioskItems = [],
+  kioskId,
+  kioskOwnerCapId,
+  onTrackChange
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -364,12 +372,17 @@ export function SculptureControlPanel({
     }
   };
 
+
   // Handle NFT item display toggle
   const handleNftItemDisplayToggle = async (nftItem: any, show: boolean) => {
     if (!sceneManager) return;
 
     const itemId = nftItem.id;
     const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+    const wasDisplayed = displayedNftItems.has(itemId);
+
+    // Track the change
+    onTrackChange?.(itemId, nftItem.name, 'displayed', wasDisplayed, show);
 
     if (show) {
       // Add to displayed items
@@ -520,6 +533,7 @@ export function SculptureControlPanel({
     }),
     object: null // Will be set when loaded
   } : null);
+
 
 
   return (
