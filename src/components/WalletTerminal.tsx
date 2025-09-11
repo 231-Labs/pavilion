@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKioskState } from './KioskStateProvider';
-import { SaveConfirmationModal } from './SaveConfirmationModal';
-import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { ObjectChange } from '../hooks/useObjectChanges';
 import { SceneConfigManager } from '../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../types/scene';
@@ -20,7 +19,7 @@ interface WalletTerminalProps {
 }
 
 export function WalletTerminal(props: WalletTerminalProps) {
-  const { objectChanges, sceneConfigManager, currentSceneConfig, kioskItems, onSaveSuccess, onSaveError } = props;
+  const { sceneConfigManager, currentSceneConfig, kioskItems, onSaveError } = props;
   const [error, setError] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -29,13 +28,13 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const router = useRouter();
 
   // Save related state
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [saveTransaction, setSaveTransaction] = useState<any>(null);
   const [isPreparingSave, setIsPreparingSave] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Use DappKit hooks
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
 
   
   // When wallet connection status changes
@@ -105,8 +104,8 @@ export function WalletTerminal(props: WalletTerminalProps) {
       const changes = Array.from(props.objectChanges.values());
 
       if (changes.length === 0) {
-        setError('No changes to save');
-        return;
+        console.log('No changes to save, but proceeding with save operation anyway');
+        // Continue with save even if no changes detected
       }
 
       // Use scene manager to capture current scene state
@@ -121,57 +120,30 @@ export function WalletTerminal(props: WalletTerminalProps) {
         stats: sceneConfigManager.getSceneStats(updatedConfig)
       });
 
-      // Create save transaction
+      // Create and execute save transaction directly
       const transaction = sceneConfigManager.createSaveTransaction(
         updatedConfig,
         kioskId,
         kioskOwnerCapId
       );
 
-      setSaveTransaction(transaction);
+      console.log('Executing save transaction directly...');
+      const result = await signAndExecuteTransaction({ transaction });
+      console.log('Save transaction executed successfully:', result);
 
-      // Convert changes to modal format
-      const modalChanges = changes.map(change => {
-        const changeDetails: any = {};
+      // Show success state
+      setSaveSuccess(true);
 
-        if (change.originalState.displayed !== change.currentState.displayed) {
-          changeDetails.displayed = {
-            from: change.originalState.displayed,
-            to: change.currentState.displayed
-          };
-        }
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
 
-        if (JSON.stringify(change.originalState.position) !== JSON.stringify(change.currentState.position)) {
-          changeDetails.position = {
-            from: change.originalState.position,
-            to: change.currentState.position
-          };
-        }
-
-        if (JSON.stringify(change.originalState.rotation) !== JSON.stringify(change.currentState.rotation)) {
-          changeDetails.rotation = {
-            from: change.originalState.rotation,
-            to: change.currentState.rotation
-          };
-        }
-
-        if (change.originalState.scale !== change.currentState.scale) {
-          changeDetails.scale = {
-            from: change.originalState.scale,
-            to: change.currentState.scale
-          };
-        }
-
-        return {
-          objectId: change.objectId,
-          objectName: change.objectName,
-          changes: changeDetails
-        };
-      });
-
-      setIsSaveModalOpen(true);
+      // Call success callback
+      props.onSaveSuccess?.();
     } catch (error) {
       console.error('Failed to prepare save transaction:', error);
+      setSaveSuccess(false); // Clear success state on error
       setError(error instanceof Error ? error.message : 'Failed to prepare save transaction');
       onSaveError?.(error as Error);
     } finally {
@@ -179,17 +151,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
-  // Handle save success
-  const handleSaveSuccess = () => {
-    setError('');
-    props.onSaveSuccess?.();
-  };
-
-  // Handle save error
-  const handleSaveError = (error: Error) => {
-    setError(`Save failed: ${error.message}`);
-    props.onSaveError?.(error);
-  };
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = props.objectChanges.size > 0;
@@ -197,7 +158,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
 
   return (
-    <div className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden">
+    <div className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       <div className="relative z-10">
         {/* Title bar */}
         <div
@@ -219,199 +180,134 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
         {/* Control panel content */}
         {isExpanded && (
-          <div className="p-3" style={{ fontSize: '13px' }}>
+          <div className="p-3 space-y-3" style={{ fontSize: '13px' }}>
             
-            <div className="wallet-terminal-buttons space-y-3">
+            <div className="space-y-2">
               <ConnectButton
-                className="elegant-button w-full text-sm tracking-wide uppercase"
-                style={{
-                  padding: '12px 16px',
-                  minHeight: '48px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.85)',
-                  fontFamily: '"Courier New", monospace',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  boxShadow: 'none'
-                }}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
+                style={{ minHeight: '48px' }}
               />
-
-              <button
-                onClick={() => router.push('/')}
-                className="elegant-button w-full text-sm tracking-wide uppercase"
-                style={{
-                  padding: '12px 16px',
-                  minHeight: '48px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.85)',
-                  fontFamily: '"Courier New", monospace',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-                }}
-              >
-                ← BACK TO HOME
-              </button>
             </div>
 
             {currentAccount && (
-              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">BALANCE</span>
+              <div className="space-y-2">
+                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                  Balance
+                </label>
+                <div className="flex justify-between items-center p-3 rounded-lg bg-black/20 border border-white/10">
                   <span className="font-medium control-label-primary">{balance} SUI</span>
                 </div>
               </div>
             )}
 
             {kioskId && (
-              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">KIOSK ID</span>
+              <div className="space-y-2">
+                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                  Kiosk ID
+                </label>
+                <div className="flex justify-between items-center p-3 rounded-lg bg-black/20 border border-white/10">
+                  <div className="flex items-center space-x-8">
+                    <span className="text-sm font-medium control-label-primary truncate max-w-[200px]">
+                      {kioskId.length > 20 ? `${kioskId.slice(0, 8)}...${kioskId.slice(-10)}` : kioskId}
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(kioskId);
+                      }}
+                      className="px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+                      title="Copy Kiosk ID"
+                    >
+                      copy
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  {kioskId}
-                </p>
               </div>
             )}
 
             {/* Save Changes Section */}
-            {hasUnsavedChanges && (
-              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium tracking-wide uppercase control-label-secondary">
-                      Unsaved changes ({props.objectChanges.size})
-                    </div>
-                    {hasUnsavedChanges && (
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                    )}
+            <div className="space-y-2">
+              <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                {hasUnsavedChanges ? 'Save Configuration on Sui' : 'Save Configuration on Sui'}
+              </label>
+              {saveSuccess && (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-medium tracking-wide uppercase control-label-secondary">
+                    Configuration saved successfully
                   </div>
-
-                  <button
-                    onClick={prepareSaveTransaction}
-                    disabled={isPreparingSave}
-                    className="w-full px-3 py-2 text-sm font-medium tracking-wide uppercase bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white/90 hover:text-white disabled:text-white/50 rounded-lg border border-white/30 disabled:border-white/20 transition-colors flex items-center justify-center space-x-2"
-                    style={{
-                      minHeight: '40px',
-                      fontSize: '12px'
-                    }}
-                  >
-                    {isPreparingSave ? (
-                      <>
-                        <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin"></div>
-                        <span>Preparing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-3 h-3"
-                        >
-                          <path
-                            d="M5 13l4 4L19 7"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <span>Save Changes</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 </div>
-              </div>
-            )}
+              )}
+              {hasUnsavedChanges && !saveSuccess && (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-medium tracking-wide uppercase control-label-secondary">
+                    Unsaved changes ({props.objectChanges.size})
+                  </div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                </div>
+              )}
+              <button
+                onClick={prepareSaveTransaction}
+                disabled={isPreparingSave}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:hover:bg-white/5 text-white/80 disabled:text-white/50 border border-white/20 disabled:border-white/10 uppercase tracking-widest transition-colors flex items-center justify-center space-x-2 disabled:cursor-not-allowed"
+                style={{ minHeight: '40px' }}
+              >
+                {isPreparingSave ? (
+                  <>
+                    <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Preparing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-3 h-3"
+                    >
+                      <path
+                        d="M5 13l4 4L19 7"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
 
             {error && (
-              <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+              <div className="space-y-2">
+                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                  Error
+                </label>
+                <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+                  </div>
+                  <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
+                    {error}
+                  </p>
                 </div>
-                <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-xl" style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  {error}
-                </p>
               </div>
             )}
+
+            {/* Back To Home Button at the bottom */}
+            <div className="border-t border-white/10 pt-3 mt-3">
+              <button
+                onClick={() => router.push('/')}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
+                style={{ minHeight: '48px' }}
+              >
+                ← BACK TO HOME
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Save Confirmation Modal */}
-      <SaveConfirmationModal
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-        changes={Array.from(props.objectChanges.values()).map(change => {
-          const changeDetails: any = {};
-
-          if (change.originalState.displayed !== change.currentState.displayed) {
-            changeDetails.displayed = {
-              from: change.originalState.displayed,
-              to: change.currentState.displayed
-            };
-          }
-
-          if (JSON.stringify(change.originalState.position) !== JSON.stringify(change.currentState.position)) {
-            changeDetails.position = {
-              from: change.originalState.position,
-              to: change.currentState.position
-            };
-          }
-
-          if (JSON.stringify(change.originalState.rotation) !== JSON.stringify(change.currentState.rotation)) {
-            changeDetails.rotation = {
-              from: change.originalState.rotation,
-              to: change.currentState.rotation
-            };
-          }
-
-          if (change.originalState.scale !== change.currentState.scale) {
-            changeDetails.scale = {
-              from: change.originalState.scale,
-              to: change.currentState.scale
-            };
-          }
-
-          return {
-            objectId: change.objectId,
-            objectName: change.objectName,
-            changes: changeDetails
-          };
-        })}
-        transaction={saveTransaction}
-        onSaveSuccess={handleSaveSuccess}
-        onSaveError={handleSaveError}
-      />
     </div>
   );
 }
