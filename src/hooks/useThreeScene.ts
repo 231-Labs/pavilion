@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { SceneManager, SceneConfig } from '../lib/three/SceneManager';
 import { SculptureInstance } from '../types/sculpture';
 import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../lib/three/KioskItemConverter';
+import { DefaultSceneConfig } from '../lib/three/DefaultScene';
 
 export interface UseThreeSceneOptions extends SceneConfig {
   createGallery?: boolean;
   addSculptures?: boolean;
   enableKioskItems?: boolean;
+  defaultScene?: DefaultSceneConfig;
 }
 
 export function useThreeScene(options: UseThreeSceneOptions = {}) {
@@ -20,18 +22,25 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Create scene manager
-    const sceneManager = new SceneManager(canvasRef.current, options);
+    // Create scene manager with default scene configuration
+    const sceneConfig: SceneConfig = {
+      ...options,
+      // Convert createGallery option to defaultScene config
+      defaultScene: options.createGallery !== false ? {
+        backgroundColor: 0x0a0a0f,
+        enableGrid: true,
+        enableParticles: true,
+        enableHolographicElements: true,
+        ...options.defaultScene // Allow custom overrides
+      } : options.defaultScene
+    };
+
+    const sceneManager = new SceneManager(canvasRef.current, sceneConfig);
     sceneManagerRef.current = sceneManager;
 
     // Create kiosk item converter if enabled
     if (options.enableKioskItems) {
       kioskItemConverterRef.current = new KioskItemConverter(sceneManager);
-    }
-
-    // Add content based on options
-    if (options.createGallery !== false) {
-      sceneManager.createGalleryEnvironment();
     }
 
     if (options.addSculptures) {
@@ -66,6 +75,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     options.createGallery,
     options.addSculptures,
     options.enableKioskItems,
+    options.defaultScene,
   ]);
 
   // Provide access interface for scene manager

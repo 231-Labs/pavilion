@@ -83,26 +83,16 @@ export default function Home() {
         for (const kiosk of initialList) {
           if (aborted) return;
           try {
-            // Try to get the extension
             const extension = await kioskClient.getKioskExtension({
               kioskId: kiosk.kioskId,
               type: finalPavilionExtensionType
             });
-            // console.log(`Kiosk ${kiosk.kioskId} - PavilionExtension result:`, extension);
-
-            // Check if extension exists (not null)
             if (extension && extension.isEnabled !== false) {
-              // Extension exists and is enabled, include in pavilion list
-              // console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension found and enabled`);
               pavilionList.push(kiosk);
             } else {
-              // Extension doesn't exist or is disabled, include in owned list
-              //console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension not found or disabled`);
               filteredList.push(kiosk);
             }
           } catch (extensionError) {
-            // If there's an error, assume extension doesn't exist and include in owned list
-            // console.log(`Kiosk ${kiosk.kioskId} - Error checking PavilionExtension, including in owned list. Error:`, extensionError);
             filteredList.push(kiosk);
           }
         }
