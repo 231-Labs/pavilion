@@ -1,16 +1,10 @@
 import { Transaction } from '@mysten/sui/transactions';
+import { bcs } from '@mysten/bcs';
+import { fromBase64 } from '@mysten/sui/utils';
 import { KioskTransaction } from '@mysten/kiosk'; 
-import type { KioskClient, KioskOwnerCap } from '@mysten/kiosk';
+import type { KioskClient } from '@mysten/kiosk';
 import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
 
-// export async function getCap(params: { kioskClient: KioskClient; address: string; }): Promise<KioskOwnerCap> {
-//   const { kioskClient, address } = params;
-//   const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ address });
-//   if (!kioskOwnerCaps || kioskOwnerCaps.length === 0) {
-//     throw new Error('No kiosk owner cap found for the provided address');
-//   }
-//   return kioskOwnerCaps[0];
-// }
 
 type PavilionTxConfig =
   | {
@@ -28,6 +22,13 @@ type PavilionTxConfig =
       ownerAddress: string;
       kioskId: string;
       kioskOwnerCapId: string;
+    }
+  | {
+      mode: 'auto';
+      kioskClient: KioskClient;
+      packageId: string;
+      pavilionName: string;
+      ownerAddress: string;
     };
 
 /**
@@ -40,7 +41,7 @@ async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transa
   const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
 
   // according to mode initialize kiosk
-  if (config.mode === 'create') {
+  if (config.mode === 'create' || config.mode === 'auto') {
     kioskTx.create();
   } else {
     kioskTx.setKiosk(tx.object(config.kioskId));
@@ -54,12 +55,11 @@ async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transa
       kioskTx.getKiosk(),
       kioskTx.getKioskCap(),
       tx.pure.string(pavilionName),
-      tx.pure.address(ownerAddress),
     ],
   });
 
   // only need to share and transfer cap when creating new kiosk
-  if (config.mode === 'create') {
+  if (config.mode === 'create' || config.mode === 'auto') {
     kioskTx.shareAndTransferCap(ownerAddress);
   }
 
@@ -89,6 +89,45 @@ export async function buildInitializePavilionWithExistingKioskTx(params: {
 }): Promise<Transaction> {
   return buildPavilionTxInternal({
     mode: 'existing',
+    ...params,
+  });
+}
+
+/**
+ * Build a transaction to initialize a pavilion automatically
+ * If user has existing kiosk, use it; otherwise create a new one
+ * The kiosk cap will be transferred back to the owner in both cases
+ */
+export async function buildAutoPavilionTx(params: {
+  kioskClient: KioskClient;
+  packageId: string;
+  pavilionName: string;
+  ownerAddress: string;
+}): Promise<Transaction> {
+  const { kioskClient, ownerAddress } = params;
+
+  try {
+    // Try to get existing kiosk for the user
+    const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ address: ownerAddress });
+
+    if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
+      // User has existing kiosk, use it
+      const existingKioskCap = kioskOwnerCaps[0];
+      return buildPavilionTxInternal({
+        mode: 'existing',
+        ...params,
+        kioskId: existingKioskCap.kioskId,
+        kioskOwnerCapId: existingKioskCap.objectId,
+      });
+    }
+  } catch (error) {
+    // If there's an error getting kiosks (e.g., no kiosks), continue to create new one
+    console.log('No existing kiosk found, creating new one:', error);
+  }
+
+  // No existing kiosk found, create a new one
+  return buildPavilionTxInternal({
+    mode: 'auto',
     ...params,
   });
 }
@@ -132,6 +171,20 @@ export async function fetchKioskIdsFromTx(params: {
 }
 
 /**
+ * Resolve the KioskOwnerCap object id for a given kiosk owned by an address
+ */
+export async function resolveKioskOwnerCapId(params: {
+  kioskClient: KioskClient;
+  ownerAddress: string;
+  kioskId: string;
+}): Promise<string | null> {
+  const { kioskClient, ownerAddress, kioskId } = params;
+  const { kioskOwnerCaps = [] } = await kioskClient.getOwnedKiosks({ address: ownerAddress });
+  const match = kioskOwnerCaps.find((c: any) => c.kioskId === kioskId);
+  return match?.objectId ?? null;
+}
+
+/**
  * Convenience helper to query kiosk contents for UI.
  */
 export async function fetchKioskContents(params: {
@@ -159,3 +212,123 @@ export async function fetchKioskContents(params: {
   // Unreachable
   return kioskClient.getKiosk({ id: kioskId, options });
 }
+
+/**
+ * Debug helper function to test dynamic field access
+ * Use this in the browser console to troubleshoot
+ */
+export async function debugDynamicFields(params: {
+  suiClient: any;
+  kioskId: string;
+}) {
+  const { suiClient, kioskId } = params;
+  console.log('🔍 Starting dynamic field debugging for kiosk:', kioskId);
+  
+  try {
+    // Get all dynamic fields
+    const fieldsResp = await suiClient.getDynamicFields({
+      parentId: kioskId,
+    });
+    console.log('📋 All dynamic fields:', JSON.stringify(fieldsResp, null, 2));
+    
+    // Get kiosk object structure
+    const objResp = await suiClient.getObject({
+      id: kioskId,
+      options: {
+        showContent: true,
+        showOwner: true,
+        showType: true,
+      },
+    });
+    console.log('🏛️ Kiosk structure:', JSON.stringify(objResp, null, 2));
+    
+    return { fields: fieldsResp, object: objResp };
+  } catch (error) {
+    console.error('💥 Debug failed:', error);
+    throw error;
+  }
+}
+
+export async function readSceneConfig(params: {
+  suiClient: any;
+  packageId: string;
+  kioskId: string;
+}): Promise<string | null> {
+  const { suiClient, packageId, kioskId } = params;
+  
+  try {
+    // Primary method: Direct getDynamicFieldObject call
+    const resp = await suiClient.getDynamicFieldObject({
+      parentId: kioskId,
+      name: {
+        type: `${packageId}::pavilion::SceneConfig`,
+        value: {},
+      },
+    });
+    
+    // Extract the JSON string from the dynamic field
+    const value = resp?.data?.content?.fields?.value;
+    
+    if (typeof value === 'string' && value.length > 0) {
+      console.log('✅ Successfully loaded scene config from chain');
+      return value;
+    }
+    
+    console.log('⚠️ Scene config field exists but value is empty or invalid');
+    return null;
+    
+  } catch (error) {
+    // Fallback method: Use getDynamicFields to find the field first
+    try {
+      const fieldsResp = await suiClient.getDynamicFields({
+        parentId: kioskId,
+      });
+      
+      if (fieldsResp?.data && Array.isArray(fieldsResp.data)) {
+        const sceneConfigField = fieldsResp.data.find((field: any) => {
+          const fieldType = field?.name?.type;
+          return fieldType?.includes('SceneConfig');
+        });
+        
+        if (sceneConfigField) {
+          const fieldResp = await suiClient.getDynamicFieldObject({
+            parentId: kioskId,
+            name: sceneConfigField.name,
+          });
+          
+          const value = fieldResp?.data?.content?.fields?.value;
+          if (typeof value === 'string' && value.length > 0) {
+            console.log('✅ Successfully loaded scene config from chain (fallback method)');
+            return value;
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.log('❌ Both primary and fallback methods failed:', fallbackError);
+    }
+    
+    console.log('💭 No scene config found on chain');
+    return null;
+  }
+}
+
+export function setSceneConfigTx(params: {
+  kioskClient: KioskClient;
+  packageId: string;
+  kioskId: string;
+  kioskOwnerCapId: string;
+  json: string;
+}): Transaction {
+  const { kioskClient, packageId, kioskId, kioskOwnerCapId, json } = params;
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
+  kioskTx.setKiosk(tx.object(kioskId));
+  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
+  tx.moveCall({
+    target: `${packageId}::pavilion::set_scene_config`,
+    arguments: [kioskTx.getKiosk(), kioskTx.getKioskCap(), tx.pure.string(json)],
+  });
+  kioskTx.finalize();
+  return tx;
+}
+

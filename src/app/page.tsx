@@ -83,26 +83,16 @@ export default function Home() {
         for (const kiosk of initialList) {
           if (aborted) return;
           try {
-            // Try to get the extension
             const extension = await kioskClient.getKioskExtension({
               kioskId: kiosk.kioskId,
               type: finalPavilionExtensionType
             });
-            // console.log(`Kiosk ${kiosk.kioskId} - PavilionExtension result:`, extension);
-
-            // Check if extension exists (not null)
             if (extension && extension.isEnabled !== false) {
-              // Extension exists and is enabled, include in pavilion list
-              // console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension found and enabled`);
               pavilionList.push(kiosk);
             } else {
-              // Extension doesn't exist or is disabled, include in owned list
-              //console.log(`Including kiosk ${kiosk.kioskId} - PavilionExtension not found or disabled`);
               filteredList.push(kiosk);
             }
           } catch (extensionError) {
-            // If there's an error, assume extension doesn't exist and include in owned list
-            // console.log(`Kiosk ${kiosk.kioskId} - Error checking PavilionExtension, including in owned list. Error:`, extensionError);
             filteredList.push(kiosk);
           }
         }
@@ -170,13 +160,7 @@ export default function Home() {
         if (kioskIdNew) setCreatedKioskId(kioskIdNew);
         if (kioskOwnerCapIdNew) setCreatedKioskCapId(kioskOwnerCapIdNew);
         if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
-        if (kioskIdNew) {
-          const data = await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
-          // TODO: to be removed
-          // console.log(kioskIdNew);
-          // console.log(kioskOwnerCapIdNew);
-          console.log(data.items);
-        }
+        if (kioskIdNew) await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
       } catch (parseErr) {
         console.warn('Failed to parse kiosk ids from tx:', parseErr);
       }
@@ -203,6 +187,10 @@ export default function Home() {
       return;
     }
     if (createSubMode === 'existing') {
+      if (!pavilionName.trim()) {
+        setError('Pavilion name is required');
+        return;
+      }
       if (!currentAccount) {
         setError('Please connect your wallet');
         return;
@@ -310,16 +298,16 @@ export default function Home() {
       <main className="relative z-10 px-6 py-8 md:py-12 flex-1 grid place-items-center">
         <div className="architect-grid"></div>
 
-        <section className="relative mx-auto max-w-6xl glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6">
+        <section className="relative mx-auto max-w-7xl glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left: Brand & Narrative */}
-            <div className="p-8 md:p-12 flex flex-col justify-center">
-              <p className="text-xs tracking-[0.35em] uppercase text-white/60 mb-4">Modernist Pavilion</p>
-              <h2 className="text-4xl md:text-5xl font-extrabold tracking-[0.22em] uppercase leading-tight silver-glow">
-                The Pavilion Protocol
+            <div className="p-10 md:p-14 flex flex-col justify-center">
+              <p className="text-xs tracking-[0.35em] uppercase text-white/60 mb-4">3D Kiosk Extension</p>
+              <h2 className="text-4xl md:text-6xl font-extrabold tracking-[0.22em] uppercase leading-tight silver-glow">
+                Pavilion
               </h2>
               <p className="mt-5 text-white/70 max-w-md">
-                A glass house for on-chain artifacts. Curate, compose, and transform kiosks into immersive pavilions.
+                Turn your kiosk into a curated gallery.
               </p>
 
               {/* Demo Pavilion Section */}
@@ -361,7 +349,7 @@ export default function Home() {
 
             {/* Right: Actions - Single Frosted Glass Area (no inner panel) */}
             <div
-              className="glass-slab glass-slab--thermal rounded-xl overflow-hidden p-6 md:p-8 self-center w-full min-h-[420px] md:min-h-[520px] lg:min-h-[560px]"
+              className="glass-slab glass-slab--thermal rounded-xl overflow-hidden p-6 md:p-8 self-center w-full h-[580px]"
               onClick={onSlabClick}
               onMouseMove={(e) => {
                 const target = e.currentTarget as HTMLDivElement;
@@ -406,7 +394,7 @@ export default function Home() {
                 </div>
 
                 {/* Create Pavilion */}
-                <div className="w-full px-5 py-4 slab-segment min-h-[200px]">
+                <div className="w-full px-5 py-4 slab-segment flex-1 flex flex-col">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div>
@@ -453,45 +441,98 @@ export default function Home() {
                           </div>
                         )}
                         {createSubMode === 'new' && !txDigest ? (
-                          <div className="mt-4 space-y-2">
-                            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name:</label>
-                            <input
-                              value={pavilionName}
-                              onChange={(e) => setPavilionName(e.target.value)}
-                              placeholder=" ≤ 20 chars"
-                              maxLength={20}
-                              required
-                              aria-required="true"
-                              className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
-                            />
+                          <div className="mt-4 mb-6 flex flex-col flex-1">
+                            <div className="space-y-2">
+                              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name:</label>
+                              <input
+                                value={pavilionName}
+                                onChange={(e) => setPavilionName(e.target.value)}
+                                placeholder=" ≤ 20 chars"
+                                maxLength={20}
+                                required
+                                aria-required="true"
+                                className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                              />
+                            </div>
+                            {/* Spacer to fill remaining space */}
+                            <div className="flex-1"></div>
                           </div>
                         ) : null}
                         {createSubMode !== 'new' && !txDigest ? (
-                          <div className="mt-4 space-y-2">
-                            <label className="text-[14px] uppercase tracking-widest text-white/70">Owned Kiosks</label>
-                            <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
-                              {(ownedKiosks && ownedKiosks.length > 0) ? (
-                                <ul className="divide-y divide-white/10">
-                                  {ownedKiosks.map((k) => (
-                                    <li key={k.objectId} className={`px-3 py-1 cursor-pointer ${selectedKioskId === k.kioskId ? 'bg-white/10' : 'hover:bg-white/5'}`} onClick={() => setSelectedKioskId(k.kioskId)}>
-                                      <div className="text-[11px] leading-tight text-white/85 truncate">
-                                        {k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : ''}
-                                      </div>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                fetchingKiosks ? (
-                                  <div className="px-3 py-2 text-[12px] text-white/60">Loading...</div>
-                                ) : (
-                                  !currentAccount ? (
-                                    <div className="px-3 py-2 text-[12px] text-white/60">Connect wallet to fetch Kiosks.</div>
-                                  ) : (
-                                    <div className="px-3 py-2 text-[12px] text-white/60">No Kiosk Found.</div>
-                                  )
-                                )
-                              )}
-                            </div>
+                          <div className="mt-4 flex flex-col flex-1">
+                            {!selectedKioskId ? (
+                              /* Step 1: Select Kiosk */
+                              <div className="flex-1 flex flex-col space-y-2">
+                                <label className="text-[14px] uppercase tracking-widest text-white/70">Step 1: Select a Kiosk</label>
+                                <div className="flex-1 flex flex-col justify-center">
+                                  <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
+                                    {(ownedKiosks && ownedKiosks.length > 0) ? (
+                                      <ul className="divide-y divide-white/10">
+                                        {ownedKiosks.map((k) => (
+                                          <li
+                                            key={k.objectId}
+                                            className="px-3 py-1 cursor-pointer hover:bg-white/5 transition-colors"
+                                            onClick={() => {
+                                              setSelectedKioskId(k.kioskId);
+                                              // Clear pavilion name when selecting a different kiosk
+                                              setPavilionName('');
+                                            }}
+                                          >
+                                            <div className="text-[11px] leading-tight text-white/85 truncate">
+                                              {k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : ''}
+                                            </div>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      fetchingKiosks ? (
+                                        <div className="px-3 py-2 text-[12px] text-white/60">Loading...</div>
+                                      ) : (
+                                        !currentAccount ? (
+                                          <div className="px-3 py-2 text-[12px] text-white/60">Connect wallet to fetch Kiosks.</div>
+                                        ) : (
+                                          <div className="px-3 py-2 text-[12px] text-white/60">No Kiosk Found.</div>
+                                        )
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Step 2: Enter Pavilion Name */
+                              <div className="flex-1 flex flex-col space-y-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[14px] uppercase tracking-widest text-white/70">Step 2: Pavilion Name</label>
+                                    <button
+                                      onClick={() => setSelectedKioskId(null)}
+                                      className="text-[10px] uppercase tracking-widest text-white/50 hover:text-white/70 transition-colors"
+                                      aria-label="Change selected kiosk"
+                                    >
+                                      Change Kiosk
+                                    </button>
+                                  </div>
+                                  <input
+                                    value={pavilionName}
+                                    onChange={(e) => setPavilionName(e.target.value)}
+                                    placeholder=" ≤ 20 chars"
+                                    maxLength={20}
+                                    required
+                                    aria-required="true"
+                                    className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                                  />
+                                </div>
+                                {/* Show selected kiosk info */}
+                                <div className="flex-1 flex items-end">
+                                  <div className="flex items-center space-x-2">
+                                    <label className="text-[12px] uppercase tracking-widest text-white/60 whitespace-nowrap">Selected Kiosk:</label>
+                                    <div className="text-[11px] text-white/70 truncate">
+                                      {selectedKioskId ? `${selectedKioskId.slice(0, 8)}...${selectedKioskId.slice(-6)}` : ''}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : null}
                       </div>

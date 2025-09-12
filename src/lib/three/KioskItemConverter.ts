@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager, LoadGLBOptions } from './SceneManager';
+import { SceneManager } from './SceneManager';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 
@@ -63,12 +63,8 @@ export class KioskItemConverter {
    * Analyze kiosk items and extract blob IDs/models without loading
    */
   analyzeKioskItems(kioskItems: KioskItem[]): KioskItemAnalysis[] {
-    // console.log(`🔍 Analyzing ${kioskItems.length} kiosk items...`);
 
     return kioskItems.map((item, index) => {
-      // console.log(`📦 Item ${index + 1}/${kioskItems.length}: ${item.objectId}`);
-      // console.log(`   Type: ${item.type}`);
-      // console.log(`   Full data:`, item.data);
 
       // Handle both nested Sui structure and flat structure
       let displayData = item.data?.display?.data;
@@ -81,9 +77,6 @@ export class KioskItemConverter {
           if (keys.length > 0) {
             displayData = item.data;
             contentFields = item.data;
-            // console.log(`   🔄 Using FLAT structure for analysis`);
-            // console.log(`   Flat data keys:`, keys);
-            // console.log(`   Flat data values:`, Object.entries(item.data).map(([k, v]) => `${k}: ${v}`).join(', '));
           }
         }
 
@@ -91,19 +84,14 @@ export class KioskItemConverter {
         if (!displayData && !contentFields && item.data) {
           displayData = item.data;
           contentFields = item.data;
-          // console.log(`   📋 Using item.data directly as both displayData and contentFields`);
         }
 
         const name = this.extractItemName(item, displayData) || `Item ${index + 1}`;
 
-        // console.log(`   Display data:`, displayData);
-        // console.log(`   Content fields:`, contentFields);
-        // console.log(`   Extracted name: "${name}"`);
 
       // Try to extract Walrus blob ID FIRST (since this is likely what we want)
       const blobId = this.extractWalrusBlobId(displayData, contentFields);
       if (blobId) {
-        // console.log(`   ✅ Classified as WALRUS type with blob ID: ${blobId}`);
         return {
           kioskItem: item,
           blobId,
@@ -115,7 +103,6 @@ export class KioskItemConverter {
       // Try to extract model URL
       const modelUrl = this.extractModelUrl(displayData, contentFields);
       if (modelUrl) {
-        // console.log(`   ✅ Classified as DIRECT type with model URL: ${modelUrl}`);
         return {
           kioskItem: item,
           modelUrl,
@@ -127,7 +114,6 @@ export class KioskItemConverter {
       // Try to extract image URL
       const imageUrl = this.extractImageUrl(displayData, contentFields);
       if (imageUrl) {
-        // console.log(`   ✅ Classified as IMAGE type with image URL: ${imageUrl}`);
         return {
           kioskItem: item,
           modelUrl: imageUrl,
@@ -135,16 +121,6 @@ export class KioskItemConverter {
           name,
         };
       }
-
-      // Default to geometry
-      // console.log(`   ⚠️  Defaulting to GEOMETRY type - no valid model/image/blob found`);
-      // console.log(`   ❌ Analysis result:`, {
-      //   hasModelUrl: !!modelUrl,
-      //   hasImageUrl: !!imageUrl,
-      //   hasBlobId: !!blobId,
-      //   displayData,
-      //   contentFields
-      // });
 
       return {
         kioskItem: item,
@@ -158,21 +134,17 @@ export class KioskItemConverter {
    * Convert kiosk items to 3D objects
    */
   async convertKioskItemsTo3D(kioskItems: KioskItem[]): Promise<KioskItem3DResult[]> {
-    // console.log(`🎨 Converting ${kioskItems.length} kiosk items to 3D objects...`);
     const results: KioskItem3DResult[] = [];
 
     for (let i = 0; i < kioskItems.length; i++) {
       const item = kioskItems[i];
-      // console.log(`🔄 Converting item ${i + 1}/${kioskItems.length}: ${item.objectId}`);
 
       try {
         const result = await this.convertSingleItemTo3D(item, i);
         if (result) {
-          // console.log(`✅ Successfully converted ${item.objectId} to ${result.config.type} type`);
           results.push(result);
           this.loadedItems.set(item.objectId, result);
         } else {
-          // console.log(`⚠️  Conversion returned null for ${item.objectId}`);
         }
       } catch (error) {
         console.error(`❌ Failed to convert kiosk item ${item.objectId}:`, error);
@@ -180,7 +152,6 @@ export class KioskItemConverter {
       }
     }
 
-    // console.log(`📊 Conversion summary: ${results.length}/${kioskItems.length} items converted successfully`);
     return results;
   }
 
@@ -197,19 +168,9 @@ export class KioskItemConverter {
     let object3D: THREE.Object3D | null;
 
     try {
-      // console.log(`🔧 Creating 3D object for ${item.objectId} of type: ${config.type}`);
-      // console.log(`   Config details:`, {
-      //   name: config.name,
-      //   type: config.type,
-      //   url: config.url,
-      //   position: config.position,
-      //   scale: config.scale
-      // });
-
       switch (config.type) {
         case 'glb':
           if (config.url) {
-            // console.log(`📦 Loading GLB model from: ${config.url}`);
             object3D = await this.sceneManager.loadGLBModel(config.url, {
               position: config.position,
               rotation: config.rotation,
@@ -218,7 +179,6 @@ export class KioskItemConverter {
               castShadow: true,
               receiveShadow: true,
             });
-            // console.log(`✅ GLB model loaded successfully for ${item.objectId}`);
           } else {
             throw new Error('GLB URL not found');
           }
@@ -232,9 +192,7 @@ export class KioskItemConverter {
 
         case 'obj':
           if (config.url) {
-            // console.log(`📦 Loading OBJ model from: ${config.url}`);
             object3D = await this.loadOBJModel(config);
-            // console.log(`✅ OBJ model loaded successfully for ${item.objectId}`);
           } else {
             throw new Error('OBJ URL not found');
           }
@@ -242,37 +200,28 @@ export class KioskItemConverter {
 
         case 'stl':
           if (config.url) {
-            // console.log(`📦 Loading STL model from: ${config.url}`);
             object3D = await this.loadSTLModel(config);
-            // console.log(`✅ STL model loaded successfully for ${item.objectId}`);
           } else {
             throw new Error('STL URL not found');
           }
           break;
 
         case 'image':
-          // console.log(`🖼️ Creating image plane for ${item.objectId} with URL: ${config.url}`);
           try {
             object3D = await this.createImagePlane(config);
-            // console.log(`✅ Image plane created successfully for ${item.objectId}`);
           } catch (imageError) {
             console.warn(`❌ Image loading failed for ${item.objectId}, URL: ${config.url}`);
             console.warn(`   Image error:`, imageError);
-            // Don't re-throw, let it fall through to fallback geometry
             throw imageError;
           }
           break;
 
         case 'geometry':
-          // console.log(`📐 Creating geometry object for ${item.objectId} (type: ${config.geometryType})`);
           object3D = this.createGeometryObject(config);
-          // console.log(`✅ Geometry object created successfully for ${item.objectId}`);
           break;
 
         case 'text':
-          // console.log(`📝 Creating text object for ${item.objectId}`);
           object3D = await this.createTextObject(config);
-          // console.log(`✅ Text object created successfully for ${item.objectId}`);
           break;
 
         default:
@@ -287,10 +236,8 @@ export class KioskItemConverter {
     } catch (error) {
       console.error(`❌ Failed to create 3D object for item ${item.objectId}:`, error);
       console.error(`   Error details:`, error);
-      // console.error(`   Config that failed:`, config);
 
       // Fallback to a simple geometry
-      // console.log(`🚨 Creating RED FALLBACK GEOMETRY for ${item.objectId} due to error`);
       object3D = this.createFallbackGeometry(config);
 
       return {
@@ -474,7 +421,7 @@ export class KioskItemConverter {
     return {
       x: (col - (itemsPerRow - 1) / 2) * spacing,
       y: 1 + row * 2, // Slightly raise to avoid overlap
-      z: row * -2, // Slightly move后排
+      z: row * -2, // Slightly move back rows
     };
   }
 
@@ -658,13 +605,10 @@ export class KioskItemConverter {
    * Create fallback geometry
    */
   private createFallbackGeometry(config: KioskItem3DConfig): THREE.Object3D {
-    // console.log(`🔴 CREATING RED FALLBACK GEOMETRY for item: ${config.id}`);
-    // console.log(`   Original config that failed:`, config);
-    // console.log(`   This red box indicates the item could not be processed correctly`);
 
     const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     const material = new THREE.MeshStandardMaterial({
-      color: 0xff0000, // 紅色表示錯誤/後備
+      color: 0xff0000,
       metalness: 0.5,
       roughness: 0.5,
     });
@@ -734,12 +678,10 @@ export class KioskItemConverter {
           // Add to scene
           this.sceneManager.addObject(object);
 
-          // console.log(`OBJ model loaded successfully: ${config.url}`);
           resolve(object);
         },
         (progress) => {
           const percent = Math.round((progress.loaded / progress.total) * 100);
-          // console.log(`Loading OBJ progress ${config.url}: ${percent}%`);
         },
         (error) => {
           console.error(`Failed to load OBJ model: ${config.url}`, error);
@@ -770,7 +712,7 @@ export class KioskItemConverter {
             roughness: 0.5,
           });
 
-          // 創建網格
+          // Create mesh
           const mesh = new THREE.Mesh(geometry, material);
 
           // Set name
@@ -800,12 +742,10 @@ export class KioskItemConverter {
           // Add to scene
           this.sceneManager.addObject(mesh);
 
-          // console.log(`STL model loaded successfully: ${config.url}`);
           resolve(mesh);
         },
         (progress) => {
           const percent = Math.round((progress.loaded / progress.total) * 100);
-          // console.log(`Loading STL progress ${config.url}: ${percent}%`);
         },
         (error) => {
           console.error(`Failed to load STL model: ${config.url}`, error);

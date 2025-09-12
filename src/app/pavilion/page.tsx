@@ -3,26 +3,62 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useThreeScene } from '../../hooks/useThreeScene';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useKioskClient } from '../../components/KioskClientProvider';
+import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
+import { useObjectChanges } from '../../hooks/useObjectChanges';
 import { SculptureControlPanel } from '../../components/SculptureControlPanel';
 import { WalletTerminal } from '../../components/WalletTerminal';
 import { useKioskState } from '../../components/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
+import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
+import { SceneConfig } from '../../types/scene';
 
 export default function PavilionPage() {
   const searchParams = useSearchParams();
   const kioskId = searchParams.get('kioskId');
   const kioskState = useKioskState();
+  const { objectChanges, trackKioskNftChange, clearChanges } = useObjectChanges();
   const [walrusItems, setWalrusItems] = useState<any[]>([]);
+  const currentAccount = useCurrentAccount();
+  const kioskClient = useKioskClient();
+  const suiClient = useSuiClient();
+  const [currentSceneConfig, setCurrentSceneConfig] = useState<SceneConfig | null>(null);
+  const [sceneConfigManager, setSceneConfigManager] = useState<SceneConfigManager | null>(null);
+
+  // Create a wrapper function for tracking changes
+  const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
+    trackKioskNftChange(objectId, objectName, property, fromValue, toValue, new Set(), new Map());
+  };
 
   // Handle kioskId parameter - update kiosk state for WalletTerminal display
   useEffect(() => {
-    if (kioskId) {
-      // console.log('Demo Pavilion loaded with kioskId:', kioskId);
-      kioskState.setKioskFromIds({ kioskId });
-    }
-  }, [kioskId, kioskState]);
+    const initializeKiosk = async () => {
+      if (kioskId && currentAccount) {
+        try {
+          const capId = await resolveKioskOwnerCapId({
+            kioskClient,
+            ownerAddress: currentAccount.address,
+            kioskId,
+          });
 
-  // Process kiosk content when kiosk state changes (kiosk content is already fetched by kioskState)
+          if (capId) {
+            kioskState.setKioskFromIds({ kioskId, kioskOwnerCapId: capId });
+          } else {
+            kioskState.setKioskFromIds({ kioskId });
+            console.warn('Kiosk found but no owner cap available for current account');
+          }
+        } catch (error) {
+          console.error('Failed to resolve kiosk owner cap:', error);
+          kioskState.setKioskFromIds({ kioskId });
+        }
+      }
+    };
+
+    initializeKiosk();
+  }, [kioskId, currentAccount, kioskClient, kioskState]);
+
+  // Process kiosk content when kiosk state changes (content is already fetched by kioskState)
   useEffect(() => {
     const kioskItems = kioskState.kioskItems;
 
@@ -75,6 +111,22 @@ export default function PavilionPage() {
     enableKioskItems: true,
   });
 
+  // Initialize scene config manager when dependencies are available
+  useEffect(() => {
+    if (kioskClient && suiClient && sceneManager) {
+      const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID;
+      if (PAVILION_PACKAGE_ID) {
+        const manager = new SceneConfigManager({
+          kioskClient,
+          suiClient,
+          packageId: PAVILION_PACKAGE_ID,
+          sceneManager,
+        });
+        setSceneConfigManager(manager);
+      }
+    }
+  }, [kioskClient, suiClient, sceneManager]);
+
   // Analyze kiosk items and extract blob IDs when kiosk state changes
   useEffect(() => {
     const kioskItems = kioskState.kioskItems;
@@ -126,6 +178,47 @@ export default function PavilionPage() {
     }
   }, [kioskState.kioskItems, loadKioskItems, clearKioskItems, sceneManager]);
 
+  // Update current scene config when kiosk items change
+  useEffect(() => {
+    if (!sceneConfigManager || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
+      setCurrentSceneConfig(null);
+      return;
+    }
+
+    const items = kioskState.kioskItems;
+    const config = sceneConfigManager.createSceneConfigFromKioskItems(
+      items,
+      kioskState.kioskId || undefined,
+      currentAccount?.address
+    );
+
+    setCurrentSceneConfig(config);
+  }, [sceneConfigManager, kioskState.kioskItems, kioskState.kioskId, currentAccount]);
+
+  // Load and apply scene config from chain when kiosk changes
+  useEffect(() => {
+    const loadAndApplySceneConfig = async () => {
+      if (!sceneConfigManager || !kioskId || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
+        return;
+      }
+
+      try {
+        const savedConfig = await sceneConfigManager.loadSceneConfig(kioskId);
+        if (savedConfig) {
+          console.log('Loaded scene config from chain:', savedConfig);
+          sceneConfigManager.applySceneConfig(savedConfig, kioskState.kioskItems);
+        } else {
+          console.log('No saved scene config found');
+        }
+      } catch (error) {
+        console.warn('Failed to load scene config:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(loadAndApplySceneConfig, 500);
+    return () => clearTimeout(timeoutId);
+  }, [sceneConfigManager, kioskId, kioskState.kioskItems]);
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       {/* Background Effects */}
@@ -138,7 +231,14 @@ export default function PavilionPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 pointer-events-none z-5"></div>
 
       {/* Left Control Panel - Sui Wallet */}
-      <WalletTerminal />
+      <WalletTerminal
+        objectChanges={objectChanges || new Map()}
+        sceneConfigManager={sceneConfigManager}
+        currentSceneConfig={currentSceneConfig}
+        kioskItems={kioskState.kioskItems || []}
+        onSaveSuccess={clearChanges}
+        onSaveError={(error) => console.error('Save error:', error)}
+      />
 
       {/* Right Control Panels */}
       <div className="absolute top-6 right-6 z-20">
@@ -151,31 +251,11 @@ export default function PavilionPage() {
           onUpdateScale={updateSculptureScale}
           autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
           kioskItems={kioskState.kioskItems || []}
+          kioskId={kioskState.kioskId || undefined}
+          kioskOwnerCapId={kioskState.kioskOwnerCapId || undefined}
+          onTrackChange={handleTrackChange}
         />
-
-        {/* Kiosk Items Status Panel */}
-        {(kioskState.kioskItems || loadingKioskItems) && (
-          <div className="mt-4 glass-ribbon rounded-lg p-4 border border-white/10">
-            <div className="text-xs tracking-widest uppercase text-white/70 mb-2">
-              Kiosk Items Status
-            </div>
-            <div className="text-white/60 text-[11px] space-y-1">
-              {loadingKioskItems ? (
-                <div className="text-blue-300">Loading kiosk items...</div>
-              ) : (
-                <>
-                  <div>Total Items: {kioskState.kioskItems?.length || 0}</div>
-                  <div>3D Items: {kioskItems3D.length}</div>
-                  {kioskState.error && (
-                    <div className="text-red-300">Error: {kioskState.error}</div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
         <div className="w-full h-full border border-white/15"></div>
         <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>

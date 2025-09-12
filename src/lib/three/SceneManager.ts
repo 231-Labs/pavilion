@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DefaultScene, DefaultSceneConfig } from './DefaultScene';
 
 export interface SceneConfig {
   backgroundColor?: number;
@@ -12,6 +13,7 @@ export interface SceneConfig {
   directionalLightIntensity?: number;
   enableShadows?: boolean;
   cameraPosition?: [number, number, number];
+  defaultScene?: DefaultSceneConfig;
 }
 
 // Options for loading GLB models
@@ -34,29 +36,29 @@ export class SceneManager {
   private resizeHandler: () => void;
   private sculptures: Map<string, SculptureInstance> = new Map();
   private loadedModels: Map<string, THREE.Group> = new Map();
+  private defaultScene?: DefaultScene;
 
   constructor(canvas: HTMLCanvasElement, config: SceneConfig = {}) {
     // Setup scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(config.backgroundColor || 0xeeeeee);
 
     // Setup camera
     this.camera = new THREE.PerspectiveCamera(
-      75, 
-      window.innerWidth / window.innerHeight, 
-      0.1, 
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
       1000
     );
     const [x, y, z] = config.cameraPosition || [0, 5, 10];
     this.camera.position.set(x, y, z);
 
     // Setup renderer
-    this.renderer = new THREE.WebGLRenderer({ 
-      canvas, 
-      antialias: true 
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    
+
     if (config.enableShadows !== false) {
       this.renderer.shadowMap.enabled = true;
     }
@@ -64,6 +66,14 @@ export class SceneManager {
     // Setup controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
+
+    // Initialize default scene (if enabled)
+    if (config.defaultScene) {
+      this.defaultScene = new DefaultScene(this.scene, config.defaultScene);
+    } else {
+      // Fallback to basic background if no default scene
+      this.scene.background = new THREE.Color(config.backgroundColor || 0xeeeeee);
+    }
 
     // Add lighting
     this.setupLights(config);
@@ -74,40 +84,63 @@ export class SceneManager {
   }
 
   private setupLights(config: SceneConfig) {
-    // Ambient light
+    // Ambient light - significantly increase for better base lighting
     const ambientLight = new THREE.AmbientLight(
-      config.ambientLightColor || 0xffffff, 
-      config.ambientLightIntensity || 0.6
+      config.ambientLightColor || 0x6a6a8a, // Brighten color further
+      config.ambientLightIntensity || 0.8 // Increased from 0.6 to 0.8
     );
     this.scene.add(ambientLight);
 
-    // Directional light
+    // Main directional light - provide bright illumination
     const directionalLight = new THREE.DirectionalLight(
-      config.directionalLightColor || 0xffffff, 
-      config.directionalLightIntensity || 1
+      config.directionalLightColor || 0xffffff, // Pure white light
+      config.directionalLightIntensity || 1.8 // Increased from 1.2 to 1.8
     );
-    directionalLight.position.set(5, 10, 5);
+    directionalLight.position.set(8, 20, 8); // Raise and reposition for better coverage
     directionalLight.castShadow = true;
+
+    // Enhanced shadow configuration
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 60;
+    directionalLight.shadow.camera.left = -30;
+    directionalLight.shadow.camera.right = 30;
+    directionalLight.shadow.camera.top = 30;
+    directionalLight.shadow.camera.bottom = -30;
+    directionalLight.shadow.bias = -0.00005; // Reduce shadow acne
+
     this.scene.add(directionalLight);
+
+    // Enhanced hemisphere light for better ambient environment
+    const hemisphereLight = new THREE.HemisphereLight(
+      0xa0d8ff, // Brighter sky blue
+      0x404060, // Slightly brighter ground
+      0.6 // Increased from 0.4 to 0.6
+    );
+    this.scene.add(hemisphereLight);
+
+    // Additional fill lights for comprehensive illumination
+    const fillLight1 = new THREE.DirectionalLight(0x6a90e2, 0.5); // Increased intensity
+    fillLight1.position.set(-8, 12, -8);
+    this.scene.add(fillLight1);
+
+    const fillLight2 = new THREE.DirectionalLight(0x8a6ae2, 0.4); // Additional purple fill
+    fillLight2.position.set(8, 12, -8);
+    this.scene.add(fillLight2);
+
+    // Rim light for edge definition
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    rimLight.position.set(0, 25, -15);
+    this.scene.add(rimLight);
   }
 
-  // Create gallery environment
-  createGalleryEnvironment() {
-    // Floor
-    const floorGeometry = new THREE.BoxGeometry(20, 0.5, 20); // Use BoxGeometry and set thickness to 0.5
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.position.y = -0.25; // Move floor down half thickness so top surface aligns with y=0 plane
-    floor.receiveShadow = true;
-    this.scene.add(floor);
-
-    // Walls
-    const wallGeometry = new THREE.BoxGeometry(20, 5, 0.1);
-    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    backWall.position.set(0, 2.5, -10);
-    backWall.receiveShadow = true;
-    this.scene.add(backWall);
+  // Initialize default scene with cosmic/tech aesthetic
+  initializeDefaultScene(config: DefaultSceneConfig = {}) {
+    if (this.defaultScene) {
+      this.defaultScene.dispose();
+    }
+    this.defaultScene = new DefaultScene(this.scene, config);
   }
 
   // Add sculptures (using default configuration)
@@ -226,6 +259,12 @@ export class SceneManager {
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
       this.controls.update();
+
+      // Update default scene animations
+      if (this.defaultScene) {
+        this.defaultScene.update(0.016); // ~60fps delta time
+      }
+
       this.renderer.render(this.scene, this.camera);
     };
     animate();
@@ -263,7 +302,12 @@ export class SceneManager {
   dispose() {
     this.stopAnimation();
     window.removeEventListener('resize', this.resizeHandler);
-    
+
+    // Dispose default scene
+    if (this.defaultScene) {
+      this.defaultScene.dispose();
+    }
+
     // Dispose Three.js resources
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
@@ -275,7 +319,7 @@ export class SceneManager {
         }
       }
     });
-    
+
     this.renderer.dispose();
     this.controls.dispose();
   }
