@@ -106,7 +106,7 @@ export default function PavilionPage() {
   } = useThreeScene({
     backgroundColor: 0x1a1a1a,
     // backgroundColor: 0xFFFFFF,
-    cameraPosition: [0, 1, 20],
+    cameraPosition: [0, 1.6, 8],
     createGallery: true,
     enableKioskItems: true,
   });
