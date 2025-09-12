@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pavilion - 3D Exhibition Presentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0A0A0A;
+      color: #ffffff;
+      overflow: hidden;
+      position: relative;
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Modernist Background Effects */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 40%),
+        radial-gradient(circle at 80% 30%, rgba(255,255,255,0.04), transparent 40%),
+        conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,0.06), transparent 50%);
+      z-index: -2;
+    }
+
+    /* Terminal Grid Background */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0;
+      background-image: 
+        linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      background-position: 0 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Glass Ribbon Container */
+    .slide {
+      position: absolute;
+      top: 50%; 
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 1200px;
+      min-height: 75%;
+      padding: 60px;
+      border-radius: 24px;
+      
+      /* Glass Ribbon Effect */
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 
+        0 0 60px rgba(255,255,255,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.95);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      z-index: 1;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 4.5rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(255,255,255,0.3);
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      margin-bottom: 32px;
+      text-shadow: 0 0 20px rgba(255,255,255,0.2);
+    }
+
+    h3 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 20px;
+    }
+
+    p, li {
+      font-size: 1.3rem;
+      line-height: 1.7;
+      color: #b0b0b0;
+      font-weight: 400;
+    }
+
+    ul, ol {
+      text-align: left;
+      max-width: 600px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    li {
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    ul li::before {
+      content: "→";
+      color: #ffffff;
+      font-weight: 600;
+      margin-right: 12px;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 20px auto;
+      max-width: 800px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+
+    .feature-card:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Columns Layout */
+    .columns { 
+      display: flex; 
+      gap: 60px; 
+      align-items: center; 
+      justify-content: center; 
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .columns > div { 
+      flex: 1; 
+      min-width: 300px; 
+      text-align: left;
+    }
+
+    /* Placeholder for images/demos */
+    .placeholder {
+      width: 100%;
+      height: 300px;
+      margin: 30px 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #888;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Typewriter Animation */
+    .typewriter {
+      overflow: hidden;
+      border-right: 0.15em solid #ffffff;
+      white-space: nowrap;
+      margin: 0 auto;
+      letter-spacing: 0.05em;
+      animation: typing 3s steps(9, end) forwards, blink 1s step-end infinite;
+      width: 0;
+      display: inline-block;
+    }
+
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 9ch; } /* PAVILION + space = 9 characters */
+    }
+    
+    @keyframes blink {
+      from, to { border-color: transparent; }
+      50% { border-color: #ffffff; }
+    }
+
+    /* Navigation */
+    .nav {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+      z-index: 100;
+    }
+    
+    .nav button {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .nav button:hover {
+      border-color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .nav button.active {
+      background: #ffffff;
+      border-color: #ffffff;
+      box-shadow: 0 0 20px rgba(255,255,255,0.5);
+    }
+
+    /* Slide Counter */
+    .slide-counter {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      font-weight: 500;
+      z-index: 100;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .slide {
+        width: 95%;
+        padding: 40px 30px;
+        min-height: 80%;
+      }
+      
+      h1 { font-size: 3rem; }
+      h2 { font-size: 2.2rem; }
+      h3 { font-size: 1.5rem; }
+      p, li { font-size: 1.1rem; }
+      
+      .columns { 
+        flex-direction: column; 
+        gap: 40px;
+      }
+      
+      .placeholder { height: 200px; }
+    }
+
+    /* Special Effects */
+    .highlight {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .tech-item {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Slide Counter -->
+  <div class="slide-counter">
+    <span id="current-slide">1</span> / <span id="total-slides">7</span>
+  </div>
+
+  <!-- Slide 1: Title -->
+  <div class="slide active">
+    <h1 class="typewriter">PAVILION </h1>
+    <p style="font-size: 1.5rem; color: #e0e0e0; margin-bottom: 20px;">3D NFT Gallery</p>
+    <p style="font-size: 1.2rem; color: #b0b0b0;">Transforming Kiosks into Immersive Galleries</p>
+    <div class="tech-stack">
+      <span class="tech-item">Sui Blockchain</span>
+      <span class="tech-item">Three.js</span>
+      <span class="tech-item">Move Language</span>
+      <span class="tech-item">Web3</span>
+    </div>
+  </div>
+
+  <!-- Slide 2: Problem Statement -->
+  <div class="slide">
+    <h2>Problem & Motivation</h2>
+    <div class="feature-card">
+      <h3>Current Limitations of 3D NFTs</h3>
+      <ul>
+        <li>Most 3D NFTs only store metadata on-chain</li>
+        <li>Lack of immersive exhibition experience</li>
+        <li>No intuitive display and interaction</li>
+        <li>Collectors struggle to manage digital assets effectively</li>
+      </ul>
+    </div>
+    <p style="text-align: center; margin-top: 30px; font-size: 1.1rem; color: #888;">
+      We need a <span class="highlight">visible, tangible, adjustable</span> solution
+    </p>
+  </div>
+
+  <!-- Slide 3: Solution Overview -->
+  <div class="slide">
+    <h2>Pavilion Solution</h2>
+    <div class="columns">
+      <div>
+        <h3>Core Concept</h3>
+        <ul>
+          <li>Transform Kiosks into 3D exhibition spaces</li>
+          <li>Real-time loading and display of NFT assets</li>
+          <li>Support position, rotation, and scale adjustments</li>
+          <li>Permanent scene configuration storage on blockchain</li>
+        </ul>
+      </div>
+      <div>
+        <div class="placeholder">[Pavilion 3D Gallery Screenshot]</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: Technical Architecture -->
+  <div class="slide">
+    <h2>Technical Architecture</h2>
+    <div class="columns">
+      <div>
+        <h3>Frontend Technology</h3>
+        <ul>
+          <li><span class="highlight">Three.js</span> - 3D Rendering Engine</li>
+          <li><span class="highlight">React</span> - User Interface</li>
+          <li><span class="highlight">Next.js</span> - Full-stack Framework</li>
+          <li><span class="highlight">TypeScript</span> - Type Safety</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Blockchain Technology</h3>
+        <ul>
+          <li><span class="highlight">Sui</span> - High-performance Blockchain</li>
+          <li><span class="highlight">Move</span> - Smart Contract Language</li>
+          <li><span class="highlight">Kiosk</span> - NFT Management Protocol</li>
+          <li><span class="highlight">Dynamic Fields</span> - Scene Storage</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Demo Flow -->
+  <div class="slide">
+    <h2>Demo Flow</h2>
+    <div class="feature-card">
+      <h3>Three-Step Pavilion Creation</h3>
+      <ol style="font-size: 1.2rem; line-height: 2;">
+        <li><strong>Create Pavilion</strong> - Create new Kiosk or use existing one</li>
+        <li><strong>Place NFTs</strong> - Load 3D models from wallet or Walrus</li>
+        <li><strong>Adjust & Save</strong> - Freely adjust positions and permanently save on-chain</li>
+      </ol>
+    </div>
+    <p style="text-align: center; margin-top: 30px; color: #888;">
+      All operations through <span class="highlight">modernist glass interface</span>
+    </p>
+  </div>
+
+  <!-- Slide 6: Live Demo -->
+  <div class="slide">
+    <h2>Live Demo</h2>
+    <div class="placeholder" style="height: 400px;">
+      [Pavilion Operation Flow GIF Animation]
+      <br><br>
+      <div style="font-size: 0.9rem; color: #666;">
+        1. Connect Wallet → 2. Create Pavilion → 3. Load 3D Models → 4. Adjust Positions → 5. Save to Blockchain
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Future Vision -->
+  <div class="slide">
+    <h2>Future Vision</h2>
+    <div class="columns">
+      <div>
+        <h3>Short-term Goals</h3>
+        <ul>
+          <li>Public gallery browsing and trading</li>
+          <li>Support 2D NFTs as frame displays</li>
+          <li>Multi-user collaborative editing</li>
+          <li>Social sharing features</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Long-term Vision</h3>
+        <ul>
+          <li>Virtual-physical integrated exhibition ecosystem</li>
+          <li>Seamless transition from digital to physical</li>
+          <li>AI-assisted curation recommendations</li>
+          <li>Cross-chain NFT support</li>
+        </ul>
+      </div>
+    </div>
+    <p style="text-align: center; margin-top: 40px; font-size: 1.1rem; color: #e0e0e0;">
+      Continuing development in <span class="highlight">HOH Chinese Hackathon</span>
+    </p>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav" id="nav"></div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const nav = document.getElementById('nav');
+    const currentSlideSpan = document.getElementById('current-slide');
+    const totalSlidesSpan = document.getElementById('total-slides');
+    let current = 0;
+
+    // Set total slides count
+    totalSlidesSpan.textContent = slides.length;
+
+    function showSlide(index) {
+      slides.forEach((s,i) => s.classList.toggle('active', i===index));
+      document.querySelectorAll('.nav button').forEach((b,i)=> b.classList.toggle('active', i===index));
+      currentSlideSpan.textContent = index + 1;
+      current = index;
+    }
+
+    // Create navigation buttons
+    slides.forEach((_,i) => {
+      const btn = document.createElement('button');
+      btn.addEventListener('click', ()=> showSlide(i));
+      if(i===0) btn.classList.add('active');
+      nav.appendChild(btn);
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        showSlide((current+1)%slides.length);
+      }
+      if(e.key === 'ArrowLeft') {
+        e.preventDefault();
+        showSlide((current-1+slides.length)%slides.length);
+      }
+    });
+
+    // Auto-advance (optional, uncomment if needed)
+    // setInterval(() => {
+    //   showSlide((current+1)%slides.length);
+    // }, 10000); // 10 seconds per slide
+  </script>
+</body>
+</html>
