@@ -170,13 +170,7 @@ export default function Home() {
         if (kioskIdNew) setCreatedKioskId(kioskIdNew);
         if (kioskOwnerCapIdNew) setCreatedKioskCapId(kioskOwnerCapIdNew);
         if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
-        if (kioskIdNew) {
-          const data = await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
-          // TODO: to be removed
-          // console.log(kioskIdNew);
-          // console.log(kioskOwnerCapIdNew);
-          console.log(data.items);
-        }
+        if (kioskIdNew) await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
       } catch (parseErr) {
         console.warn('Failed to parse kiosk ids from tx:', parseErr);
       }
@@ -318,12 +312,12 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left: Brand & Narrative */}
             <div className="p-10 md:p-14 flex flex-col justify-center">
-              <p className="text-xs tracking-[0.35em] uppercase text-white/60 mb-4">Modernist Pavilion</p>
+              <p className="text-xs tracking-[0.35em] uppercase text-white/60 mb-4">3D Kiosk Extension</p>
               <h2 className="text-4xl md:text-6xl font-extrabold tracking-[0.22em] uppercase leading-tight silver-glow">
-                The Pavilion
+                Pavilion
               </h2>
               <p className="mt-5 text-white/70 max-w-md">
-                A glass house for on-chain artifacts. Curate, compose, and transform kiosks into immersive pavilions.
+                Turn your kiosk into a curated gallery.
               </p>
 
               {/* Demo Pavilion Section */}
