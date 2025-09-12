@@ -30,7 +30,6 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
       const saved = localStorage.getItem('pavilion:lastKioskId');
       if (saved) setKioskId(saved);
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

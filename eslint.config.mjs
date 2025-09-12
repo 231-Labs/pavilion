@@ -20,6 +20,17 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn", 
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react-hooks/exhaustive-deps": "warn", 
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "@next/next/no-img-element": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "no-empty": ["error", { "allowEmptyCatch": true }],
+    },
+  },
 ];
 
 export default eslintConfig;

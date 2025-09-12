@@ -145,6 +145,7 @@ export class KioskItemConverter {
           results.push(result);
           this.loadedItems.set(item.objectId, result);
         } else {
+          // Item not found or not suitable for 3D conversion
         }
       } catch (error) {
         console.error(`❌ Failed to convert kiosk item ${item.objectId}:`, error);
@@ -680,8 +681,8 @@ export class KioskItemConverter {
 
           resolve(object);
         },
-        (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
+        () => {
+          // Progress callback - currently unused
         },
         (error) => {
           console.error(`Failed to load OBJ model: ${config.url}`, error);
@@ -744,8 +745,8 @@ export class KioskItemConverter {
 
           resolve(mesh);
         },
-        (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
+        () => {
+          // Progress callback - currently unused
         },
         (error) => {
           console.error(`Failed to load STL model: ${config.url}`, error);

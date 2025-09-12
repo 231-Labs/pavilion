@@ -121,7 +121,7 @@ export function SaveConfirmationModal({
 
             {/* Changes List */}
             <div className="space-y-3">
-              {changes.map((change, index) => (
+              {changes.map((change) => (
                 <div
                   key={change.objectId}
                   className="bg-white/5 rounded-lg p-4 border border-white/10"

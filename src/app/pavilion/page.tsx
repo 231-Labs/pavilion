@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useThreeScene } from '../../hooks/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
@@ -14,7 +14,7 @@ import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 
-export default function PavilionPage() {
+function PavilionContent() {
   const searchParams = useSearchParams();
   const kioskId = searchParams.get('kioskId');
   const kioskState = useKioskState();
@@ -65,25 +65,6 @@ export default function PavilionPage() {
     if (kioskItems && kioskItems.length > 0) {
       // console.log(`Processing ${kioskItems.length} items from kiosk state`);
 
-      // Process items for 3D models - this logic can stay for additional processing
-      const itemsWithPotential3D = kioskItems.filter((item: any) => {
-        // Check if item has display data or content with potential 3D model info
-        const hasDisplay = item.data?.display?.data;
-        const hasContent = item.data?.content?.fields;
-
-        if (hasDisplay) {
-          // console.log('Item has display data:', item.data.display.data);
-        }
-
-        if (hasContent) {
-          // console.log('Item has content fields:', item.data.content.fields);
-        }
-
-        // Consider all items as potential 3D content for now
-        return true;
-      });
-
-      // console.log('Items with potential 3D content:', itemsWithPotential3D.length);
     } else if (kioskId && !kioskState.loading) {
       // console.log('No items found in kiosk or still loading');
     }
@@ -98,11 +79,8 @@ export default function PavilionPage() {
     updateSculptureRotation,
     updateSculptureScale,
     // Kiosk items
-    kioskItems3D,
-    loadingKioskItems,
     loadKioskItems,
-    clearKioskItems,
-    getKioskItem3D
+    clearKioskItems
   } = useThreeScene({
     backgroundColor: 0x1a1a1a,
     // backgroundColor: 0xFFFFFF,
@@ -164,12 +142,6 @@ export default function PavilionPage() {
       });
 
       if (nonWalrusItems.length > 0) {
-        // console.log('Loading non-Walrus kiosk items:', nonWalrusItems.length);
-        // console.log('Non-Walrus items details:', nonWalrusItems.map(item => ({
-        //   objectId: item.objectId,
-        //   type: item.type,
-        //   analysis: analyses.find(a => a.kioskItem.objectId === item.objectId)?.type || 'unknown'
-        // })));
         loadKioskItems(nonWalrusItems);
       }
     } else {
@@ -264,4 +236,10 @@ export default function PavilionPage() {
   );
 }
 
-
+export default function PavilionPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-white">載入中...</div>}>
+      <PavilionContent />
+    </Suspense>
+  );
+}
