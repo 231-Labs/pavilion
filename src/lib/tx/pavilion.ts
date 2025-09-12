@@ -214,214 +214,40 @@ export async function fetchKioskContents(params: {
 }
 
 /**
- * Update the display status of a kiosk NFT item (show/hide)
+ * Debug helper function to test dynamic field access
+ * Use this in the browser console to troubleshoot
  */
-export async function updateKioskNftDisplayStatus(params: {
-  kioskClient: KioskClient;
-  packageId: string;
+export async function debugDynamicFields(params: {
+  suiClient: any;
   kioskId: string;
-  kioskOwnerCapId: string;
-  objectId: string;
-  displayed: boolean;
-}): Promise<Transaction> {
-  const { kioskClient, packageId, kioskId, kioskOwnerCapId, objectId, displayed } = params;
-
-  const tx = new Transaction();
-  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
-
-  // Set kiosk and kiosk cap
-  kioskTx.setKiosk(tx.object(kioskId));
-  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
-
-  // Call toggle_object_display function
-  tx.moveCall({
-    target: `${packageId}::pavilion::toggle_object_display`,
-    arguments: [
-      kioskTx.getKiosk(),
-      kioskTx.getKioskCap(),
-      tx.pure.id(objectId),
-    ],
-  });
-
-  kioskTx.finalize();
-  return tx;
-}
-
-/**
- * Batch update kiosk NFT object properties (position, rotation, scale)
- */
-export async function batchUpdateKioskNftProperties(params: {
-  kioskClient: KioskClient;
-  packageId: string;
-  kioskId: string;
-  kioskOwnerCapId: string;
-  updates: Array<{
-    objectId: string;
-    displayed: boolean;
-    position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
-    scale: number;
-  }>;
-}): Promise<Transaction> {
-  const { kioskClient, packageId, kioskId, kioskOwnerCapId, updates } = params;
-
-  const tx = new Transaction();
-  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
-
-  // Set kiosk and kiosk cap
-  kioskTx.setKiosk(tx.object(kioskId));
-  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
-
-  // Call set_object_properties for each update (avoid constructing vector<ObjectProperties>)
-  for (const update of updates) {
-    const positionVec = tx.makeMoveVec({
-      type: 'u64',
-      elements: [
-        tx.pure.u64(Math.round(update.position.x * 1000)),
-        tx.pure.u64(Math.round(update.position.y * 1000)),
-        tx.pure.u64(Math.round(update.position.z * 1000)),
-      ],
+}) {
+  const { suiClient, kioskId } = params;
+  console.log('🔍 Starting dynamic field debugging for kiosk:', kioskId);
+  
+  try {
+    // Get all dynamic fields
+    const fieldsResp = await suiClient.getDynamicFields({
+      parentId: kioskId,
     });
-
-    const rotationVec = tx.makeMoveVec({
-      type: 'u64',
-      elements: [
-        tx.pure.u64(Math.round((update.rotation.x * 180 / Math.PI) * 1000)),
-        tx.pure.u64(Math.round((update.rotation.y * 180 / Math.PI) * 1000)),
-        tx.pure.u64(Math.round((update.rotation.z * 180 / Math.PI) * 1000)),
-      ],
+    console.log('📋 All dynamic fields:', JSON.stringify(fieldsResp, null, 2));
+    
+    // Get kiosk object structure
+    const objResp = await suiClient.getObject({
+      id: kioskId,
+      options: {
+        showContent: true,
+        showOwner: true,
+        showType: true,
+      },
     });
-
-    tx.moveCall({
-      target: `${packageId}::pavilion::set_object_properties`,
-      arguments: [
-        kioskTx.getKiosk(),
-        kioskTx.getKioskCap(),
-        tx.pure.id(update.objectId),
-        tx.pure.bool(update.displayed),
-        positionVec,
-        rotationVec,
-        tx.pure.u64(Math.round(update.scale * 1000)),
-      ],
-    });
+    console.log('🏛️ Kiosk structure:', JSON.stringify(objResp, null, 2));
+    
+    return { fields: fieldsResp, object: objResp };
+  } catch (error) {
+    console.error('💥 Debug failed:', error);
+    throw error;
   }
-
-  kioskTx.finalize();
-  return tx;
 }
-
-/**
- * Update single kiosk NFT object properties
- */
-export async function updateKioskNftProperties(params: {
-  kioskClient: KioskClient;
-  packageId: string;
-  kioskId: string;
-  kioskOwnerCapId: string;
-  objectId: string;
-  displayed: boolean;
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
-  scale: number;
-}): Promise<Transaction> {
-  const { kioskClient, packageId, kioskId, kioskOwnerCapId, objectId, displayed, position, rotation, scale } = params;
-
-  const tx = new Transaction();
-  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
-
-  // Set kiosk and kiosk cap
-  kioskTx.setKiosk(tx.object(kioskId));
-  kioskTx.setKioskCap(tx.object(kioskOwnerCapId));
-
-  // Position vector [x, y, z]
-  const positionVec = tx.makeMoveVec({
-    elements: [
-      tx.pure.u64(Math.round(position.x * 1000)), // Convert to milliunits
-      tx.pure.u64(Math.round(position.y * 1000)),
-      tx.pure.u64(Math.round(position.z * 1000))
-    ]
-  });
-
-  // Rotation vector [x, y, z] in degrees
-  const rotationVec = tx.makeMoveVec({
-    elements: [
-      tx.pure.u64(Math.round((rotation.x * 180 / Math.PI) * 1000)),
-      tx.pure.u64(Math.round((rotation.y * 180 / Math.PI) * 1000)),
-      tx.pure.u64(Math.round((rotation.z * 180 / Math.PI) * 1000))
-    ]
-  });
-
-  // Call set_object_properties
-  tx.moveCall({
-    target: `${packageId}::pavilion::set_object_properties`,
-    arguments: [
-      kioskTx.getKiosk(),
-      kioskTx.getKioskCap(),
-      tx.pure.id(objectId),
-      tx.pure.bool(displayed),
-      positionVec,
-      rotationVec,
-      tx.pure.u64(Math.round(scale * 1000)), // Convert to milliunits
-    ],
-  });
-
-  kioskTx.finalize();
-  return tx;
-}
-
-// ================== Scene reconstruction helpers (devInspect) ==================
-
-export type ParsedObjectProperties = {
-  displayed: boolean;
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number }; // radians
-  scale: number; // uniform scale
-  updated_at: number;
-};
-
-const ObjectPropertiesBcs = bcs.struct('ObjectProperties', {
-  displayed: bcs.bool(),
-  position: bcs.vector(bcs.u64()),
-  rotation: bcs.vector(bcs.u64()),
-  scale: bcs.u64(),
-  updated_at: bcs.u64(),
-});
-
-function decodeOptionObjectProperties(bytes: Uint8Array): ParsedObjectProperties | null {
-  // Sui Option encoding: leading tag byte 0=none, 1=some
-  if (bytes.length === 0) return null;
-  const tag = bytes[0];
-  if (tag === 0) return null;
-  const inner = bytes.slice(1);
-  const raw = ObjectPropertiesBcs.parse(inner) as {
-    displayed: boolean;
-    position: string[]; // u64s
-    rotation: string[]; // u64s
-    scale: string; // u64
-    updated_at: string; // u64
-  };
-  const posNums = raw.position.map((v) => Number(v));
-  const rotNums = raw.rotation.map((v) => Number(v));
-  const scaleNum = Number(raw.scale);
-  const toRad = (degTimes1000: number) => (degTimes1000 / 1000) * Math.PI / 180;
-  return {
-    displayed: raw.displayed,
-    position: {
-      x: (posNums[0] ?? 0) / 1000,
-      y: (posNums[1] ?? 0) / 1000,
-      z: (posNums[2] ?? 0) / 1000,
-    },
-    rotation: {
-      x: toRad(rotNums[0] ?? 0),
-      y: toRad(rotNums[1] ?? 0),
-      z: toRad(rotNums[2] ?? 0),
-    },
-    scale: scaleNum / 1000,
-    updated_at: Number(raw.updated_at),
-  };
-}
-
-// ================== Simple JSON scene config via dynamic field ==================
 
 export async function readSceneConfig(params: {
   suiClient: any;
@@ -429,7 +255,9 @@ export async function readSceneConfig(params: {
   kioskId: string;
 }): Promise<string | null> {
   const { suiClient, packageId, kioskId } = params;
+  
   try {
+    // Primary method: Direct getDynamicFieldObject call
     const resp = await suiClient.getDynamicFieldObject({
       parentId: kioskId,
       name: {
@@ -437,9 +265,49 @@ export async function readSceneConfig(params: {
         value: {},
       },
     });
-    const value = (resp as any)?.data?.content?.fields?.value;
-    return typeof value === 'string' ? value : null;
-  } catch {
+    
+    // Extract the JSON string from the dynamic field
+    const value = resp?.data?.content?.fields?.value;
+    
+    if (typeof value === 'string' && value.length > 0) {
+      console.log('✅ Successfully loaded scene config from chain');
+      return value;
+    }
+    
+    console.log('⚠️ Scene config field exists but value is empty or invalid');
+    return null;
+    
+  } catch (error) {
+    // Fallback method: Use getDynamicFields to find the field first
+    try {
+      const fieldsResp = await suiClient.getDynamicFields({
+        parentId: kioskId,
+      });
+      
+      if (fieldsResp?.data && Array.isArray(fieldsResp.data)) {
+        const sceneConfigField = fieldsResp.data.find((field: any) => {
+          const fieldType = field?.name?.type;
+          return fieldType?.includes('SceneConfig');
+        });
+        
+        if (sceneConfigField) {
+          const fieldResp = await suiClient.getDynamicFieldObject({
+            parentId: kioskId,
+            name: sceneConfigField.name,
+          });
+          
+          const value = fieldResp?.data?.content?.fields?.value;
+          if (typeof value === 'string' && value.length > 0) {
+            console.log('✅ Successfully loaded scene config from chain (fallback method)');
+            return value;
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.log('❌ Both primary and fallback methods failed:', fallbackError);
+    }
+    
+    console.log('💭 No scene config found on chain');
     return null;
   }
 }
@@ -464,55 +332,3 @@ export function setSceneConfigTx(params: {
   return tx;
 }
 
-export async function devInspectObjectProperties(params: {
-  suiClient: any;
-  sender: string;
-  packageId: string;
-  kioskId: string;
-  objectIds: string[];
-}): Promise<Record<string, ParsedObjectProperties | null>> {
-  const { suiClient, sender, packageId, kioskId, objectIds } = params;
-  const tx = new Transaction();
-  const kiosk = tx.object(kioskId);
-
-  for (const id of objectIds) {
-    tx.moveCall({
-      target: `${packageId}::pavilion::get_object_properties`,
-      arguments: [kiosk, tx.pure.id(id)],
-    });
-  }
-
-  const res = await suiClient.devInspectTransactionBlock({
-    sender,
-    transactionBlock: tx,
-  });
-
-  const out: Record<string, ParsedObjectProperties | null> = {};
-  const results = (res as any)?.results ?? [];
-  for (let i = 0; i < objectIds.length; i++) {
-    const r = results[i];
-    const rv = r?.returnValues?.[0];
-    if (!rv) { out[objectIds[i]] = null; continue; }
-
-    // rv is usually [base64, typeStr], but be defensive
-    let bytesStr: string | undefined;
-    try {
-      const a = Array.isArray(rv) ? rv : [];
-      const s0 = String(a[0] ?? '');
-      const s1 = String(a[1] ?? '');
-      const isB64 = (s: string) => /^[A-Za-z0-9+/=]+$/.test(s) && !s.startsWith('0x') && !s.includes('::');
-      if (isB64(s0)) bytesStr = s0; else if (isB64(s1)) bytesStr = s1; else bytesStr = undefined;
-    } catch {}
-
-    if (!bytesStr) { out[objectIds[i]] = null; continue; }
-
-    let bytes: Uint8Array | null = null;
-    try {
-      bytes = fromBase64(bytesStr);
-    } catch {
-      bytes = null;
-    }
-    out[objectIds[i]] = bytes ? decodeOptionObjectProperties(bytes) : null;
-  }
-  return out;
-}

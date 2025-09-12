@@ -40,9 +40,6 @@ module pavilion::pavilion_tests {
         assert!(option::is_some(&stored_name), 2);
         assert!(option::destroy_some(stored_name) == string::utf8(b"Test Pavilion"), 3);
         
-        // Verify object count is initially 0
-        assert!(pavilion::get_object_count(&kiosk) == 0, 4);
-        
         test_utils::destroy(kiosk);
         test_utils::destroy(kiosk_cap);
         test_scenario::end(scenario);
@@ -96,58 +93,6 @@ module pavilion::pavilion_tests {
         test_scenario::end(scenario);
     }
 
-    #[test]
-    fun test_object_properties_management() {
-        let mut scenario = test_scenario::begin(SELLER);
-        
-        let (mut kiosk, kiosk_cap) = create_test_kiosk(&mut scenario);
-        
-        // Initialize pavilion
-        let pavilion_name = string::utf8(b"Test Pavilion");
-        pavilion::initialize_pavilion(&mut kiosk, &kiosk_cap, pavilion_name, test_scenario::ctx(&mut scenario));
-        
-        // Create test object properties
-        let object_id = object::id_from_address(@0x1234);
-        let position = vector[100, 200, 300];
-        let rotation = vector[0, 90, 0];
-        let scale = 1500; // 1.5x scale
-        
-        // Set object properties
-        pavilion::set_object_properties(
-            &mut kiosk, 
-            &kiosk_cap, 
-            object_id, 
-            true,     // displayed
-            position, 
-            rotation, 
-            scale, 
-            test_scenario::ctx(&mut scenario)
-        );
-        
-        // Verify object count increased
-        assert!(pavilion::get_object_count(&kiosk) == 1, 0);
-        
-        // Get object properties
-        let properties_opt = pavilion::get_object_properties(&kiosk, object_id);
-        assert!(option::is_some(&properties_opt), 1);
-        
-        let _properties = option::destroy_some(properties_opt);
-        // Note: ObjectProperties fields are not publicly accessible, 
-        // so we can only test that the properties exist and operations work
-        
-        // Toggle display status
-        pavilion::toggle_object_display(&mut kiosk, &kiosk_cap, object_id, test_scenario::ctx(&mut scenario));
-        let _updated_properties = option::destroy_some(pavilion::get_object_properties(&kiosk, object_id));
-        
-        // Remove object properties
-        pavilion::remove_object_properties(&mut kiosk, &kiosk_cap, object_id);
-        assert!(pavilion::get_object_count(&kiosk) == 0, 2);
-        assert!(option::is_none(&pavilion::get_object_properties(&kiosk, object_id)), 3);
-        
-        test_utils::destroy(kiosk);
-        test_utils::destroy(kiosk_cap);
-        test_scenario::end(scenario);
-    }
 
     #[test, expected_failure]
     fun test_pavilion_name_too_short() {
@@ -179,29 +124,6 @@ module pavilion::pavilion_tests {
         test_scenario::end(scenario);
     }
 
-    #[test, expected_failure]
-    fun test_set_object_properties_on_non_pavilion_fails() {
-        let mut scenario = test_scenario::begin(SELLER);
-        
-        let (mut kiosk, kiosk_cap) = create_test_kiosk(&mut scenario);
-        
-        // Try to set object properties without initializing pavilion (should fail)
-        let object_id = object::id_from_address(@0x1234);
-        pavilion::set_object_properties(
-            &mut kiosk, 
-            &kiosk_cap, 
-            object_id, 
-            true, 
-            vector[0, 0, 0], 
-            vector[0, 0, 0], 
-            1000, 
-            test_scenario::ctx(&mut scenario)
-        );
-        
-        test_utils::destroy(kiosk);
-        test_utils::destroy(kiosk_cap);
-        test_scenario::end(scenario);
-    }
 
     #[test]
     fun test_kiosk_to_pavilion_conversion_detailed() {
@@ -220,8 +142,6 @@ module pavilion::pavilion_tests {
         let config_result = pavilion::scene_config_blob(&kiosk);
         assert!(option::is_none(&config_result), 2);
         
-        // Object count should be 0 for non-pavilion kiosk
-        assert!(pavilion::get_object_count(&kiosk) == 0, 3);
         
         // Step 4: Convert to pavilion kiosk using initialize_pavilion
         let pavilion_name = string::utf8(b"My New Pavilion");
@@ -235,35 +155,13 @@ module pavilion::pavilion_tests {
         assert!(option::is_some(&stored_name), 5);
         assert!(option::destroy_some(stored_name) == string::utf8(b"My New Pavilion"), 6);
         
-        // Object count should still be 0 but registry should be initialized
-        assert!(pavilion::get_object_count(&kiosk) == 0, 7);
-        
-        // Step 7: Verify pavilion-specific operations now work
+        // Step 7: Verify scene configuration functionality
         let scene_config = string::utf8(b"scene_config_123");
         pavilion::set_scene_config(&mut kiosk, &kiosk_cap, scene_config);
         
         let stored_config = pavilion::scene_config_blob(&kiosk);
         assert!(option::is_some(&stored_config), 8);
         assert!(option::destroy_some(stored_config) == string::utf8(b"scene_config_123"), 9);
-        
-        // Step 8: Test object properties functionality
-        let object_id = object::id_from_address(@0xABCD);
-        pavilion::set_object_properties(
-            &mut kiosk, 
-            &kiosk_cap, 
-            object_id, 
-            true, 
-            vector[10, 20, 30], 
-            vector[45, 90, 0], 
-            1200, 
-            test_scenario::ctx(&mut scenario)
-        );
-        
-        // Verify object was added
-        assert!(pavilion::get_object_count(&kiosk) == 1, 10);
-        
-        let props = pavilion::get_object_properties(&kiosk, object_id);
-        assert!(option::is_some(&props), 11);
         
         test_utils::destroy(kiosk);
         test_utils::destroy(kiosk_cap);

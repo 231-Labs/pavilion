@@ -9,7 +9,6 @@ import { SceneConfigManager } from '../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../types/scene';
 
 interface WalletTerminalProps {
-  // Change tracking props
   objectChanges: Map<string, ObjectChange>;
   sceneConfigManager: SceneConfigManager | null;
   currentSceneConfig: SceneConfig | null;
@@ -59,8 +58,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
     return () => { isCancelled = true; };
   }, [currentAccount, suiClient]);
 
-  // KioskId is provided by global state now
-
   // Prepare save transaction
   const prepareSaveTransaction = async () => {
     console.log('Debugging save transaction:', {
@@ -105,7 +102,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
       if (changes.length === 0) {
         console.log('No changes to save, but proceeding with save operation anyway');
-        // Continue with save even if no changes detected
       }
 
       // Use scene manager to capture current scene state

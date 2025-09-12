@@ -199,11 +199,12 @@ export class SceneConfigManager {
     const compactConfig = compressSceneConfig(config);
     const jsonStr = JSON.stringify(compactConfig);
     
+    // TODO: Log size comparison for debugging
     // Log size comparison for debugging
-    const fullSize = JSON.stringify(config).length;
-    const compactSize = jsonStr.length;
-    const savings = Math.round((1 - compactSize / fullSize) * 100);
-    console.log(`💰 Storage optimization: ${fullSize} → ${compactSize} bytes (${savings}% savings)`);
+    //const fullSize = JSON.stringify(config).length;
+    //const compactSize = jsonStr.length;
+    //const savings = Math.round((1 - compactSize / fullSize) * 100);
+    // console.log(`💰 Storage optimization: ${fullSize} → ${compactSize} bytes (${savings}% savings)`);
     
     return setSceneConfigTx({
       kioskClient: this.kioskClient,
@@ -235,6 +236,14 @@ export class SceneConfigManager {
     }
 
     console.log(`Applying scene config with ${config.objects.length} objects`);
+    
+    // Debug: Log kiosk items
+    console.log('🎒 Kiosk items for matching:', kioskItems.map(item => ({
+      objectId: item.objectId,
+      suffix: item.objectId?.slice(-8),
+      type: item.type,
+      name: item.data?.display?.name
+    })));
 
     // Create objectId to suffix mapping
     const objectIdToSuffix: Record<string, string> = {};
@@ -244,9 +253,26 @@ export class SceneConfigManager {
         objectIdToSuffix[item.objectId] = suffix;
       }
     });
+    
+    // Debug: Log scene config objects
+    console.log('📋 Scene config objects:', config.objects.map(obj => ({
+      id: obj.id,
+      suffix: objectIdToSuffix[obj.id],
+      name: obj.name,
+      displayed: obj.displayed
+    })));
 
     const applyTransforms = () => {
       let appliedCount = 0;
+      
+      // Debug: Log all 3D scene objects
+      const sceneObjects: string[] = [];
+      scene.traverse((child: any) => {
+        if (child?.name && typeof child.name === 'string') {
+          sceneObjects.push(child.name);
+        }
+      });
+      console.log('🎭 3D Scene objects:', sceneObjects);
       
       try {
         scene.traverse((child: any) => {
@@ -255,6 +281,8 @@ export class SceneConfigManager {
           // Find matching scene object config
           for (const sceneObj of config.objects) {
             const suffix = objectIdToSuffix[sceneObj.id];
+            console.log(`🔍 Trying to match: 3D object "${child.name}" with config object "${sceneObj.name}" (suffix: "${suffix}")`);
+            
             if (!suffix || !child.name.endsWith(suffix)) continue;
 
             // Apply displayed status
@@ -282,7 +310,7 @@ export class SceneConfigManager {
             }
 
             appliedCount++;
-            console.log(`Applied transforms to ${child.name}:`, {
+            console.log(`✅ Applied transforms to ${child.name}:`, {
               displayed: sceneObj.displayed,
               position: sceneObj.position,
               rotation: sceneObj.rotation,
