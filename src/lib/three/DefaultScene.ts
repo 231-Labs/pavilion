@@ -28,16 +28,12 @@ export class DefaultScene {
   }
 
   private initializeBackground(config: DefaultSceneConfig) {
-    // 背景改成深灰色
     this.scene.background = new THREE.Color(config.backgroundColor || 0x1a1a1a);
-
-    // 冷灰霧效果
     const fog = new THREE.Fog(0x1a1a1a, 30, 100);
     this.scene.fog = fog;
   }
 
   private createFloor() {
-    // 淡灰色線條地板
     const floorGeometry = new THREE.PlaneGeometry(20, 20, 10, 10);
     const floorMaterial = new THREE.MeshBasicMaterial({
       color: 0xcccccc,
@@ -52,7 +48,6 @@ export class DefaultScene {
     floor.position.y = -0.1;
     this.scene.add(floor);
 
-    // 地板光暈（灰白）
     const floorGlowGeometry = new THREE.PlaneGeometry(21, 21);
     const floorGlowMaterial = new THREE.MeshBasicMaterial({
       color: 0xcccccc,
@@ -68,7 +63,6 @@ export class DefaultScene {
   }
 
   private createWalls() {
-    // 背牆：深灰色，半透明
     const wallGeometry = new THREE.PlaneGeometry(20, 10, 4, 4);
     const wallMaterial = new THREE.MeshBasicMaterial({
       color: 0x222222,
@@ -86,7 +80,6 @@ export class DefaultScene {
   private createSpaceGrid(enableGrid = true) {
     if (!enableGrid) return;
 
-    // 冷灰藍格線
     const gridSize = 20;
     const gridDivisions = 6;
 
@@ -102,7 +95,7 @@ export class DefaultScene {
   private createParticleField(enableParticles = true) {
     if (!enableParticles) return;
 
-    const particleCount = 100; // 少一點，乾淨感
+    const particleCount = 100;
     const particleGeometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -112,17 +105,16 @@ export class DefaultScene {
       positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
       positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
 
-      // 幾乎白色
-      colors[i * 3] = 0.8 + Math.random() * 0.2; // R
-      colors[i * 3 + 1] = 0.8 + Math.random() * 0.2; // G
-      colors[i * 3 + 2] = 0.8 + Math.random() * 0.2; // B
+      colors[i * 3] = 0.8 + Math.random() * 0.2;
+      colors[i * 3 + 1] = 0.8 + Math.random() * 0.2;
+      colors[i * 3 + 2] = 0.8 + Math.random() * 0.2;
     }
 
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 0.15, // 小一點
+      size: 0.15,
       vertexColors: true,
       transparent: true,
       opacity: 0.4,
@@ -134,7 +126,6 @@ export class DefaultScene {
   }
 
   private createSpotlights() {
-    // 主白色聚光燈
     const mainSpotlight = new THREE.SpotLight(0xffffff, 2.5);
     mainSpotlight.position.set(0, 12, 8);
     mainSpotlight.target.position.set(0, 0, 0);
@@ -147,7 +138,6 @@ export class DefaultScene {
     this.scene.add(mainSpotlight);
     this.scene.add(mainSpotlight.target);
 
-    // 左冷藍燈
     const sideSpotlight1 = new THREE.SpotLight(0xaaccff, 1.5);
     sideSpotlight1.position.set(-10, 8, 6);
     sideSpotlight1.target.position.set(-4, 0, 0);
@@ -159,7 +149,6 @@ export class DefaultScene {
     this.scene.add(sideSpotlight1);
     this.scene.add(sideSpotlight1.target);
 
-    // 右冷藍燈
     const sideSpotlight2 = new THREE.SpotLight(0x99ccff, 1.5);
     sideSpotlight2.position.set(10, 8, 6);
     sideSpotlight2.target.position.set(4, 0, 0);

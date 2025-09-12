@@ -13,8 +13,8 @@ interface SculptureControlPanelProps {
   onUpdateScale?: (id: string, scale: { x: number; y: number; z: number }) => void;
   autoLoadBlobIds?: string[]; // Blob IDs to auto-load from kiosk items
   kioskItems?: any[]; // Kiosk items from the current kiosk
-  kioskId?: string; // Current kiosk ID
-  kioskOwnerCapId?: string; // Current kiosk owner cap ID
+  kioskId?: string; // Current kiosk ID (for future use)
+  kioskOwnerCapId?: string; // Current kiosk owner cap ID (for future use)
   // Change tracking props
   onTrackChange?: (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => void;
 }
@@ -39,8 +39,6 @@ export function SculptureControlPanel({
   onUpdateScale,
   autoLoadBlobIds = [],
   kioskItems = [],
-  kioskId,
-  kioskOwnerCapId,
   onTrackChange
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
@@ -269,7 +267,7 @@ export function SculptureControlPanel({
         },
       }));
 
-      const groups = await sceneManager.loadMultipleGLBModels(modelsToLoad);
+      await sceneManager.loadMultipleGLBModels(modelsToLoad);
       const modelNames = modelsToLoad.map((m) => (m.options as { name: string }).name);
       setLoadedModels(prev => [...prev, ...modelNames]);
       // console.log(`Loaded ${groups.length} models from /public/models`);
@@ -303,7 +301,7 @@ export function SculptureControlPanel({
 
     try {
       const url = `/api/walrus/${encodeURIComponent(blobId)}`;
-      const model = await sceneManager.loadGLBModel(url, {
+      await sceneManager.loadGLBModel(url, {
         position: { x: 0, y: 2, z: 0 },
         name: modelName,
         onProgress: (progress) => {
@@ -640,7 +638,6 @@ export function SculptureControlPanel({
                   {kioskNftItems
                     .filter(nftItem => displayedNftItems.has(nftItem.id))
                     .map((nftItem) => {
-                      const modelName = `KioskNFT_${nftItem.name}_${nftItem.id.slice(-8)}`;
                       return (
                         <option
                           key={nftItem.id}

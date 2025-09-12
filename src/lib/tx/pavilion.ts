@@ -1,6 +1,4 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { bcs } from '@mysten/bcs';
-import { fromBase64 } from '@mysten/sui/utils';
 import { KioskTransaction } from '@mysten/kiosk'; 
 import type { KioskClient } from '@mysten/kiosk';
 import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
@@ -277,7 +275,7 @@ export async function readSceneConfig(params: {
     console.log('⚠️ Scene config field exists but value is empty or invalid');
     return null;
     
-  } catch (error) {
+  } catch {
     // Fallback method: Use getDynamicFields to find the field first
     try {
       const fieldsResp = await suiClient.getDynamicFields({

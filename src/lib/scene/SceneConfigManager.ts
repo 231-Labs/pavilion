@@ -6,7 +6,6 @@
 import { 
   SceneConfig, 
   SceneObject, 
-  CompactSceneConfig,
   createSceneConfig, 
   createSceneObjectFromKioskItem, 
   validateSceneConfig,

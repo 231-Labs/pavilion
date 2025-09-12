@@ -92,7 +92,7 @@ export default function Home() {
             } else {
               filteredList.push(kiosk);
             }
-          } catch (extensionError) {
+          } catch {
             filteredList.push(kiosk);
           }
         }
@@ -222,7 +222,7 @@ export default function Home() {
         kioskState.setKioskFromIds({ kioskId: selectedKioskId, kioskOwnerCapId: cap });
         // parse kiosk items for preview
         try {
-          const data = await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
+          await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
         } catch {}
       } catch (e) {
         setError((e as Error).message || 'Failed to initialize pavilion with existing kiosk');
