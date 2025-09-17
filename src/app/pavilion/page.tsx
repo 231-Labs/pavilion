@@ -25,6 +25,10 @@ function PavilionContent() {
   const suiClient = useSuiClient();
   const [currentSceneConfig, setCurrentSceneConfig] = useState<SceneConfig | null>(null);
   const [sceneConfigManager, setSceneConfigManager] = useState<SceneConfigManager | null>(null);
+  
+  // Panel state for scene restoration
+  const [panelDisplayedItems, setPanelDisplayedItems] = useState<Set<string>>(new Set());
+  const [panelTransforms, setPanelTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
 
   // Create a wrapper function for tracking changes
   const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
@@ -167,9 +171,9 @@ function PavilionContent() {
     setCurrentSceneConfig(config);
   }, [sceneConfigManager, kioskState.kioskItems, kioskState.kioskId, currentAccount]);
 
-  // Load and apply scene config from chain when kiosk changes
+  // Load scene config from chain and sync to panel state
   useEffect(() => {
-    const loadAndApplySceneConfig = async () => {
+    const loadAndSyncSceneConfig = async () => {
       if (!sceneConfigManager || !kioskId || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
         return;
       }
@@ -177,17 +181,37 @@ function PavilionContent() {
       try {
         const savedConfig = await sceneConfigManager.loadSceneConfig(kioskId);
         if (savedConfig) {
-          console.log('Loaded scene config from chain:', savedConfig);
-          sceneConfigManager.applySceneConfig(savedConfig, kioskState.kioskItems);
+          console.log('✅ Loaded scene config from chain:', savedConfig);
+          
+          // Convert scene config to panel state format
+          const { displayedNftItems, kioskNftTransforms } = sceneConfigManager.convertSceneConfigToPanelState(
+            savedConfig, 
+            kioskState.kioskItems
+          );
+          
+          // Update panel state - this will trigger scene updates through panel components
+          setPanelDisplayedItems(displayedNftItems);
+          setPanelTransforms(kioskNftTransforms);
+          
+          console.log('✅ Scene config synced to panel state:', {
+            displayedItems: displayedNftItems.size,
+            transforms: kioskNftTransforms.size
+          });
         } else {
-          console.log('No saved scene config found');
+          console.log('💭 No saved scene config found, using default state');
+          // Reset to default state
+          setPanelDisplayedItems(new Set());
+          setPanelTransforms(new Map());
         }
       } catch (error) {
-        console.warn('Failed to load scene config:', error);
+        console.warn('❌ Failed to load scene config:', error);
+        // Reset to default state on error
+        setPanelDisplayedItems(new Set());
+        setPanelTransforms(new Map());
       }
     };
 
-    const timeoutId = setTimeout(loadAndApplySceneConfig, 500);
+    const timeoutId = setTimeout(loadAndSyncSceneConfig, 500);
     return () => clearTimeout(timeoutId);
   }, [sceneConfigManager, kioskId, kioskState.kioskItems]);
 
@@ -226,6 +250,9 @@ function PavilionContent() {
           kioskId={kioskState.kioskId || undefined}
           kioskOwnerCapId={kioskState.kioskOwnerCapId || undefined}
           onTrackChange={handleTrackChange}
+          // Pass panel state for scene restoration
+          initialDisplayedItems={panelDisplayedItems}
+          initialTransforms={panelTransforms}
         />
       </div>
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">

@@ -198,13 +198,6 @@ export class SceneConfigManager {
     const compactConfig = compressSceneConfig(config);
     const jsonStr = JSON.stringify(compactConfig);
     
-    // TODO: Log size comparison for debugging
-    // Log size comparison for debugging
-    //const fullSize = JSON.stringify(config).length;
-    //const compactSize = jsonStr.length;
-    //const savings = Math.round((1 - compactSize / fullSize) * 100);
-    // console.log(`💰 Storage optimization: ${fullSize} → ${compactSize} bytes (${savings}% savings)`);
-    
     return setSceneConfigTx({
       kioskClient: this.kioskClient,
       packageId: this.packageId,
@@ -215,7 +208,62 @@ export class SceneConfigManager {
   }
 
   /**
-   * Apply scene config to 3D scene
+   * Convert scene config to panel state format
+   * This should be used instead of directly applying to 3D scene
+   */
+  convertSceneConfigToPanelState(
+    config: SceneConfig,
+    kioskItems: any[]
+  ): {
+    displayedNftItems: Set<string>;
+    kioskNftTransforms: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>;
+  } {
+    const displayedNftItems = new Set<string>();
+    const kioskNftTransforms = new Map();
+
+    // Create objectId mapping for matching
+    const objectIdToItem: Record<string, any> = {};
+    kioskItems.forEach(item => {
+      if (typeof item.objectId === 'string') {
+        objectIdToItem[item.objectId] = item;
+      }
+    });
+
+    // Process each scene config object
+    config.objects.forEach(sceneObj => {
+      const kioskItem = objectIdToItem[sceneObj.id];
+      if (!kioskItem) return;
+
+      // Add to displayed items if shown
+      if (sceneObj.displayed) {
+        displayedNftItems.add(sceneObj.id);
+      }
+
+      // Set transform data
+      kioskNftTransforms.set(sceneObj.id, {
+        position: sceneObj.position,
+        rotation: sceneObj.rotation,
+        scale: { 
+          x: sceneObj.scale, 
+          y: sceneObj.scale, 
+          z: sceneObj.scale 
+        }
+      });
+    });
+
+    console.log(`✅ Converted scene config to panel state:`, {
+      displayedItems: displayedNftItems.size,
+      transforms: kioskNftTransforms.size
+    });
+
+    return {
+      displayedNftItems,
+      kioskNftTransforms
+    };
+  }
+
+  /**
+   * Apply scene config to 3D scene (DEPRECATED - use convertSceneConfigToPanelState instead)
    */
   applySceneConfig(
     config: SceneConfig,

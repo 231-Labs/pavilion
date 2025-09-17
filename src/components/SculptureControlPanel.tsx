@@ -22,6 +22,9 @@ interface SculptureControlPanelProps {
   kioskOwnerCapId?: string; // Current kiosk owner cap ID (for future use)
   // Change tracking props
   onTrackChange?: (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => void;
+  // Scene restoration props
+  initialDisplayedItems?: Set<string>; // Items that should be displayed based on loaded scene config
+  initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>; // Initial transforms from loaded scene config
 }
 
 // Interface for controllable objects
@@ -38,7 +41,9 @@ export function SculptureControlPanel({
   onUpdateScale,
   autoLoadBlobIds = [],
   kioskItems = [],
-  onTrackChange
+  onTrackChange,
+  initialDisplayedItems,
+  initialTransforms
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -53,6 +58,91 @@ export function SculptureControlPanel({
   const [kioskNftItems, setKioskNftItems] = useState<any[]>([]);
   const [displayedNftItems, setDisplayedNftItems] = useState<Set<string>>(new Set());
   const [kioskNftTransforms, setKioskNftTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
+
+  // Sync initial state from loaded scene config
+  useEffect(() => {
+    if (initialDisplayedItems) {
+      console.log('🔄 Syncing initial displayed items from scene config:', initialDisplayedItems);
+      setDisplayedNftItems(new Set(initialDisplayedItems));
+    }
+    if (initialTransforms) {
+      console.log('🔄 Syncing initial transforms from scene config:', initialTransforms);
+      setKioskNftTransforms(new Map(initialTransforms));
+    }
+  }, [initialDisplayedItems, initialTransforms]);
+
+  // Auto-load models for items that should be displayed (from scene config)
+  useEffect(() => {
+    const autoLoadDisplayedModels = async () => {
+      if (!sceneManager || displayedNftItems.size === 0 || kioskNftItems.length === 0 || isLoading) {
+        return;
+      }
+
+      // Find items that should be displayed but models aren't loaded yet
+      const itemsToLoad = kioskNftItems.filter(nftItem => {
+        const itemId = nftItem.id;
+        const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+        return displayedNftItems.has(itemId) && !loadedModels.includes(modelName);
+      });
+
+      if (itemsToLoad.length === 0) {
+        console.log('✅ All displayed models are already loaded');
+        return;
+      }
+
+      console.log(`🚀 Auto-loading ${itemsToLoad.length} models that should be displayed:`, 
+        itemsToLoad.map(item => item.name));
+
+      // Load models one by one to avoid overwhelming the system
+      for (const nftItem of itemsToLoad) {
+        const itemId = nftItem.id;
+        const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+        
+        // Double-check it's not loaded (in case of race conditions)
+        if (loadedModels.includes(modelName)) continue;
+
+        try {
+          console.log(`📦 Loading model for ${nftItem.name}...`);
+          
+          setIsLoading(true);
+          setError(null);
+          setLoadingProgress(0);
+
+          const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
+          
+          await sceneManager.loadGLBModel(url, {
+            name: modelName,
+            position: kioskNftTransforms.get(itemId)?.position || { x: 0, y: 2, z: 0 },
+            rotation: kioskNftTransforms.get(itemId)?.rotation || { x: 0, y: 0, z: 0 },
+            scale: kioskNftTransforms.get(itemId)?.scale || { x: 1, y: 1, z: 1 },
+            onProgress: (progress) => {
+              const percent = Math.round((progress.loaded / progress.total) * 100);
+              setLoadingProgress(percent);
+            }
+          });
+
+          // Update loaded models list
+          setLoadedModels(prev => [...prev, modelName]);
+          console.log(`✅ Successfully loaded model: ${modelName}`);
+
+          // Small delay between loads to prevent overwhelming
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        } catch (error) {
+          console.error(`❌ Failed to load model for ${nftItem.name}:`, error);
+          setError(`Failed to load ${nftItem.name}: ${error}`);
+        }
+      }
+
+      setIsLoading(false);
+      setLoadingProgress(0);
+      console.log('🎉 Finished auto-loading displayed models');
+    };
+
+    // Add a small delay to ensure all state is settled
+    const timeoutId = setTimeout(autoLoadDisplayedModels, 300);
+    return () => clearTimeout(timeoutId);
+  }, [displayedNftItems, kioskNftItems, loadedModels, sceneManager, isLoading, kioskNftTransforms]);
 
   // Extract NFT items with glb_file from kiosk items
   useEffect(() => {

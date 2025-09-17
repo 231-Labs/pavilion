@@ -146,7 +146,7 @@ export function createDefaultSceneObject(
   id: string,
   name: string,
   type: SceneObject['type'] = 'kiosk_nft',
-  position: Vector3 = { x: 0, y: 2, z: 0 }
+  position: Vector3 = { x: 0, y: 0, z: 0 }
 ): SceneObject {
   return {
     id,

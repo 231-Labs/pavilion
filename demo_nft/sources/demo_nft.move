@@ -2,10 +2,12 @@
 module demo_nft::demo_nft{
     
     use std::string::{Self, String};
-    use sui::transfer::{public_transfer, public_share_object};
-    use sui::package;
-    use sui::display;
-    use sui::transfer_policy;
+    use sui::{
+        transfer::{public_transfer, public_share_object},
+        package,
+        display,
+        transfer_policy,
+    };
 
     public struct DemoNFT has key, store{
         id: UID,
@@ -20,16 +22,16 @@ module demo_nft::demo_nft{
 
     // == Royalty Rule Structures ==
     
-    /// 版稅規則標識符
+    /// Royalty Rule
     public struct RoyaltyRule has drop {}
     
-    /// 版稅配置
+    /// Royalty Config
     public struct RoyaltyConfig has store, drop {
-        creator: address,    // 創作者地址
-        rate_bp: u64,       // 版稅率（基點，100 = 1%）
+        creator: address,    // creator address
+        rate_bp: u64,       // royalty rate (basis points, 100 = 1%)
     }
     
-    /// 版稅收據 - 證明版稅已支付
+    /// Royalty Receipt - proves royalty was paid
     public struct RoyaltyReceipt has drop {}
 
     /// This sets up the standard fields and adds an extra `glb_file` field.
@@ -98,12 +100,12 @@ module demo_nft::demo_nft{
 
     // == Royalty Rule Functions ==
     
-    /// 添加版稅規則到 TransferPolicy
+    /// Add royalty rule to TransferPolicy
     public fun add_royalty_rule(
         policy: &mut transfer_policy::TransferPolicy<DemoNFT>,
         policy_cap: &transfer_policy::TransferPolicyCap<DemoNFT>,
         creator: address,
-        rate_bp: u64  // 基點，500 = 5%
+        rate_bp: u64  // basis points, 500 = 5%
     ) {
         let config = RoyaltyConfig {
             creator,
@@ -117,29 +119,29 @@ module demo_nft::demo_nft{
         );
     }
     
-    /// 支付版稅並添加收據
+    /// Pay royalty and add receipt
     public fun pay_royalty_and_add_receipt(
         policy: &transfer_policy::TransferPolicy<DemoNFT>,
         transfer_request: &mut transfer_policy::TransferRequest<DemoNFT>,
         royalty_payment: sui::coin::Coin<sui::sui::SUI>
     ) {
-        // 獲取版稅配置
+        // Get royalty config
         let config = transfer_policy::get_rule<DemoNFT, RoyaltyRule, RoyaltyConfig>(
             RoyaltyRule {},
             policy
         );
         
-        // 支付版稅給創作者
+        // Pay royalty to creator
         sui::transfer::public_transfer(royalty_payment, config.creator);
         
-        // 添加收據證明版稅已支付
+        // Add receipt to prove royalty was paid
         transfer_policy::add_receipt<DemoNFT, RoyaltyRule>(
             RoyaltyRule {},
             transfer_request
         );
     }
     
-    /// 計算版稅金額
+    /// Calculate royalty amount
     public fun calculate_royalty(
         policy: &transfer_policy::TransferPolicy<DemoNFT>,
         price: u64
@@ -178,30 +180,29 @@ module demo_nft::demo_nft{
         nft.glb_file
     }
     
-    /// 從 kiosk 購買 NFT 並支付版稅
+    /// Purchase NFT from kiosk and pay royalty
     public fun purchase_with_royalty(
         kiosk: &mut sui::kiosk::Kiosk,
         item_id: sui::object::ID,
         payment: sui::coin::Coin<sui::sui::SUI>,
         royalty_payment: sui::coin::Coin<sui::sui::SUI>,
         policy: &transfer_policy::TransferPolicy<DemoNFT>,
-        _ctx: &mut sui::tx_context::TxContext
     ): DemoNFT {
-        // 1. 從 kiosk 購買 NFT
+        // 1. Purchase NFT from kiosk
         let (nft, mut transfer_request) = sui::kiosk::purchase<DemoNFT>(
             kiosk, 
             item_id, 
             payment
         );
         
-        // 2. 支付版稅並添加收據
+        // 2. Pay royalty and add receipt
         pay_royalty_and_add_receipt(
             policy,
             &mut transfer_request,
             royalty_payment
         );
         
-        // 3. 確認轉移請求
+        // 3. Confirm transfer request
         transfer_policy::confirm_request(policy, transfer_request);
         
         nft
