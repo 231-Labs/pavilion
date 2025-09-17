@@ -7,6 +7,9 @@ module demo_nft::demo_nft{
         package,
         display,
         transfer_policy,
+        kiosk::{Kiosk},
+        coin::{Coin},
+        sui::SUI
     };
 
     public struct DemoNFT has key, store{
@@ -21,17 +24,17 @@ module demo_nft::demo_nft{
     public struct DEMO_NFT has drop {}
 
     // == Royalty Rule Structures ==
-    
-    /// Royalty Rule
+
+    /// Royalty rule identifier
     public struct RoyaltyRule has drop {}
-    
-    /// Royalty Config
+
+    /// Royalty configuration
     public struct RoyaltyConfig has store, drop {
         creator: address,    // creator address
         rate_bp: u64,       // royalty rate (basis points, 100 = 1%)
     }
-    
-    /// Royalty Receipt - proves royalty was paid
+
+    /// Royalty receipt - proof royalty has been paid
     public struct RoyaltyReceipt has drop {}
 
     /// This sets up the standard fields and adds an extra `glb_file` field.
@@ -123,9 +126,9 @@ module demo_nft::demo_nft{
     public fun pay_royalty_and_add_receipt(
         policy: &transfer_policy::TransferPolicy<DemoNFT>,
         transfer_request: &mut transfer_policy::TransferRequest<DemoNFT>,
-        royalty_payment: sui::coin::Coin<sui::sui::SUI>
+        royalty_payment: Coin<SUI>
     ) {
-        // Get royalty config
+        // Get royalty configuration
         let config = transfer_policy::get_rule<DemoNFT, RoyaltyRule, RoyaltyConfig>(
             RoyaltyRule {},
             policy
@@ -133,8 +136,8 @@ module demo_nft::demo_nft{
         
         // Pay royalty to creator
         sui::transfer::public_transfer(royalty_payment, config.creator);
-        
-        // Add receipt to prove royalty was paid
+
+        // Add receipt to prove royalty has been paid
         transfer_policy::add_receipt<DemoNFT, RoyaltyRule>(
             RoyaltyRule {},
             transfer_request
@@ -182,11 +185,12 @@ module demo_nft::demo_nft{
     
     /// Purchase NFT from kiosk and pay royalty
     public fun purchase_with_royalty(
-        kiosk: &mut sui::kiosk::Kiosk,
-        item_id: sui::object::ID,
-        payment: sui::coin::Coin<sui::sui::SUI>,
-        royalty_payment: sui::coin::Coin<sui::sui::SUI>,
+        kiosk: &mut Kiosk,
+        item_id: ID,
+        payment: Coin<SUI>,
+        royalty_payment: Coin<SUI>,
         policy: &transfer_policy::TransferPolicy<DemoNFT>,
+        _ctx: &mut TxContext
     ): DemoNFT {
         // 1. Purchase NFT from kiosk
         let (nft, mut transfer_request) = sui::kiosk::purchase<DemoNFT>(
