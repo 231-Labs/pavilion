@@ -295,18 +295,39 @@ export default function Home() {
       </header>
 
       {/* Main Content - Glass Ribbon Layout */}
-      <main className="relative z-10 px-6 py-8 md:py-12 flex-1 grid place-items-center">
+      <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-1 grid place-items-center">
         <div className="architect-grid"></div>
 
-        <section className="relative mx-auto max-w-7xl glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2">
+        <section 
+          className="relative mx-auto glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6"
+          style={{
+            width: 'clamp(320px, 85vw, 1400px)',
+            minHeight: 'clamp(500px, 60vh, 800px)'
+          }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
             {/* Left: Brand & Narrative */}
-            <div className="p-10 md:p-14 flex flex-col justify-center">
+            <div 
+              className="flex flex-col justify-center"
+              style={{
+                padding: 'clamp(24px, 5vw, 56px)'
+              }}
+            >
               <p className="text-xs tracking-[0.35em] uppercase text-white/60 mb-4">3D Kiosk Extension</p>
-              <h2 className="text-4xl md:text-6xl font-extrabold tracking-[0.22em] uppercase leading-tight silver-glow">
+              <h2 
+                className="font-extrabold tracking-[0.22em] uppercase leading-tight silver-glow"
+                style={{
+                  fontSize: 'clamp(2rem, 5vw, 3.75rem)'
+                }}
+              >
                 Pavilion
               </h2>
-              <p className="mt-5 text-white/70 max-w-md">
+              <p 
+                className="mt-5 text-white/70 max-w-md"
+                style={{
+                  fontSize: 'clamp(0.875rem, 1.2vw, 1rem)'
+                }}
+              >
                 Turn your kiosk into a curated gallery.
               </p>
 
@@ -349,7 +370,11 @@ export default function Home() {
 
             {/* Right: Actions - Single Frosted Glass Area (no inner panel) */}
             <div
-              className="glass-slab glass-slab--thermal rounded-xl overflow-hidden p-6 md:p-8 self-center w-full h-[580px]"
+              className="glass-slab glass-slab--thermal rounded-xl overflow-hidden self-center w-full flex flex-col"
+              style={{
+                padding: 'clamp(16px, 3vw, 32px)',
+                minHeight: 'clamp(480px, 55vh, 720px)'
+              }}
               onClick={onSlabClick}
               onMouseMove={(e) => {
                 const target = e.currentTarget as HTMLDivElement;
@@ -366,8 +391,18 @@ export default function Home() {
               }}
             >
                 {/* Mode Toggle (Collector / Designer) */}
-                <div className="px-5 py-2 slab-segment">
-                  <div className="relative mx-auto w-[200px] sm:w-[220px] rounded-lg border border-white/20 bg-white/5 overflow-hidden">
+                <div 
+                  className="slab-segment"
+                  style={{
+                    padding: 'clamp(8px, 2vw, 20px) clamp(12px, 2.5vw, 20px)'
+                  }}
+                >
+                  <div 
+                    className="relative mx-auto rounded-lg border border-white/20 bg-white/5 overflow-hidden"
+                    style={{
+                      width: 'clamp(180px, 20vw, 220px)'
+                    }}
+                  >
                     <div
                       className="absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-8px)] rounded-md bg-white/10 transition-transform duration-300"
                       style={{ transform: mode === 'designer' ? 'translateX(100%)' : 'translateX(0%)' }}
@@ -394,7 +429,13 @@ export default function Home() {
                 </div>
 
                 {/* Create Pavilion */}
-                <div className="w-full px-5 py-4 slab-segment flex-1 flex flex-col">
+                <div 
+                  className="w-full slab-segment flex-1 flex flex-col"
+                  style={{
+                    padding: 'clamp(12px, 2.5vw, 20px)',
+                    minHeight: 'clamp(200px, 25vh, 300px)'
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div>
@@ -465,7 +506,12 @@ export default function Home() {
                               <div className="flex-1 flex flex-col space-y-2">
                                 <label className="text-[14px] uppercase tracking-widest text-white/70">Step 1: Select a Kiosk</label>
                                 <div className="flex-1 flex flex-col justify-center">
-                                  <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
+                                  <div 
+                                    className="h-12 overflow-auto rounded border border-white/10"
+                                    style={{
+                                      width: 'clamp(280px, 35vw, 320px)'
+                                    }}
+                                  >
                                     {(ownedKiosks && ownedKiosks.length > 0) ? (
                                       <ul className="divide-y divide-white/10">
                                         {ownedKiosks.map((k) => (
@@ -587,10 +633,18 @@ export default function Home() {
                   <div className="px-5 py-3 text-[12px] text-red-300">{error}</div>
                 )}
                 {/* Divider */}
-                <div className="slab-divider" />
+                <div className="flex justify-center items-center py-2">
+                  <div className="slab-divider w-full" />
+                </div>
 
                 {/* Visit Pavilion */}
-                <div className="w-full px-5 py-4 slab-segment min-h-[200px]">
+                <div 
+                  className="w-full slab-segment flex-1"
+                  style={{
+                    padding: 'clamp(12px, 2.5vw, 20px)',
+                    minHeight: 'clamp(200px, 25vh, 300px)'
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div>
@@ -624,7 +678,12 @@ export default function Home() {
                       {visitSubMode === 'my' ? (
                         <div className="mt-3 space-y-2">
                           <label className="text-[14px] uppercase tracking-widest text-white/70">Owned Pavilions</label>
-                          <div className="w-[320px] h-12 overflow-auto rounded border border-white/10">
+                          <div 
+                            className="h-12 overflow-auto rounded border border-white/10"
+                            style={{
+                              width: 'clamp(280px, 35vw, 320px)'
+                            }}
+                          >
                             {(pavilionKiosks && pavilionKiosks.length > 0) ? (
                               <ul className="divide-y divide-white/10">
                                 {pavilionKiosks.map((k) => (
@@ -655,7 +714,10 @@ export default function Home() {
                             value={kioskId}
                             onChange={(e) => setKioskId(e.target.value)}
                             placeholder="0x..."
-                            className="w-[320px] bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                            className="bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                            style={{
+                              width: 'clamp(280px, 35vw, 320px)'
+                            }}
                           />
                         </div>
                       )}

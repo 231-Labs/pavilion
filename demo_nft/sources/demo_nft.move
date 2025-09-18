@@ -20,7 +20,7 @@ module demo_nft::demo_nft{
         glb_file: String, // walrus blob id for glb file
     }
 
-    /// One-time witness for package initialization
+    /// One-time witness
     public struct DEMO_NFT has drop {}
 
     // == Royalty Rule Structures ==
