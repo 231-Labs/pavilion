@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../components/KioskClientProvider';
 import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../lib/tx/pavilion';
 import { useKioskState } from '../components/KioskStateProvider';
+import { useLoading } from '../components/LoadingProvider';
 
 export default function Home() {
   const [kioskId, setKioskId] = useState('');
@@ -30,6 +30,7 @@ export default function Home() {
   const currentAccount = useCurrentAccount();
   const kioskClient = useKioskClient();
   const suiClient = useSuiClient();
+  const { setLoading, setLoadingStage } = useLoading();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
       await suiClient.executeTransactionBlock({
@@ -173,6 +174,10 @@ export default function Home() {
 
   const onMainAction = async () => {
     if (txDigest) {
+      // Set loading state before navigation
+      setLoading(true);
+      setLoadingStage('Entering Gallery...', 'Loading your exclusive 3D space');
+      
       // Navigate to pavilion page with the created kiosk ID
       const targetKioskId = createdKioskId || kioskState.kioskId;
       if (targetKioskId) {
@@ -257,6 +262,10 @@ export default function Home() {
       targetKioskId = kioskId.trim();
     }
 
+    // Set loading state before navigation
+    setLoading(true);
+    setLoadingStage('Connecting to Gallery...', 'Loading 3D exhibition space');
+
     // Navigate to pavilion page with the selected kiosk ID
     router.push(`/pavilion?kioskId=${targetKioskId}`);
   };
@@ -333,8 +342,12 @@ export default function Home() {
 
               {/* Demo Pavilion Section */}
               <div className="mt-6">
-                <Link
-                  href="/pavilion?kioskId=0x1"
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    setLoadingStage('Entering Demo Gallery...', 'Loading 3D exhibition space');
+                    router.push('/pavilion?kioskId=0x1');
+                  }}
                   className="group inline-flex items-center space-x-3 text-white/70 hover:text-white/90 transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="relative">
@@ -364,7 +377,7 @@ export default function Home() {
                       />
                     </svg>
                   </div>
-                </Link>
+                </button>
               </div>
             </div>
 

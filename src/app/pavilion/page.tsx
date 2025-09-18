@@ -13,6 +13,7 @@ import { useKioskState } from '../../components/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
+import { SceneLoadingOverlay } from '../../components/LoadingProvider';
 
 function PavilionContent() {
   const searchParams = useSearchParams();
@@ -217,6 +218,9 @@ function PavilionContent() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      {/* Scene Loading Overlay */}
+      <SceneLoadingOverlay />
+
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20 pointer-events-none z-0"></div>
 
@@ -265,7 +269,7 @@ function PavilionContent() {
 
 export default function PavilionPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen text-white">載入中...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-white">Loading...</div>}>
       <PavilionContent />
     </Suspense>
   );

@@ -3,6 +3,7 @@ import { SceneManager, SceneConfig } from '../lib/three/SceneManager';
 import { SculptureInstance } from '../types/sculpture';
 import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../lib/three/KioskItemConverter';
 import { DefaultSceneConfig } from '../lib/three/DefaultScene';
+import { useLoading } from '../components/LoadingProvider';
 
 export interface UseThreeSceneOptions extends SceneConfig {
   createGallery?: boolean;
@@ -18,39 +19,93 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
   const [sculptures, setSculptures] = useState<SculptureInstance[]>([]);
   const [kioskItems3D, setKioskItems3D] = useState<KioskItem3DResult[]>([]);
   const [loadingKioskItems, setLoadingKioskItems] = useState(false);
+  const [sceneInitialized, setSceneInitialized] = useState(false);
+  
+  const { setLoading, setProgress, setLoadingStage } = useLoading();
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Create scene manager with default scene configuration
-    const sceneConfig: SceneConfig = {
-      ...options,
-      // Convert createGallery option to defaultScene config
-      defaultScene: options.createGallery !== false ? {
-        backgroundColor: 0x0a0a0f,
-        enableGrid: true,
-        enableParticles: true,
-        enableHolographicElements: true,
-        ...options.defaultScene // Allow custom overrides
-      } : options.defaultScene
+    // Start loading state
+    setLoading(true);
+    setProgress(0);
+    setLoadingStage('Initializing 3D scene...', 'Setting up renderer and camera');
+    setSceneInitialized(false);
+
+    // Simulate asynchronous initialization of loading steps
+    const initializeScene = async () => {
+      try {
+        // Step 1: Create scene configuration
+        setProgress(20);
+        setLoadingStage('Configuring scene parameters...', 'Setting up lights and materials');
+        
+        const sceneConfig: SceneConfig = {
+          ...options,
+          // Convert createGallery option to defaultScene config
+          defaultScene: options.createGallery !== false ? {
+            backgroundColor: 0x0a0a0f,
+            enableGrid: true,
+            enableParticles: true,
+            enableHolographicElements: true,
+            ...options.defaultScene // Allow custom overrides
+          } : options.defaultScene
+        };
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Step 2: Initialize scene manager
+        setProgress(40);
+        setLoadingStage('Creating 3D environment...', 'Initializing WebGL rendering context');
+        
+        const sceneManager = new SceneManager(canvasRef.current!, sceneConfig);
+        sceneManagerRef.current = sceneManager;
+
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Step 3: Setup kiosk item converter
+        setProgress(60);
+        setLoadingStage('Setting up model converter...', 'Preparing 3D object processing system');
+        
+        if (options.enableKioskItems) {
+          kioskItemConverterRef.current = new KioskItemConverter(sceneManager);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Step 4: Add sculptures if needed
+        setProgress(75);
+        if (options.addSculptures) {
+          setLoadingStage('Adding sculptures...', 'Loading default 3D models');
+          sceneManager.addSculptures();
+          setSculptures(sceneManager.getSculptures());
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        // Step 5: Start animation and finalize
+        setProgress(90);
+        setLoadingStage('Starting rendering loop...', 'Preparing to enter 3D world');
+        
+        sceneManager.startAnimation();
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Complete loading
+        setProgress(100);
+        setLoadingStage('Loading Completed', 'Welcome to your exclusive gallery');
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        setSceneInitialized(true);
+        setLoading(false);
+
+      } catch (error) {
+        console.error('Scene initialization failed:', error);
+        setLoadingStage('Initialization failed', 'Please refresh the page and try again');
+        setLoading(false);
+      }
     };
 
-    const sceneManager = new SceneManager(canvasRef.current, sceneConfig);
-    sceneManagerRef.current = sceneManager;
-
-    // Create kiosk item converter if enabled
-    if (options.enableKioskItems) {
-      kioskItemConverterRef.current = new KioskItemConverter(sceneManager);
-    }
-
-    if (options.addSculptures) {
-      sceneManager.addSculptures();
-      // Update sculpture status
-      setSculptures(sceneManager.getSculptures());
-    }
-
-    // Start animation
-    sceneManager.startAnimation();
+    initializeScene();
 
     // Cleanup function
     return () => {
@@ -60,10 +115,14 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
         kioskItemConverterRef.current = null;
       }
 
-      sceneManager.dispose();
-      sceneManagerRef.current = null;
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.dispose();
+        sceneManagerRef.current = null;
+      }
+      
       setSculptures([]);
       setKioskItems3D([]);
+      setSceneInitialized(false);
     };
   }, [
     options.backgroundColor,
@@ -155,7 +214,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     updateSculpturePosition,
     updateSculptureRotation,
     updateSculptureScale,
-    // Kiosk items
+    sceneInitialized,
     kioskItems3D,
     loadingKioskItems,
     loadKioskItems,

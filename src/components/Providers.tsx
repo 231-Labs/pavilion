@@ -7,6 +7,7 @@ import { ReactNode } from 'react';
 import { elegantTheme } from '../styles/dappKitTheme';
 import { KioskClientProvider } from './KioskClientProvider';
 import { KioskStateProvider } from './KioskStateProvider';
+import { LoadingProvider } from './LoadingProvider';
 
 // Create QueryClient
 const queryClient = new QueryClient();
@@ -29,7 +30,9 @@ export function Providers({ children }: ProvidersProps) {
         <WalletProvider theme={elegantTheme} autoConnect={true}>
           <KioskClientProvider networkName={defaultNetwork}>
             <KioskStateProvider>
-              {children}
+              <LoadingProvider>
+                {children}
+              </LoadingProvider>
             </KioskStateProvider>
           </KioskClientProvider>
         </WalletProvider>
