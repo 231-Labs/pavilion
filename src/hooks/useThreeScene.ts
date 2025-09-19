@@ -10,6 +10,7 @@ export interface UseThreeSceneOptions extends SceneConfig {
   addSculptures?: boolean;
   enableKioskItems?: boolean;
   defaultScene?: DefaultSceneConfig;
+  sculptureControlPanelLoading?: boolean; // Loading state from SculptureControlPanel
 }
 
 export function useThreeScene(options: UseThreeSceneOptions = {}) {
@@ -20,25 +21,21 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
   const [kioskItems3D, setKioskItems3D] = useState<KioskItem3DResult[]>([]);
   const [loadingKioskItems, setLoadingKioskItems] = useState(false);
   const [sceneInitialized, setSceneInitialized] = useState(false);
+  const [hasKioskItems, setHasKioskItems] = useState(false);
+  const [allModelsLoaded, setAllModelsLoaded] = useState(false);
   
-  const { setLoading, setProgress, setLoadingStage } = useLoading();
+  const { setLoading } = useLoading();
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Start loading state
+    // Start background animation
     setLoading(true);
-    setProgress(0);
-    setLoadingStage('Initializing 3D scene...', 'Setting up renderer and camera');
     setSceneInitialized(false);
 
-    // Simulate asynchronous initialization of loading steps
+    // Simplified scene initialization
     const initializeScene = async () => {
       try {
-        // Step 1: Create scene configuration
-        setProgress(20);
-        setLoadingStage('Configuring scene parameters...', 'Setting up lights and materials');
-        
         const sceneConfig: SceneConfig = {
           ...options,
           // Convert createGallery option to defaultScene config
@@ -51,56 +48,25 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
           } : options.defaultScene
         };
 
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Step 2: Initialize scene manager
-        setProgress(40);
-        setLoadingStage('Creating 3D environment...', 'Initializing WebGL rendering context');
-        
         const sceneManager = new SceneManager(canvasRef.current!, sceneConfig);
         sceneManagerRef.current = sceneManager;
 
-        await new Promise(resolve => setTimeout(resolve, 400));
-
-        // Step 3: Setup kiosk item converter
-        setProgress(60);
-        setLoadingStage('Setting up model converter...', 'Preparing 3D object processing system');
-        
         if (options.enableKioskItems) {
           kioskItemConverterRef.current = new KioskItemConverter(sceneManager);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Step 4: Add sculptures if needed
-        setProgress(75);
         if (options.addSculptures) {
-          setLoadingStage('Adding sculptures...', 'Loading default 3D models');
           sceneManager.addSculptures();
           setSculptures(sceneManager.getSculptures());
-          await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        // Step 5: Start animation and finalize
-        setProgress(90);
-        setLoadingStage('Starting rendering loop...', 'Preparing to enter 3D world');
-        
         sceneManager.startAnimation();
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Complete loading
-        setProgress(100);
-        setLoadingStage('Loading Completed', 'Welcome to your exclusive gallery');
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         setSceneInitialized(true);
-        setLoading(false);
+        
+        // Don't stop loading here - wait for models to load
 
       } catch (error) {
         console.error('Scene initialization failed:', error);
-        setLoadingStage('Initialization failed', 'Please refresh the page and try again');
         setLoading(false);
       }
     };
@@ -123,6 +89,8 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       setSculptures([]);
       setKioskItems3D([]);
       setSceneInitialized(false);
+      setHasKioskItems(false);
+      setAllModelsLoaded(false);
     };
   }, [
     options.backgroundColor,
@@ -136,6 +104,40 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     options.enableKioskItems,
     options.defaultScene,
   ]);
+
+  // Monitor loading state - stop animation when all models are loaded
+  useEffect(() => {
+    if (!sceneInitialized) return;
+
+    // Check if SculptureControlPanel is still loading
+    if (options.sculptureControlPanelLoading) {
+      console.log('⏳ SculptureControlPanel still loading auto-models...');
+      return;
+    }
+
+    // If no kiosk items expected, stop loading after basic scene setup with minimum delay
+    if (!hasKioskItems) {
+      const timer = setTimeout(() => {
+        console.log('✅ No kiosk items - stopping loading animation');
+        setAllModelsLoaded(true);
+        setLoading(false);
+      }, 800); // Minimum visual feedback time
+      return () => clearTimeout(timer);
+    }
+
+    // If kiosk items are expected but still loading, wait
+    if (loadingKioskItems) {
+      console.log('⏳ Still loading kiosk items...');
+      return;
+    }
+
+    // All kiosk items loaded and SculptureControlPanel not loading, stop loading animation
+    if (hasKioskItems && !loadingKioskItems) {
+      console.log('✅ All kiosk items loaded and SculptureControlPanel ready - stopping loading animation');
+      setAllModelsLoaded(true);
+      setLoading(false);
+    }
+  }, [sceneInitialized, hasKioskItems, loadingKioskItems, options.sculptureControlPanelLoading, setLoading]);
 
   // Provide access interface for scene manager
   const getSceneManager = () => sceneManagerRef.current;
@@ -175,7 +177,10 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       return;
     }
 
+    console.log(`🎨 Starting to load ${kioskItems.length} kiosk items...`);
+    setHasKioskItems(kioskItems.length > 0);
     setLoadingKioskItems(true);
+    
     try {
       // Clear existing kiosk items first
       converter.clearAllItems();
@@ -184,9 +189,9 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       const results = await converter.convertKioskItemsTo3D(kioskItems);
       setKioskItems3D(results);
 
-      console.log(`Successfully loaded ${results.length} kiosk items into 3D scene`);
+      console.log(`✅ Successfully loaded ${results.length} kiosk items into 3D scene`);
     } catch (error) {
-      console.error('Failed to load kiosk items:', error);
+      console.error('❌ Failed to load kiosk items:', error);
     } finally {
       setLoadingKioskItems(false);
     }
@@ -198,6 +203,8 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     if (converter) {
       converter.clearAllItems();
       setKioskItems3D([]);
+      setHasKioskItems(false);
+      console.log('🧹 Cleared all kiosk items from scene');
     }
   }, []);
 
@@ -215,6 +222,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     updateSculptureRotation,
     updateSculptureScale,
     sceneInitialized,
+    allModelsLoaded,
     kioskItems3D,
     loadingKioskItems,
     loadKioskItems,

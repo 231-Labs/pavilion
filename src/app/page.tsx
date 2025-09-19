@@ -7,6 +7,7 @@ import { useKioskClient } from '../components/KioskClientProvider';
 import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../lib/tx/pavilion';
 import { useKioskState } from '../components/KioskStateProvider';
 import { useLoading } from '../components/LoadingProvider';
+import { PreloadService, PreloadedSceneData } from '../lib/three/PreloadService';
 
 export default function Home() {
   const [kioskId, setKioskId] = useState('');
@@ -30,7 +31,9 @@ export default function Home() {
   const currentAccount = useCurrentAccount();
   const kioskClient = useKioskClient();
   const suiClient = useSuiClient();
-  const { setLoading, setLoadingStage } = useLoading();
+  const { setLoading, setPreloading, loadingState } = useLoading();
+  const [preloadService, setPreloadService] = useState<PreloadService | null>(null);
+  const [preloadedData, setPreloadedData] = useState<PreloadedSceneData | null>(null);
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
       await suiClient.executeTransactionBlock({
@@ -172,18 +175,91 @@ export default function Home() {
     }
   };
 
+  // Preload scene and models for smoother transition
+  const preloadSceneForKiosk = async (targetKioskId: string): Promise<boolean> => {
+    if (!kioskClient || !suiClient) {
+      console.error('❌ Kiosk or Sui client not available for preloading');
+      return false;
+    }
+
+    const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID;
+    if (!PAVILION_PACKAGE_ID) {
+      console.error('❌ Pavilion package ID not configured');
+      return false;
+    }
+
+    try {
+      console.log(`🎬 Starting scene preload for kiosk: ${targetKioskId}`);
+      setPreloading(true, 0, 'Initializing preload...');
+
+      // Fetch kiosk items
+      setPreloading(true, 10, 'Fetching kiosk contents...');
+      const kioskData = await fetchKioskContents({ kioskClient, kioskId: targetKioskId });
+      const kioskItems = kioskData?.items || [];
+      console.log(`📋 Found ${kioskItems.length} items in kiosk`);
+
+      // Create preload service
+      const service = new PreloadService({
+        kioskClient,
+        suiClient,
+        kioskId: targetKioskId,
+        kioskItems,
+        packageId: PAVILION_PACKAGE_ID,
+        onProgress: (progress, stage, details) => {
+          setPreloading(true, progress, details ? `${stage} (${details})` : stage);
+        },
+        onComplete: (sceneManager, data) => {
+          console.log('🎉 Scene preload completed successfully!');
+          setPreloadedData(data);
+        },
+        onError: (error) => {
+          console.error('❌ Preload error:', error);
+          setPreloading(false);
+        }
+      });
+
+      setPreloadService(service);
+      
+      // Start preloading
+      await service.startPreloading();
+      setPreloading(false, 100, 'Preload complete!');
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Scene preload failed:', error);
+      setPreloading(false);
+      return false;
+    }
+  };
+
   const onMainAction = async () => {
     if (txDigest) {
-      // Set loading state before navigation
-      setLoading(true);
-      setLoadingStage('Entering Gallery...', 'Loading your exclusive 3D space');
-      
-      // Navigate to pavilion page with the created kiosk ID
       const targetKioskId = createdKioskId || kioskState.kioskId;
+      
       if (targetKioskId) {
-        router.push(`/pavilion?kioskId=${targetKioskId}`);
+        console.log(`🎬 Starting preload for kiosk: ${targetKioskId}`);
+        // Start preloading - this will trigger background animation
+        const preloadSuccess = await preloadSceneForKiosk(targetKioskId);
+        
+        if (preloadSuccess) {
+          console.log('✅ Preload completed, navigating to pavilion...');
+          // Add small delay for smooth transition
+          setTimeout(() => {
+            router.push(`/pavilion?kioskId=${targetKioskId}`);
+          }, 300);
+        } else {
+          console.warn('⚠️ Preload failed, navigating without preload...');
+          setLoading(true);
+          setTimeout(() => {
+            router.push(`/pavilion?kioskId=${targetKioskId}`);
+          }, 800);
+        }
       } else {
-        router.push('/pavilion');
+        // No kiosk ID, navigate to demo pavilion directly
+        setLoading(true);
+        setTimeout(() => {
+          router.push('/pavilion');
+        }, 800);
       }
       return;
     }
@@ -245,7 +321,7 @@ export default function Home() {
     if (error) setError(null);
   };
 
-  const onVisitPavilion = () => {
+  const onVisitPavilion = async () => {
     let targetKioskId = '';
 
     if (visitSubMode === 'my') {
@@ -262,24 +338,43 @@ export default function Home() {
       targetKioskId = kioskId.trim();
     }
 
-    // Set loading state before navigation
-    setLoading(true);
-    setLoadingStage('Connecting to Gallery...', 'Loading 3D exhibition space');
-
-    // Navigate to pavilion page with the selected kiosk ID
-    router.push(`/pavilion?kioskId=${targetKioskId}`);
+    console.log(`🎬 Starting preload for visit kiosk: ${targetKioskId}`);
+    // Start preloading - this will trigger background animation
+    const preloadSuccess = await preloadSceneForKiosk(targetKioskId);
+    
+    if (preloadSuccess) {
+      console.log('✅ Visit preload completed, navigating to pavilion...');
+      // Add small delay for smooth transition
+      setTimeout(() => {
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
+      }, 300);
+    } else {
+      console.warn('⚠️ Visit preload failed, navigating without preload...');
+      setLoading(true);
+      setTimeout(() => {
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
+      }, 800);
+    }
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden film-noise flex flex-col">
-      {/* Monochrome Liquid Glass Background */}
+      {/* Enhanced Background with Animation System */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-[#0F0F12]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_40%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.04),transparent_40%)]"></div>
+        
+        {/* Animated background gradients */}
+        <div className={`absolute inset-0 transition-opacity duration-500 ${loadingState.backgroundAnimating ? 'bg-animated opacity-100' : 'opacity-100'}`}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_40%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.04),transparent_40%)]"></div>
+        </div>
+        
         <div className="absolute inset-0 bg-[conic-gradient(from_180deg_at_50%_50%,rgba(255,255,255,0.06),transparent_50%)] mix-blend-overlay"></div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent via-transparent to-white/10"></div>
-        <div className="terminal-grid"></div>
+        
+        {/* Animated terminal grid */}
+        <div className={`terminal-grid ${loadingState.backgroundAnimating ? 'terminal-grid--animating' : ''}`}></div>
+        
       </div>
 
       {/* Header */}
@@ -305,7 +400,7 @@ export default function Home() {
 
       {/* Main Content - Glass Ribbon Layout */}
       <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-1 grid place-items-center">
-        <div className="architect-grid"></div>
+        <div className={`architect-grid ${loadingState.backgroundAnimating ? 'architect-grid--animating' : ''}`}></div>
 
         <section 
           className="relative mx-auto glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6"
@@ -344,11 +439,17 @@ export default function Home() {
               <div className="mt-6">
                 <button
                   onClick={() => {
+                    // Demo pavilion - no preloading needed, use standard animation
+                    console.log('🎬 Navigating to Demo Pavilion (no preload needed)');
                     setLoading(true);
-                    setLoadingStage('Entering Demo Gallery...', 'Loading 3D exhibition space');
-                    router.push('/pavilion?kioskId=0x1');
+                    
+                    // Small delay for animation to be visible before navigation
+                    setTimeout(() => {
+                      router.push('/pavilion');
+                    }, 800);
                   }}
-                  className="group inline-flex items-center space-x-3 text-white/70 hover:text-white/90 transition-all duration-300 hover:scale-[1.02]"
+                  disabled={loadingState.backgroundAnimating}
+                  className="group inline-flex items-center space-x-3 text-white/70 hover:text-white/90 transition-all duration-300 hover:scale-[1.02] disabled:opacity-60 disabled:pointer-events-none"
                 >
                   <div className="relative">
                     <div className="text-sm font-medium tracking-wide silver-glow relative">
@@ -362,20 +463,28 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 border border-white/20 group-hover:bg-white/20 group-hover:border-white/30 transition-all duration-300 group-hover:shadow-[0_0_8px_rgba(255,255,255,0.2)]">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-3 h-3 text-current group-hover:translate-x-0.5 transition-transform duration-200"
-                    >
-                      <path
-                        d="M5 12h14M13 6l6 6-6 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    {loadingState.backgroundAnimating ? (
+                      <div className="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    ) : (
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-3 h-3 text-current group-hover:translate-x-0.5 transition-transform duration-200"
+                      >
+                        <path
+                          d="M5 12h14M13 6l6 6-6 6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </div>
                 </button>
               </div>
@@ -612,12 +721,14 @@ export default function Home() {
                       )}
                       <button
                         onClick={onMainAction}
-                        disabled={creating}
+                        disabled={creating || loadingState.backgroundAnimating}
                         title={createSubMode === 'new' && !pavilionName.trim() ? 'Pavilion name is required' : undefined}
                         aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
                         className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
                       >
-                        {txDigest ? (
+                        {loadingState.backgroundAnimating ? (
+                          <div className="loading-spinner" />
+                        ) : txDigest ? (
                           <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -738,18 +849,22 @@ export default function Home() {
 
                     <button
                       onClick={onVisitPavilion}
-                      disabled={(visitSubMode === 'my' && !selectedVisitKioskId) || (visitSubMode === 'external' && !kioskId.trim())}
+                      disabled={(visitSubMode === 'my' && !selectedVisitKioskId) || (visitSubMode === 'external' && !kioskId.trim()) || loadingState.backgroundAnimating}
                       aria-label="Visit pavilion"
                       className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/30"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
-                      >
-                        <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      {loadingState.backgroundAnimating ? (
+                        <div className="loading-spinner" />
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
+                        >
+                          <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -759,7 +874,7 @@ export default function Home() {
       </main>
 
       {/* Architectural Frame */}
-      <div className="architect-frame" />
+      <div className={`architect-frame ${loadingState.backgroundAnimating ? 'architect-frame--animating' : ''}`} />
     </div>
   );
 }

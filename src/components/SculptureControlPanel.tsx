@@ -25,6 +25,8 @@ interface SculptureControlPanelProps {
   // Scene restoration props
   initialDisplayedItems?: Set<string>; // Items that should be displayed based on loaded scene config
   initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>; // Initial transforms from loaded scene config
+  // Loading state callback
+  onLoadingStateChange?: (isLoading: boolean) => void; // Callback to report auto-loading state
 }
 
 // Interface for controllable objects
@@ -43,7 +45,8 @@ export function SculptureControlPanel({
   kioskItems = [],
   onTrackChange,
   initialDisplayedItems,
-  initialTransforms
+  initialTransforms,
+  onLoadingStateChange
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -59,9 +62,15 @@ export function SculptureControlPanel({
   const [displayedNftItems, setDisplayedNftItems] = useState<Set<string>>(new Set());
   const [kioskNftTransforms, setKioskNftTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
 
+  // Report loading state changes to parent
+  useEffect(() => {
+    onLoadingStateChange?.(isLoading);
+    console.log(`🎨 SculptureControlPanel loading state changed: ${isLoading}`);
+  }, [isLoading, onLoadingStateChange]);
+
   // Sync initial state from loaded scene config
   useEffect(() => {
-    if (initialDisplayedItems) {
+    if (initialDisplayedItems && initialDisplayedItems.size > 0) {
       console.log('🔄 Syncing initial displayed items from scene config:', initialDisplayedItems);
       setDisplayedNftItems(new Set(initialDisplayedItems));
     }
@@ -74,7 +83,30 @@ export function SculptureControlPanel({
   // Auto-load models for items that should be displayed (from scene config)
   useEffect(() => {
     const autoLoadDisplayedModels = async () => {
-      if (!sceneManager || displayedNftItems.size === 0 || kioskNftItems.length === 0 || isLoading) {
+      console.log('🔍 Checking auto-load conditions:', {
+        sceneManager: !!sceneManager,
+        displayedNftItems: displayedNftItems.size,
+        kioskNftItems: kioskNftItems.length,
+        isLoading,
+      });
+
+      if (!sceneManager) {
+        console.log('⏸️ SceneManager not available yet');
+        return;
+      }
+      
+      if (displayedNftItems.size === 0) {
+        console.log('⏸️ No displayed NFT items to load');
+        // Clear loading if no items to display
+        if (isLoading) {
+          console.log('✅ No items to load, clearing loading state');
+          setIsLoading(false);
+        }
+        return;
+      }
+      
+      if (kioskNftItems.length === 0) {
+        console.log('⏸️ Kiosk NFT items not available yet');
         return;
       }
 
@@ -85,8 +117,26 @@ export function SculptureControlPanel({
         return displayedNftItems.has(itemId) && !loadedModels.includes(modelName);
       });
 
+      console.log('📋 Items analysis:', {
+        shouldDisplay: displayedNftItems.size,
+        availableItems: kioskNftItems.length,
+        itemsToLoad: itemsToLoad.length,
+        alreadyLoaded: loadedModels.length
+      });
+
       if (itemsToLoad.length === 0) {
         console.log('✅ All displayed models are already loaded');
+        // Clear loading since everything is loaded
+        if (isLoading) {
+          console.log('✅ All models loaded, clearing loading state');
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      // Prevent starting new loading if already loading the same items
+      if (isLoading) {
+        console.log('⏸️ Already loading, waiting for current operation to complete');
         return;
       }
 
@@ -112,7 +162,7 @@ export function SculptureControlPanel({
           
           await sceneManager.loadGLBModel(url, {
             name: modelName,
-            position: kioskNftTransforms.get(itemId)?.position || { x: 0, y: 2, z: 0 },
+            position: kioskNftTransforms.get(itemId)?.position || { x: 0, y: 0, z: 0 },
             rotation: kioskNftTransforms.get(itemId)?.rotation || { x: 0, y: 0, z: 0 },
             scale: kioskNftTransforms.get(itemId)?.scale || { x: 1, y: 1, z: 1 },
             onProgress: (progress) => {
@@ -140,7 +190,7 @@ export function SculptureControlPanel({
     };
 
     // Add a small delay to ensure all state is settled
-    const timeoutId = setTimeout(autoLoadDisplayedModels, 300);
+    const timeoutId = setTimeout(autoLoadDisplayedModels, 500);
     return () => clearTimeout(timeoutId);
   }, [displayedNftItems, kioskNftItems, loadedModels, sceneManager, isLoading, kioskNftTransforms]);
 

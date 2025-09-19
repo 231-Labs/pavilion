@@ -13,7 +13,6 @@ import { useKioskState } from '../../components/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
-import { SceneLoadingOverlay } from '../../components/LoadingProvider';
 
 function PavilionContent() {
   const searchParams = useSearchParams();
@@ -30,6 +29,9 @@ function PavilionContent() {
   // Panel state for scene restoration
   const [panelDisplayedItems, setPanelDisplayedItems] = useState<Set<string>>(new Set());
   const [panelTransforms, setPanelTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
+  
+  // SculptureControlPanel loading state
+  const [sculptureControlPanelLoading, setSculptureControlPanelLoading] = useState<boolean>(false);
 
   // Create a wrapper function for tracking changes
   const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
@@ -92,6 +94,8 @@ function PavilionContent() {
     cameraPosition: [0, 1.6, 8],
     createGallery: true,
     enableKioskItems: true,
+    // Pass SculptureControlPanel loading state
+    sculptureControlPanelLoading,
   });
 
   // Initialize scene config manager when dependencies are available
@@ -218,9 +222,6 @@ function PavilionContent() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      {/* Scene Loading Overlay */}
-      <SceneLoadingOverlay />
-
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20 pointer-events-none z-0"></div>
 
@@ -257,6 +258,8 @@ function PavilionContent() {
           // Pass panel state for scene restoration
           initialDisplayedItems={panelDisplayedItems}
           initialTransforms={panelTransforms}
+          // Loading state callback
+          onLoadingStateChange={setSculptureControlPanelLoading}
         />
       </div>
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
