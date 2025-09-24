@@ -1,31 +1,11 @@
 import * as THREE from 'three';
-// @ts-expect-error Importing OrbitControls from examples path lacks bundled TS types in this setup
+// @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
+// @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DefaultScene, DefaultSceneConfig } from './DefaultScene';
-
-export interface SceneConfig {
-  backgroundColor?: number;
-  ambientLightColor?: number;
-  ambientLightIntensity?: number;
-  directionalLightColor?: number;
-  directionalLightIntensity?: number;
-  enableShadows?: boolean;
-  cameraPosition?: [number, number, number];
-  defaultScene?: DefaultSceneConfig;
-}
-
-// Options for loading GLB models
-export interface LoadGLBOptions {
-  position?: { x: number; y: number; z: number };
-  rotation?: { x: number; y: number; z: number };
-  scale?: { x: number; y: number; z: number };
-  castShadow?: boolean;
-  receiveShadow?: boolean;
-  name?: string;
-  onProgress?: (progress: ProgressEvent) => void;
-}
+import { ThreeSceneConfig, LoadGLBOptions } from '../../types/three';
 
 export class SceneManager {
   private scene: THREE.Scene;
@@ -38,7 +18,7 @@ export class SceneManager {
   private loadedModels: Map<string, THREE.Group> = new Map();
   private defaultScene?: DefaultScene;
 
-  constructor(canvas: HTMLCanvasElement, config: SceneConfig = {}) {
+  constructor(canvas: HTMLCanvasElement, config: ThreeSceneConfig = {}) {
     // Setup scene
     this.scene = new THREE.Scene();
 
@@ -83,7 +63,7 @@ export class SceneManager {
     window.addEventListener('resize', this.resizeHandler);
   }
 
-  private setupLights(config: SceneConfig) {
+  private setupLights(config: ThreeSceneConfig) {
     // Ambient light - significantly increase for better base lighting
     const ambientLight = new THREE.AmbientLight(
       config.ambientLightColor || 0x6a6a8a, // Brighten color further

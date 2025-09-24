@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { SceneManager, SceneConfig } from '../lib/three/SceneManager';
+import { SceneManager } from '../lib/three/SceneManager';
+import { ThreeSceneConfig } from '../types/three';
 import { SculptureInstance } from '../types/sculpture';
 import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../lib/three/KioskItemConverter';
 import { DefaultSceneConfig } from '../lib/three/DefaultScene';
 import { useLoading } from '../components/LoadingProvider';
 
-export interface UseThreeSceneOptions extends SceneConfig {
+export interface UseThreeSceneOptions extends ThreeSceneConfig {
   createGallery?: boolean;
   addSculptures?: boolean;
   enableKioskItems?: boolean;
@@ -36,7 +37,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     // Simplified scene initialization
     const initializeScene = async () => {
       try {
-        const sceneConfig: SceneConfig = {
+        const sceneConfig: ThreeSceneConfig = {
           ...options,
           // Convert createGallery option to defaultScene config
           defaultScene: options.createGallery !== false ? {

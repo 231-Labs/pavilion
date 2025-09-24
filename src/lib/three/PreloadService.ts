@@ -1,6 +1,7 @@
 'use client';
 
-import { SceneManager, SceneConfig } from './SceneManager';
+import { SceneManager } from './SceneManager';
+import { ThreeSceneConfig } from '../../types/three';
 import { KioskItemConverter } from './KioskItemConverter';
 import { SceneConfigManager } from '../scene/SceneConfigManager';
 
@@ -59,7 +60,7 @@ export class PreloadService {
       document.body.appendChild(hiddenCanvas);
 
       // Initialize scene manager
-      const sceneConfig: SceneConfig = {
+      const sceneConfig: ThreeSceneConfig = {
         backgroundColor: 0x1a1a1a,
         cameraPosition: [0, 1.6, 8],
         defaultScene: {
