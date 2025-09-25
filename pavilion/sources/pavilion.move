@@ -1,4 +1,4 @@
-/// Module: pavilion - User-level pavilion functionality
+/// Pavilion user-level features
 module pavilion::pavilion {
     use std::string::{Self, String};
     use sui::{
@@ -13,14 +13,20 @@ module pavilion::pavilion {
 
     // == Structs ==
 
-    /// Dynamic field key for pavilion name
+    /// Package init witness
+    public struct PAVILION has drop {}
+
+    /// DF key: pavilion name
     public struct PavilionName has copy, store, drop {}
 
-    /// Dynamic field key for scene configuration blob ID
+    /// DF key: scene config blob ID
     public struct SceneConfig has copy, store, drop {}
 
-    /// Pavilion extension witness
+    /// Pavilion extension witness (for kiosk_extension)
     public struct PavilionExtension has drop {}
+
+    /// Shared object to mark Pavilion extension availability
+    public struct PavilionExtensionObject has key, store { id: UID }
 
 
     // == Constants ==
@@ -29,7 +35,7 @@ module pavilion::pavilion {
     const MAX_NAME_LENGTH: u64 = 20;
     const MIN_NAME_LENGTH: u64 = 1;
     
-    // Commission-related constants moved to platform module
+    // Commission constants moved to platform module
     
     // Error codes
     #[error] const E_INVALID_NAME_LENGTH: u8 = 0;
@@ -37,11 +43,15 @@ module pavilion::pavilion {
 
     // == Public Functions ==
 
-    // == TransferPolicy Integration Examples ==
+    /// Init: share PavilionExtensionObject so frontends can detect availability
+    #[allow(lint(share_owned))]
+    fun init(_otw: PAVILION, ctx: &mut TxContext) {
+        let obj = PavilionExtensionObject { id: object::new(ctx) };
+        transfer::public_share_object(obj);
+    }
     
-    /// Purchase with policy-enforced commission (confirm_request phase)
-    /// Flow: purchase -> pay commission -> add receipt -> confirm_request
-    public fun purchase_with_policy_commission<T: key + store>(
+    /// Purchase with policy commission
+    public(package) fun purchase_with_policy_commission<T: key + store>(
         kiosk: &mut Kiosk,
         item_id: ID,
         payment: Coin<SUI>,
@@ -66,14 +76,12 @@ module pavilion::pavilion {
 
     // Simplified Transaction Functions (Legacy - commission now handled in TransferPolicy)
     
-    /// Simple marketplace purchase - commission is enforced by TransferPolicy
-    /// This function just executes the purchase and confirms the transfer policy
-    public fun marketplace_purchase<T: key + store>(
+    /// Marketplace purchase (policy enforces commission)
+    public(package) fun marketplace_purchase<T: key + store>(
         kiosk: &mut Kiosk,
         item_id: ID,
         payment: Coin<SUI>,
         transfer_policy: &TransferPolicy<T>,
-        _ctx: &mut TxContext
     ): T {
         // 1. Execute kiosk purchase
         let (nft, transfer_request) = kiosk::purchase<T>(kiosk, item_id, payment);
@@ -86,9 +94,8 @@ module pavilion::pavilion {
 
     // Standard Kiosk Functions (Use platform TransferPolicy for commission enforcement)
     
-    /// List an item in the pavilion kiosk
-    /// Commission enforcement is handled by TransferPolicy during purchase
-    public fun list_item<T: key + store>(
+    /// List item (commission via policy on purchase)
+    public(package) fun list_item<T: key + store>(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         item_id: ID,
@@ -97,8 +104,8 @@ module pavilion::pavilion {
         kiosk::list<T>(kiosk, cap, item_id, price);
     }
 
-    /// Delist an item from pavilion kiosk
-    public fun delist_item<T: key + store>(
+    /// Delist item
+    public(package) fun delist_item<T: key + store>(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         item_id: ID,
@@ -108,50 +115,53 @@ module pavilion::pavilion {
 
     // Kiosk Management Functions
     
-    /// Initialize pavilion functionality on an existing kiosk
-    /// This function can be called multiple times - first call installs extension, subsequent calls update settings
+    /// Initialize pavilion on kiosk (requires platform fee)
     public fun initialize_pavilion(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         name: String,
+        cfg: &platform::PlatformConfig,
+        treasury: &mut platform::Treasury,
+        payment: Coin<SUI>,
         ctx: &mut TxContext
     ) { 
-        // Validate name length
+        // Validate name
         validate_pavilion_name(&name);
         
-        // Check if this kiosk already has pavilion extension installed
+        // Charge opening fee
+        platform::pay_opening_fee(cfg, treasury, payment, ctx);
+
+        // If already a pavilion, just update name
         if (is_pavilion_kiosk(kiosk)) {
-            // This is already a pavilion kiosk, just update the name
             set_dynamic_field(kiosk, cap, PavilionName {}, name);
         } else {
-            // This is a new pavilion, install extension and initialize everything
+            // New pavilion: install extension and set name
             kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
             set_dynamic_field(kiosk, cap, PavilionName {}, name);
         };
     }
 
-    /// Update pavilion name (only works on existing pavilion kiosks)
+    /// Update pavilion name
     public fun update_pavilion_name(self: &mut Kiosk, cap: &KioskOwnerCap, name: String) {
-        // Ensure this is a pavilion kiosk
+        // Ensure pavilion kiosk
         assert_is_pavilion_kiosk(self);
         
-        // Validate name length
+        // Validate name
         validate_pavilion_name(&name);
         
         set_dynamic_field(self, cap, PavilionName {}, name);
     }
 
-    /// Set scene configuration blob ID (points to Walrus storage)
-    /// Only works on pavilion kiosks
+    /// Set scene config blob ID
     public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
-        // Ensure this is a pavilion kiosk
+        // Ensure pavilion kiosk
         assert_is_pavilion_kiosk(self);
         
         set_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
-    /// Remove pavilion functionality from kiosk
-    public fun remove_pavilion(self: &mut Kiosk, cap: &KioskOwnerCap) {
+    /// Remove pavilion data from kiosk
+    public(package) fun remove_pavilion(self: &mut Kiosk, cap: &KioskOwnerCap) {
         if (df::exists_(self.uid(), PavilionName {})) {
             let _name: String = df::remove(self.uid_mut_as_owner(cap), PavilionName {});
         };
@@ -162,19 +172,17 @@ module pavilion::pavilion {
 
     // Query Functions
 
-    /// Check if a kiosk has pavilion extension installed
-    /// This is crucial for the frontend to determine if the kiosk should be treated as a pavilion
+    /// Check if kiosk has pavilion extension
     public fun is_pavilion_kiosk(kiosk: &Kiosk): bool {
         kiosk_extension::is_installed<PavilionExtension>(kiosk)
     }
 
-    /// Verify that a kiosk is a pavilion kiosk (throws error if not)
-    /// Use this in functions that require pavilion functionality
-    public fun assert_is_pavilion_kiosk(kiosk: &Kiosk) {
+    /// Assert pavilion kiosk
+    public(package) fun assert_is_pavilion_kiosk(kiosk: &Kiosk) {
         assert!(is_pavilion_kiosk(kiosk), E_NOT_PAVILION);
     }
 
-    /// Get the name of the pavilion
+    /// Get pavilion name
     public fun pavilion_name(self: &Kiosk): Option<String> {
         if (df::exists_(self.uid(), PavilionName {})) {
             let name = *df::borrow(self.uid(), PavilionName {});
@@ -188,7 +196,7 @@ module pavilion::pavilion {
         }
     }
 
-    /// Get scene configuration blob ID
+    /// Get scene config blob ID
     public fun scene_config_blob(self: &Kiosk): Option<String> {
         if (df::exists_(self.uid(), SceneConfig {})) {
             option::some(*df::borrow(self.uid(), SceneConfig {}))
@@ -200,13 +208,13 @@ module pavilion::pavilion {
 
     // == Private Functions ==
 
-    /// Validate pavilion name length
+    /// Validate name length
     fun validate_pavilion_name(name: &String) {
         assert!(string::length(name) > MIN_NAME_LENGTH, E_INVALID_NAME_LENGTH);
         assert!(string::length(name) <= MAX_NAME_LENGTH, E_INVALID_NAME_LENGTH);
     }
 
-    /// Generic function to set or update a dynamic field
+    /// Set or update a dynamic field
     fun set_dynamic_field<K: copy + store + drop, V: store + drop>(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,

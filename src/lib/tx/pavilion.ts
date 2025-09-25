@@ -11,6 +11,9 @@ type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      treasuryId: string;
+      paymentCoinObjectId: string;
     }
   | {
       mode: 'existing';
@@ -20,6 +23,9 @@ type PavilionTxConfig =
       ownerAddress: string;
       kioskId: string;
       kioskOwnerCapId: string;
+      platformConfigId: string;
+      treasuryId: string;
+      paymentCoinObjectId: string;
     }
   | {
       mode: 'auto';
@@ -27,6 +33,9 @@ type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      treasuryId: string;
+      paymentCoinObjectId: string;
     };
 
 /**
@@ -46,6 +55,11 @@ async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transa
     kioskTx.setKioskCap(tx.object(config.kioskOwnerCapId));
   }
 
+  // shared objects & payment coin
+  const platformConfig = tx.object((config as any).platformConfigId);
+  const treasury = tx.object((config as any).treasuryId);
+  const paymentCoin = tx.object((config as any).paymentCoinObjectId);
+
   // common initialize_pavilion call
   tx.moveCall({
     target: `${packageId}::pavilion::initialize_pavilion`,
@@ -53,6 +67,9 @@ async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transa
       kioskTx.getKiosk(),
       kioskTx.getKioskCap(),
       tx.pure.string(pavilionName),
+      platformConfig,
+      treasury,
+      paymentCoin,
     ],
   });
 
@@ -70,6 +87,9 @@ export async function buildCreatePavilionTx(params: {
   packageId: string;
   pavilionName: string;
   ownerAddress: string;
+  platformConfigId: string;
+  treasuryId: string;
+  paymentCoinObjectId: string;
 }): Promise<Transaction> {
   return buildPavilionTxInternal({
     mode: 'create',
@@ -84,6 +104,9 @@ export async function buildInitializePavilionWithExistingKioskTx(params: {
   ownerAddress: string;
   kioskId: string;
   kioskOwnerCapId: string;
+  platformConfigId: string;
+  treasuryId: string;
+  paymentCoinObjectId: string;
 }): Promise<Transaction> {
   return buildPavilionTxInternal({
     mode: 'existing',
@@ -101,6 +124,9 @@ export async function buildAutoPavilionTx(params: {
   packageId: string;
   pavilionName: string;
   ownerAddress: string;
+  platformConfigId: string;
+  treasuryId: string;
+  paymentCoinObjectId: string;
 }): Promise<Transaction> {
   const { kioskClient, ownerAddress } = params;
 

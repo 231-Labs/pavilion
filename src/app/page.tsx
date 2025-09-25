@@ -48,6 +48,18 @@ export default function Home() {
   });
 
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
+  const PLATFORM_CONFIG_ID = process.env.NEXT_PUBLIC_PLATFORM_CONFIG_ID as string | undefined;
+  const TREASURY_ID = process.env.NEXT_PUBLIC_TREASURY_ID as string | undefined;
+
+  const getBestGasCoinObjectId = async (): Promise<string> => {
+    if (!currentAccount) throw new Error('Wallet not connected');
+    const coins = await suiClient.getCoins({ owner: currentAccount.address, coinType: '0x2::sui::SUI', limit: 200 });
+    const data = coins?.data ?? [];
+    if (!data.length) throw new Error('No SUI coins found');
+    const best = data.reduce((acc: any, c: any) => (BigInt(c.balance ?? 0) > BigInt(acc.balance ?? 0) ? c : acc), data[0]);
+    if (!best?.coinObjectId) throw new Error('Failed to resolve SUI coin id');
+    return best.coinObjectId as string;
+  };
 
   // Auto-fetch owned kiosks when wallet connects/changes
   useEffect(() => {
@@ -132,14 +144,22 @@ export default function Home() {
       setError('Pavilion name is required');
       return;
     }
+    if (!PLATFORM_CONFIG_ID || !TREASURY_ID) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID or NEXT_PUBLIC_TREASURY_ID');
+      return;
+    }
 
     setCreating(true);
     try {
+      const paymentCoinObjectId = await getBestGasCoinObjectId();
       const tx = await buildCreatePavilionTx({
         kioskClient,
         packageId: PAVILION_PACKAGE_ID,
         pavilionName,
         ownerAddress: currentAccount.address,
+        platformConfigId: PLATFORM_CONFIG_ID,
+        treasuryId: TREASURY_ID,
+        paymentCoinObjectId,
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
@@ -285,9 +305,14 @@ export default function Home() {
         setError('Missing kiosk cap for selected kiosk');
         return;
       }
+      if (!PLATFORM_CONFIG_ID || !TREASURY_ID) {
+        setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID or NEXT_PUBLIC_TREASURY_ID');
+        return;
+      }
       setCreating(true);
       try {
         setError(null);
+        const paymentCoinObjectId = await getBestGasCoinObjectId();
         const tx = await buildInitializePavilionWithExistingKioskTx({
           kioskClient,
           packageId: PAVILION_PACKAGE_ID!,
@@ -295,6 +320,9 @@ export default function Home() {
           ownerAddress: currentAccount.address,
           kioskId: selectedKioskId,
           kioskOwnerCapId: cap,
+          platformConfigId: PLATFORM_CONFIG_ID,
+          treasuryId: TREASURY_ID,
+          paymentCoinObjectId,
         });
         const result = await signAndExecuteTransaction({ transaction: tx });
         const digest = (result as any)?.digest ?? null;
