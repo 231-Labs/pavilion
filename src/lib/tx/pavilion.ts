@@ -310,6 +310,37 @@ export async function readSceneConfig(params: {
   }
 }
 
+export async function readPavilionName(params: {
+  suiClient: any;
+  packageId: string;
+  kioskId: string;
+}): Promise<string | null> {
+  const { suiClient, packageId, kioskId } = params;
+  try {
+    const resp = await suiClient.getDynamicFieldObject({
+      parentId: kioskId,
+      name: {
+        type: `${packageId}::pavilion::PavilionName`,
+        value: {},
+      },
+    });
+    const value = resp?.data?.content?.fields?.value;
+    if (typeof value === 'string' && value.length > 0) return value;
+    return null;
+  } catch {
+    try {
+      const fieldsResp = await suiClient.getDynamicFields({ parentId: kioskId });
+      const match = fieldsResp?.data?.find((f: any) => f?.name?.type?.includes('PavilionName'));
+      if (match) {
+        const fieldResp = await suiClient.getDynamicFieldObject({ parentId: kioskId, name: match.name });
+        const value = fieldResp?.data?.content?.fields?.value;
+        if (typeof value === 'string' && value.length > 0) return value;
+      }
+    } catch {}
+    return null;
+  }
+}
+
 export function setSceneConfigTx(params: {
   kioskClient: KioskClient;
   packageId: string;

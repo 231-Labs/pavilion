@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../components/KioskClientProvider';
-import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../lib/tx/pavilion';
+import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents, readPavilionName } from '../lib/tx/pavilion';
 import { useKioskState } from '../components/KioskStateProvider';
 import { useLoading } from '../components/LoadingProvider';
 import { PreloadService, PreloadedSceneData } from '../lib/three/PreloadService';
@@ -24,7 +24,7 @@ export default function Home() {
   const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
   const [visitSubMode, setVisitSubMode] = useState<'my' | 'external'>('my');
   const [selectedVisitKioskId, setSelectedVisitKioskId] = useState<string | null>(null);
-  const [pavilionKiosks, setPavilionKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean }[] | null>(null);
+  const [pavilionKiosks, setPavilionKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean; name?: string | null }[] | null>(null);
   const [fetchingPavilionKiosks, setFetchingPavilionKiosks] = useState(false);
   const kioskState = useKioskState();
   const router = useRouter();
@@ -102,7 +102,31 @@ export default function Home() {
         }
 
         setOwnedKiosks(filteredList);
-        setPavilionKiosks(pavilionList);
+        // 讀取每個 Pavilion kiosk 的名稱（動態欄位）
+        try {
+          if (PAVILION_PACKAGE_ID && pavilionList.length > 0) {
+            const withNames = await Promise.all(
+              pavilionList.map(async (k) => {
+                try {
+                  const name = await readPavilionName({
+                    suiClient,
+                    packageId: PAVILION_PACKAGE_ID,
+                    kioskId: k.kioskId,
+                  });
+                  return { ...k, name: name ?? null };
+                } catch {
+                  return { ...k, name: null };
+                }
+              })
+            );
+            if (!aborted) setPavilionKiosks(withNames);
+          } else {
+            setPavilionKiosks(pavilionList);
+          }
+        } catch (nameErr) {
+          console.warn('Failed to load pavilion names:', nameErr);
+          setPavilionKiosks(pavilionList);
+        }
       } catch (e) {
         if (aborted) return;
         console.error('Failed to fetch kiosks:', e);
@@ -115,7 +139,7 @@ export default function Home() {
     };
     void run();
     return () => { aborted = true; };
-  }, [currentAccount, kioskClient]);
+  }, [currentAccount, kioskClient, suiClient]);
 
   const onCreatePavilion = async () => {
     setError(null);
@@ -363,8 +387,8 @@ export default function Home() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-[#0F0F12]"></div>
         
-        {/* Animated background gradients */}
-        <div className={`absolute inset-0 transition-opacity duration-500 ${loadingState.backgroundAnimating ? 'bg-animated opacity-100' : 'opacity-100'}`}>
+        {/* Background gradients (static, no transition) */}
+        <div className={`absolute inset-0`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_40%)]"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.04),transparent_40%)]"></div>
         </div>
@@ -372,8 +396,8 @@ export default function Home() {
         <div className="absolute inset-0 bg-[conic-gradient(from_180deg_at_50%_50%,rgba(255,255,255,0.06),transparent_50%)] mix-blend-overlay"></div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent via-transparent to-white/10"></div>
         
-        {/* Animated terminal grid */}
-        <div className={`terminal-grid ${loadingState.backgroundAnimating ? 'terminal-grid--animating' : ''}`}></div>
+        {/* Terminal grid (static) */}
+        <div className={`terminal-grid`}></div>
         
       </div>
 
@@ -400,7 +424,7 @@ export default function Home() {
 
       {/* Main Content - Glass Ribbon Layout */}
       <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-1 grid place-items-center">
-        <div className={`architect-grid ${loadingState.backgroundAnimating ? 'architect-grid--animating' : ''}`}></div>
+        <div className={`architect-grid`}></div>
 
         <section 
           className="relative mx-auto glass-ribbon rounded-xl border border-white/10 overflow-hidden -translate-y-4 md:-translate-y-6"
@@ -810,10 +834,12 @@ export default function Home() {
                           >
                             {(pavilionKiosks && pavilionKiosks.length > 0) ? (
                               <ul className="divide-y divide-white/10">
-                                {pavilionKiosks.map((k) => (
+                                    {pavilionKiosks.map((k) => (
                                   <li key={k.objectId} className={`px-3 py-1 cursor-pointer ${selectedVisitKioskId === k.kioskId ? 'bg-white/10' : 'hover:bg-white/5'}`} onClick={() => setSelectedVisitKioskId(k.kioskId)}>
                                     <div className="text-[11px] leading-tight text-white/85 truncate">
-                                      {k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : ''}
+                                      {k.name && k.name.trim().length > 0
+                                        ? k.name
+                                        : (k.kioskId ? `${k.kioskId.slice(0, 8)}...${k.kioskId.slice(-6)}` : '')}
                                     </div>
                                   </li>
                                 ))}
@@ -873,8 +899,8 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Architectural Frame */}
-      <div className={`architect-frame ${loadingState.backgroundAnimating ? 'architect-frame--animating' : ''}`} />
+      {/* Architectural Frame (static during transition to avoid thick glowing borders) */}
+      <div className={`architect-frame`} />
     </div>
   );
 }

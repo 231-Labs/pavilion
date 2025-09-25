@@ -12,7 +12,6 @@ interface ExternalModelsSectionProps {
   error: string | null;
   loadedModels: string[];
   onLoadWalrus: () => void;
-  onClearModels: () => void;
   onLoadAllModels: () => void;
 }
 
@@ -26,7 +25,6 @@ export function ExternalModelsSection({
   error,
   loadedModels,
   onLoadWalrus,
-  onClearModels,
   onLoadAllModels,
 }: ExternalModelsSectionProps) {
   return (
@@ -70,15 +68,6 @@ export function ExternalModelsSection({
                 ) : (
                   <span className="walrus-glyph" aria-hidden="true"></span>
                 )}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                onClick={onClearModels}
-                className="px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
-              >
-                Clear Models
               </button>
             </div>
 
