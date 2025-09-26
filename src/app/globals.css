@@ -96,97 +96,7 @@
 .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
 .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-/* Background Animation System - Energy Flow Effects */
-@keyframes gridPulse {
-  0%, 100% { 
-    opacity: 0.8; 
-    transform: scale(1);
-  }
-  25% { 
-    opacity: 0.95; 
-    transform: scale(1.001);
-  }
-  50% { 
-    opacity: 1.05; 
-    transform: scale(1.002);
-  }
-  75% { 
-    opacity: 0.95; 
-    transform: scale(1.001);
-  }
-}
-
-@keyframes energyWave {
-  0% { 
-    background-position: -100% 0, 0 -100%; 
-    opacity: 0.6;
-  }
-  50% { 
-    background-position: 200% 0, 0 200%; 
-    opacity: 1.0;
-  }
-  100% { 
-    background-position: 300% 0, 0 300%; 
-    opacity: 0.6;
-  }
-}
-
-@keyframes dataFlow {
-  0% { 
-    background-position: 0 0, 0 0;
-    filter: brightness(1) hue-rotate(0deg);
-  }
-  25% { 
-    background-position: -32px -32px, 32px 32px;
-    filter: brightness(1.08) hue-rotate(5deg);
-  }
-  50% { 
-    background-position: -64px -64px, 64px 64px;
-    filter: brightness(1.15) hue-rotate(8deg);
-  }
-  75% { 
-    background-position: -32px -32px, 32px 32px;
-    filter: brightness(1.08) hue-rotate(5deg);
-  }
-  100% { 
-    background-position: 0 0, 0 0;
-    filter: brightness(1) hue-rotate(0deg);
-  }
-}
-
-
-@keyframes systemActivation {
-  0%, 100% { 
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-    filter: brightness(1);
-  }
-  25% { 
-    box-shadow: 
-      inset 0 0 0 1px rgba(64,200,255,0.25),
-      0 0 12px rgba(64,200,255,0.08);
-    filter: brightness(1.02);
-  }
-  75% { 
-    box-shadow: 
-      inset 0 0 0 1px rgba(255,196,120,0.25),
-      0 0 15px rgba(255,196,120,0.1),
-      inset 0 0 25px rgba(255,196,120,0.03);
-    filter: brightness(1.04);
-  }
-}
-
-@keyframes backgroundRadiance {
-  0%, 100% { 
-    background: 
-      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.04), transparent 40%),
-      radial-gradient(circle at 80% 30%, rgba(255,255,255,0.03), transparent 40%);
-  }
-  50% { 
-    background: 
-      radial-gradient(circle at 30% 70%, rgba(64,200,255,0.06), transparent 45%),
-      radial-gradient(circle at 70% 30%, rgba(255,196,120,0.05), transparent 40%);
-  }
-}
+/* Background Animation System - removed unused keyframes */
 @import "tailwindcss";
 
 :root {
@@ -364,16 +274,9 @@ body::before {
   opacity: 0.8;
   mask-image: radial-gradient(circle at center, black 65%, transparent 95%);
   pointer-events: none;
-  transition: all 0.5s ease;
 }
 
-/* Animated architect grid */
-.architect-grid--animating {
-  animation: gridPulse 3.5s ease-in-out infinite;
-  background-image:
-    linear-gradient(rgba(64,200,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,196,120,0.035) 1px, transparent 1px);
-}
+/* Animated architect grid - removed */
 
 /* Horizontal glass ribbon */
 .glass-ribbon {
@@ -402,40 +305,58 @@ body::before {
   background-size: 32px 32px, 32px 32px;
   mask-image: radial-gradient(circle at center, black 50%, transparent 85%);
   pointer-events: none;
-  transition: all 0.5s ease;
 }
 
-/* Animated terminal grid */
-.terminal-grid--animating {
-  animation: dataFlow 4.5s ease-in-out infinite;
+/* Animated terminal grid - removed */
+
+/* Single horizontal sweep line (CRT-like) */
+@keyframes sweepDown {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(120%); }
+}
+
+.terminal-grid--sweep {
+  position: absolute;
+  inset: 0;
+  /* keep very subtle grid backdrop */
   background-image:
-    linear-gradient(rgba(255,196,120,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(64,200,255,0.04) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
   mask-image: radial-gradient(circle at center, black 60%, transparent 90%);
+  pointer-events: none;
 }
 
-
-/* Background radiance animation */
-.bg-animated {
-  animation: backgroundRadiance 6s ease-in-out infinite;
+.terminal-grid--sweep::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 10px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255,255,255,0.12) 40%,
+    rgba(255,255,255,0.18) 50%,
+    rgba(255,255,255,0.12) 60%,
+    transparent 100%
+  );
+  filter: blur(0.3px);
+  mix-blend-mode: luminosity;
+  animation: sweepDown 2.8s linear infinite;
 }
 
-/* Architectural frame animation */
-.architect-frame--animating {
-  animation: systemActivation 4s ease-in-out infinite;
-  border-color: rgba(255,255,255,0.15);
-}
+/* Water ripple effect for terminal grid - removed */
 
-.architect-frame--animating::before,
-.architect-frame--animating::after {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(64,200,255,0.15) 25%, 
-    rgba(255,196,120,0.18) 50%, 
-    rgba(64,200,255,0.15) 75%, 
-    transparent);
-  animation: energyWave 4s ease-in-out infinite;
-}
+/* Retro scanline and CRT effects - removed */
+
+/* Scanlines effect - removed */
+
+
+/* Background radiance animation - removed */
+
+/* Architectural frame animation - removed */
 
 /* Noise film */
 .film-noise::after {

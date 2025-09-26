@@ -10,6 +10,8 @@ module pavilion::pavilion {
         transfer_policy::{Self, TransferPolicy},
     };
     use pavilion::platform;
+    use pavilion::policy_commission;
+    use pavilion::utils::{Self, validate_pavilion_name, set_kiosk_dynamic_field};
 
     // == Structs ==
 
@@ -32,13 +34,10 @@ module pavilion::pavilion {
     // == Constants ==
 
     const PAVILION_PERMISSIONS: u128 = 3;
-    const MAX_NAME_LENGTH: u64 = 20;
-    const MIN_NAME_LENGTH: u64 = 1;
     
     // Commission constants moved to platform module
     
     // Error codes
-    #[error] const E_INVALID_NAME_LENGTH: u8 = 0;
     #[error] const E_NOT_PAVILION: u8 = 1;
 
     // == Public Functions ==
@@ -50,27 +49,28 @@ module pavilion::pavilion {
         transfer::public_share_object(obj);
     }
     
-    /// Purchase with policy commission
-    public(package) fun purchase_with_policy_commission<T: key + store>(
+    /// Purchase with enforced platform commission (prevents bypass)
+    public fun marketplace_purchase_with_platform_commission<T: key + store>(
         kiosk: &mut Kiosk,
         item_id: ID,
         payment: Coin<SUI>,
         policy: &TransferPolicy<T>,
         commission_payment: Coin<SUI>,
-        commission_recipient: address,
         _ctx: &mut TxContext
     ): T {
-        // 1) Kiosk purchase
+        // 1) Execute kiosk purchase
         let (nft, mut transfer_request) = kiosk::purchase<T>(kiosk, item_id, payment);
-        // 2) Pay commission and add receipt for PlatformCommissionRule
-        platform::pay_commission_and_add_receipt(
+        
+        // 2) Pay platform commission (required by TransferPolicy rule)
+        policy_commission::pay_platform_commission_and_add_receipt(
             policy,
             &mut transfer_request,
-            commission_payment,
-            commission_recipient
+            commission_payment
         );
-        // 3) Confirm policy (now that receipt exists)
+        
+        // 3) Confirm transfer policy - this will FAIL if commission wasn't paid
         transfer_policy::confirm_request(policy, transfer_request);
+        
         nft
     }
 
@@ -129,15 +129,14 @@ module pavilion::pavilion {
         validate_pavilion_name(&name);
         
         // Charge opening fee
-        platform::pay_opening_fee(cfg, treasury, payment, ctx);
+        pay_pavilion_opening_fee(cfg, treasury, payment, ctx);
 
         // If already a pavilion, just update name
         if (is_pavilion_kiosk(kiosk)) {
-            set_dynamic_field(kiosk, cap, PavilionName {}, name);
+            set_kiosk_dynamic_field(kiosk, cap, PavilionName {}, name);
         } else {
-            // New pavilion: install extension and set name
             kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
-            set_dynamic_field(kiosk, cap, PavilionName {}, name);
+            set_kiosk_dynamic_field(kiosk, cap, PavilionName {}, name);
         };
     }
 
@@ -148,16 +147,14 @@ module pavilion::pavilion {
         
         // Validate name
         validate_pavilion_name(&name);
-        
-        set_dynamic_field(self, cap, PavilionName {}, name);
+        set_kiosk_dynamic_field(self, cap, PavilionName {}, name);
     }
 
-    /// Set scene config blob ID
+    /// Set scene config
     public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
         // Ensure pavilion kiosk
         assert_is_pavilion_kiosk(self);
-        
-        set_dynamic_field(self, cap, SceneConfig {}, config);
+        set_kiosk_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
     /// Remove pavilion data from kiosk
@@ -205,26 +202,28 @@ module pavilion::pavilion {
         }
     }
 
+    // == Pavilion Opening Fee ==
 
-    // == Private Functions ==
-
-    /// Validate name length
-    fun validate_pavilion_name(name: &String) {
-        assert!(string::length(name) > MIN_NAME_LENGTH, E_INVALID_NAME_LENGTH);
-        assert!(string::length(name) <= MAX_NAME_LENGTH, E_INVALID_NAME_LENGTH);
-    }
-
-    /// Set or update a dynamic field
-    fun set_dynamic_field<K: copy + store + drop, V: store + drop>(
-        kiosk: &mut Kiosk,
-        cap: &KioskOwnerCap,
-        key: K,
-        value: V
+    /// Pay opening fee to become a pavilion
+    #[allow(lint(self_transfer))]
+    fun pay_pavilion_opening_fee(
+        cfg: &platform::PlatformConfig,
+        treasury: &mut platform::Treasury,
+        payment: Coin<SUI>,
+        ctx: &mut TxContext
     ) {
-        if (df::exists_(kiosk.uid(), key)) {
-            *df::borrow_mut(kiosk.uid_mut_as_owner(cap), key) = value;
+        let fee = platform::opening_fee(cfg);
+        let (fee_balance, change_opt) = utils::split_payment_with_change(payment, fee, ctx);
+        
+        // Deposit fee to treasury
+        platform::deposit_to_treasury(treasury, fee_balance);
+        
+        // Return change if any
+        if (option::is_some(&change_opt)) {
+            let change = option::destroy_some(change_opt);
+            transfer::public_transfer(change, ctx.sender());
         } else {
-            df::add(kiosk.uid_mut_as_owner(cap), key, value);
+            option::destroy_none(change_opt);
         }
     }
 }
