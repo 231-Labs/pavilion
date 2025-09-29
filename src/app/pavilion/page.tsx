@@ -10,13 +10,16 @@ import { useObjectChanges } from '../../hooks/useObjectChanges';
 import { SculptureControlPanel } from '../../components/SculptureControlPanel';
 import { WalletTerminal } from '../../components/WalletTerminal';
 import { useKioskState } from '../../components/KioskStateProvider';
+import { clearDemoStorage } from '../../utils/clearDemoStorage';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
+import { MOCK_2D_NFTS } from '../../config/nft-test-config';
 
 function PavilionContent() {
   const searchParams = useSearchParams();
   const kioskId = searchParams.get('kioskId');
+  const isDemoMode = !kioskId; // Demo mode when no specific kiosk ID is provided
   const kioskState = useKioskState();
   const { objectChanges, trackKioskNftChange, clearChanges } = useObjectChanges();
   const [walrusItems, setWalrusItems] = useState<any[]>([]);
@@ -29,6 +32,7 @@ function PavilionContent() {
   // Panel state for scene restoration
   const [panelDisplayedItems, setPanelDisplayedItems] = useState<Set<string>>(new Set());
   const [panelTransforms, setPanelTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
+  const [injectedMockData, setInjectedMockData] = useState<any[]>([]);
   
   // SculptureControlPanel loading state
   const [sculptureControlPanelLoading, setSculptureControlPanelLoading] = useState<boolean>(false);
@@ -37,6 +41,18 @@ function PavilionContent() {
   const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
     trackKioskNftChange(objectId, objectName, property, fromValue, toValue, new Set(), new Map());
   };
+
+  // Clear storage and ensure clean state in Demo mode, then auto-load mock data
+  useEffect(() => {
+    if (isDemoMode) {
+      clearDemoStorage();
+      console.log('🎭 Demo mode initialized: clean state');
+      
+      // Auto-inject mock 2D NFT data for demo
+      setInjectedMockData(MOCK_2D_NFTS);
+      console.log('🖼️ Auto-loaded mock 2D NFT data for demo mode');
+    }
+  }, [isDemoMode]);
 
   // Handle kioskId parameter - update kiosk state for WalletTerminal display
   useEffect(() => {
@@ -116,17 +132,22 @@ function PavilionContent() {
 
   // Analyze kiosk items and extract blob IDs when kiosk state changes
   useEffect(() => {
-    const kioskItems = kioskState.kioskItems;
+    const baseKioskItems = kioskState.kioskItems || [];
+    const itemsToProcess = isDemoMode 
+      ? [...baseKioskItems, ...injectedMockData]
+      : baseKioskItems;
 
-    if (kioskItems && kioskItems.length > 0) {
+    if (itemsToProcess.length > 0) {
       // Analyze kiosk items to find blob IDs
       if (!sceneManager) {
         console.warn('SceneManager not available for kiosk item analysis');
         return;
       }
 
+      console.log(`🎯 Processing ${itemsToProcess.length} items${isDemoMode ? ' (Demo mode with mock data)' : ''}`);
+
       const converter = new KioskItemConverter(sceneManager);
-      const analyses = converter.analyzeKioskItems(kioskItems);
+      const analyses = converter.analyzeKioskItems(itemsToProcess);
 
       // Find Walrus blob IDs
       const foundWalrusItems = analyses.filter(item => item.type === 'walrus' && item.blobId);
@@ -137,40 +158,67 @@ function PavilionContent() {
         setWalrusItems([]);
       }
 
-      // Load non-Walrus items directly
-      const nonWalrusItems = kioskItems.filter(item => {
+      // Load non-Walrus, non-image items directly (images are handled by SculptureControlPanel on demand)
+      const nonWalrusNonImageItems = itemsToProcess.filter(item => {
         const analysis = analyses.find(a => a.kioskItem.objectId === item.objectId);
-        return analysis && analysis.type !== 'walrus';
+        return analysis && analysis.type !== 'walrus' && analysis.type !== 'image';
       });
 
-      if (nonWalrusItems.length > 0) {
-        loadKioskItems(nonWalrusItems);
+      if (nonWalrusNonImageItems.length > 0) {
+        loadKioskItems(nonWalrusNonImageItems);
+      }
+      
+      // Log info about 2D images (they will be handled by SculptureControlPanel)
+      const imageItems = itemsToProcess.filter(item => {
+        const analysis = analyses.find(a => a.kioskItem.objectId === item.objectId);
+        return analysis && analysis.type === 'image';
+      });
+      
+      if (imageItems.length > 0) {
+        console.log(`📸 Found ${imageItems.length} 2D image(s) - will be created on demand via SculptureControlPanel`);
       }
     } else {
       // Clear 3D scene if no kiosk items
       clearKioskItems();
     }
-  }, [kioskState.kioskItems, loadKioskItems, clearKioskItems, sceneManager]);
+  }, [kioskState.kioskItems, injectedMockData, isDemoMode, loadKioskItems, clearKioskItems, sceneManager]);
 
   // Update current scene config when kiosk items change
   useEffect(() => {
-    if (!sceneConfigManager || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
+    if (!sceneConfigManager) {
       setCurrentSceneConfig(null);
       return;
     }
 
-    const items = kioskState.kioskItems;
+    const baseKioskItems = kioskState.kioskItems || [];
+    const itemsToProcess = isDemoMode 
+      ? [...baseKioskItems, ...injectedMockData]
+      : baseKioskItems;
+
+    if (itemsToProcess.length === 0) {
+      setCurrentSceneConfig(null);
+      return;
+    }
+
     const config = sceneConfigManager.createSceneConfigFromKioskItems(
-      items,
-      kioskState.kioskId || undefined,
+      itemsToProcess,
+      isDemoMode ? undefined : (kioskState.kioskId || undefined),
       currentAccount?.address
     );
 
     setCurrentSceneConfig(config);
-  }, [sceneConfigManager, kioskState.kioskItems, kioskState.kioskId, currentAccount]);
+  }, [sceneConfigManager, kioskState.kioskItems, injectedMockData, isDemoMode, kioskState.kioskId, currentAccount]);
 
-  // Load scene config from chain and sync to panel state
+  // Load scene config from chain and sync to panel state (skip in Demo mode)
   useEffect(() => {
+    if (isDemoMode) {
+      // In Demo mode, don't load from chain, just reset to clean state
+      console.log('🎭 Demo mode: skipping on chain config loading');
+      setPanelDisplayedItems(new Set());
+      setPanelTransforms(new Map());
+      return;
+    }
+
     const loadAndSyncSceneConfig = async () => {
       if (!sceneConfigManager || !kioskId || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
         return;
@@ -211,7 +259,7 @@ function PavilionContent() {
 
     const timeoutId = setTimeout(loadAndSyncSceneConfig, 500);
     return () => clearTimeout(timeoutId);
-  }, [sceneConfigManager, kioskId, kioskState.kioskItems]);
+  }, [sceneConfigManager, kioskId, kioskState.kioskItems, isDemoMode]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -229,7 +277,7 @@ function PavilionContent() {
         objectChanges={objectChanges || new Map()}
         sceneConfigManager={sceneConfigManager}
         currentSceneConfig={currentSceneConfig}
-        kioskItems={kioskState.kioskItems || []}
+        kioskItems={[...(kioskState.kioskItems || []), ...injectedMockData]}
         onSaveSuccess={clearChanges}
         onSaveError={(error) => console.error('Save error:', error)}
       />
@@ -244,9 +292,9 @@ function PavilionContent() {
           onUpdateRotation={updateSculptureRotation}
           onUpdateScale={updateSculptureScale}
           autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
-          kioskItems={kioskState.kioskItems || []}
-          kioskId={kioskState.kioskId || undefined}
-          kioskOwnerCapId={kioskState.kioskOwnerCapId || undefined}
+          kioskItems={[...(kioskState.kioskItems || []), ...injectedMockData]}
+          kioskId={isDemoMode ? undefined : (kioskState.kioskId || undefined)}
+          kioskOwnerCapId={isDemoMode ? undefined : (kioskState.kioskOwnerCapId || undefined)}
           onTrackChange={handleTrackChange}
           // Pass panel state for scene restoration
           initialDisplayedItems={panelDisplayedItems}

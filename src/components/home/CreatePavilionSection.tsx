@@ -40,7 +40,7 @@ export function CreatePavilionSection({ createSubMode, setCreateSubMode }: Creat
       if (targetKioskId) {
         await navigateToKiosk(targetKioskId);
       } else {
-        // Navigate to demo pavilion
+        // Navigate to demo pavilion (without kioskId parameter)
         setTimeout(() => {
           window.location.href = '/pavilion';
         }, 800);
