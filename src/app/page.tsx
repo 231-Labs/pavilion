@@ -36,7 +36,6 @@ export default function Home() {
   const [visitSubMode, setVisitSubMode] = useState<'my' | 'external'>('my');
   const [selectedVisitKioskId, setSelectedVisitKioskId] = useState<string | null>(null);
   const [pavilionKiosks, setPavilionKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean; name?: string | null }[] | null>(null);
-  const [fetchingPavilionKiosks, setFetchingPavilionKiosks] = useState(false);
   const kioskState = useKioskState();
   const router = useRouter();
   const currentAccount = useCurrentAccount();
@@ -58,7 +57,7 @@ export default function Home() {
 
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
 
-  // Auto-fetch owned kiosks when wallet connects/changes
+  // Fetch owned kiosks when wallet connects
   useEffect(() => {
     let aborted = false;
     const run = async () => {
@@ -71,26 +70,22 @@ export default function Home() {
       }
       try {
         setFetchingKiosks(true);
-        setFetchingPavilionKiosks(true);
         const res = await kioskClient.getOwnedKiosks({ address: currentAccount.address });
         if (aborted) return;
 
-        // Filter out kiosks that already have PavilionExtension installed
+        // Separate kiosks with and without PavilionExtension
         const pavilionExtensionType = process.env.NEXT_PUBLIC_PAVILION_EXTENSION_TYPE as string | undefined;
         const pavilionPackageId = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
 
-        // Temporary fallback for development - use default values if env vars are not set
         const finalPavilionExtensionType = pavilionExtensionType ||
           `${pavilionPackageId || '0x0'}::pavilion::PavilionExtension`;
 
-        console.log('Using pavilion extension type:', finalPavilionExtensionType);
         const initialList = (res.kioskOwnerCaps ?? []).map((c: any) => ({
           objectId: c.objectId,
           kioskId: c.kioskId,
           isPersonal: c.isPersonal
         }));
 
-        // Check each kiosk for PavilionExtension
         const filteredList = [];
         const pavilionList = [];
         for (const kiosk of initialList) {
@@ -111,9 +106,9 @@ export default function Home() {
         }
 
         setOwnedKiosks(filteredList);
-        // 讀取每個 Pavilion kiosk 的名稱（動態欄位）
-        try {
-          if (PAVILION_PACKAGE_ID && pavilionList.length > 0) {
+        // Load pavilion names
+        if (PAVILION_PACKAGE_ID && pavilionList.length > 0) {
+          try {
             const withNames = await Promise.all(
               pavilionList.map(async (k) => {
                 try {
@@ -129,20 +124,17 @@ export default function Home() {
               })
             );
             if (!aborted) setPavilionKiosks(withNames);
-          } else {
+          } catch {
             setPavilionKiosks(pavilionList);
           }
-        } catch (nameErr) {
-          console.warn('Failed to load pavilion names:', nameErr);
+        } else {
           setPavilionKiosks(pavilionList);
         }
-      } catch (e) {
+      } catch {
         if (aborted) return;
-        console.error('Failed to fetch kiosks:', e);
       } finally {
         if (!aborted) {
           setFetchingKiosks(false);
-          setFetchingPavilionKiosks(false);
         }
       }
     };
@@ -178,27 +170,29 @@ export default function Home() {
       const result = await signAndExecuteTransaction({ transaction: tx });
       const digest = (result as SuiTransactionResult)?.digest ?? null;
       setTxDigest(digest);
-      // console.log('Create Pavilion tx result:', result);
 
-      // Extract new kiosk & cap ids directly from objectChanges and fetch kiosk contents
-      // TODO: find simpler way to do this
+      // Extract new kiosk & cap ids from transaction
       try {
         const changes = (result as SuiTransactionResult)?.objectChanges ?? [];
-        let kioskIdNew: string | undefined;
-        let kioskOwnerCapIdNew: string | undefined;
-        for (const ch of changes) {
-          if (ch.type !== 'created') continue;
-          const t = ch.objectType;
-          const id = ch.objectId;
-          if (!t || !id) continue;
-          if (t.endsWith('::kiosk::Kiosk')) kioskIdNew = id;
-          if (t.endsWith('::kiosk::KioskOwnerCap')) kioskOwnerCapIdNew = id;
+        const kioskChange = changes.find(ch => 
+          ch.type === 'created' && ch.objectType?.endsWith('::kiosk::Kiosk')
+        );
+        const capChange = changes.find(ch => 
+          ch.type === 'created' && ch.objectType?.endsWith('::kiosk::KioskOwnerCap')
+        );
+        
+        const kioskIdNew = kioskChange?.objectId;
+        const kioskOwnerCapIdNew = capChange?.objectId;
+        
+        if (kioskIdNew) {
+          setCreatedKioskId(kioskIdNew);
+          await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
         }
-        if (kioskIdNew) setCreatedKioskId(kioskIdNew);
-        if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
-        if (kioskIdNew) await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
-      } catch (parseErr) {
-        console.warn('Failed to parse kiosk ids from tx:', parseErr);
+        if (kioskIdNew || kioskOwnerCapIdNew) {
+          kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
+        }
+      } catch {
+        // Failed to parse kiosk ids from transaction
       }
     } catch (e) {
       setError((e as Error).message ?? 'Create Pavilion transaction failed');
@@ -209,26 +203,17 @@ export default function Home() {
 
   // Preload scene and models for smoother transition
   const preloadSceneForKiosk = async (targetKioskId: string): Promise<boolean> => {
-    if (!kioskClient || !suiClient) {
-      console.error('❌ Kiosk or Sui client not available for preloading');
-      return false;
-    }
-
-    const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID;
-    if (!PAVILION_PACKAGE_ID) {
-      console.error('❌ Pavilion package ID not configured');
+    if (!kioskClient || !suiClient || !PAVILION_PACKAGE_ID) {
       return false;
     }
 
     try {
-      console.log(`🎬 Starting scene preload for kiosk: ${targetKioskId}`);
       setPreloading(true, 0, 'Initializing preload...');
 
       // Fetch kiosk items
       setPreloading(true, 10, 'Fetching kiosk contents...');
       const kioskData = await fetchKioskContents({ kioskClient, kioskId: targetKioskId });
       const kioskItems = kioskData?.items || [];
-      console.log(`📋 Found ${kioskItems.length} items in kiosk`);
 
       // Create preload service
       const service = new PreloadService({
@@ -241,11 +226,9 @@ export default function Home() {
           setPreloading(true, progress, details ? `${stage} (${details})` : stage);
         },
         onComplete: () => {
-          console.log('🎉 Scene preload completed successfully!');
           // Data is handled internally by PreloadService
         },
-        onError: (error) => {
-          console.error('❌ Preload error:', error);
+        onError: () => {
           setPreloading(false);
         }
       });
@@ -255,10 +238,24 @@ export default function Home() {
       setPreloading(false, 100, 'Preload complete!');
       
       return true;
-    } catch (error) {
-      console.error('❌ Scene preload failed:', error);
+    } catch {
       setPreloading(false);
       return false;
+    }
+  };
+
+  const navigateToKiosk = async (targetKioskId: string) => {
+    const preloadSuccess = await preloadSceneForKiosk(targetKioskId);
+    
+    if (preloadSuccess) {
+      setTimeout(() => {
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
+      }, 300);
+    } else {
+      setLoading(true);
+      setTimeout(() => {
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
+      }, 800);
     }
   };
 
@@ -267,25 +264,8 @@ export default function Home() {
       const targetKioskId = createdKioskId || kioskState.kioskId;
       
       if (targetKioskId) {
-        console.log(`🎬 Starting preload for kiosk: ${targetKioskId}`);
-        // Start preloading - this will trigger background animation
-        const preloadSuccess = await preloadSceneForKiosk(targetKioskId);
-        
-        if (preloadSuccess) {
-          console.log('✅ Preload completed, navigating to pavilion...');
-          // Add small delay for smooth transition
-          setTimeout(() => {
-            router.push(`/pavilion?kioskId=${targetKioskId}`);
-          }, 300);
-        } else {
-          console.warn('⚠️ Preload failed, navigating without preload...');
-          setLoading(true);
-          setTimeout(() => {
-            router.push(`/pavilion?kioskId=${targetKioskId}`);
-          }, 800);
-        }
+        await navigateToKiosk(targetKioskId);
       } else {
-        // No kiosk ID, navigate to demo pavilion directly
         setLoading(true);
         setTimeout(() => {
           router.push('/pavilion');
@@ -329,9 +309,8 @@ export default function Home() {
         const result = await signAndExecuteTransaction({ transaction: tx });
         const digest = (result as SuiTransactionResult)?.digest ?? null;
         setTxDigest(digest);
-        // set global kiosk state so /pavilion and Wallet panel can reflect selection
+        // Set global kiosk state and fetch contents
         kioskState.setKioskFromIds({ kioskId: selectedKioskId, kioskOwnerCapId: cap });
-        // parse kiosk items for preview
         try {
           await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
         } catch {}
@@ -368,32 +347,16 @@ export default function Home() {
       targetKioskId = kioskId.trim();
     }
 
-    console.log(`🎬 Starting preload for visit kiosk: ${targetKioskId}`);
-    // Start preloading - this will trigger background animation
-    const preloadSuccess = await preloadSceneForKiosk(targetKioskId);
-    
-    if (preloadSuccess) {
-      console.log('✅ Visit preload completed, navigating to pavilion...');
-      // Add small delay for smooth transition
-      setTimeout(() => {
-        router.push(`/pavilion?kioskId=${targetKioskId}`);
-      }, 300);
-    } else {
-      console.warn('⚠️ Visit preload failed, navigating without preload...');
-      setLoading(true);
-      setTimeout(() => {
-        router.push(`/pavilion?kioskId=${targetKioskId}`);
-      }, 800);
-    }
+    await navigateToKiosk(targetKioskId);
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden film-noise flex flex-col">
-      {/* Enhanced Background with Animation System */}
+      {/* Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-[#0F0F12]"></div>
         
-        {/* Background gradients (static, no transition) */}
+        {/* Background gradients */}
         <div className={`absolute inset-0`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_40%)]"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.04),transparent_40%)]"></div>
@@ -402,7 +365,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[conic-gradient(from_180deg_at_50%_50%,rgba(255,255,255,0.06),transparent_50%)] mix-blend-overlay"></div>
         <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent via-transparent to-white/10"></div>
         
-        {/* Terminal grid (static) */}
+        {/* Terminal grid */}
         <div className={`terminal-grid`}></div>
         
       </div>
@@ -416,7 +379,7 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Header Connect Wallet*/}
+        {/* Connect Wallet */}
         <div className="flex items-center mt-1">
         <ConnectButton
           style={{
@@ -469,11 +432,7 @@ export default function Home() {
               <div className="mt-6">
                 <button
                   onClick={() => {
-                    // Demo pavilion - no preloading needed, use standard animation
-                    console.log('🎬 Navigating to Demo Pavilion (no preload needed)');
                     setLoading(true);
-                    
-                    // Small delay for animation to be visible before navigation
                     setTimeout(() => {
                       router.push('/pavilion');
                     }, 800);
@@ -484,10 +443,8 @@ export default function Home() {
                   <div className="relative">
                     <div className="text-sm font-medium tracking-wide silver-glow relative">
                       Demo Pavilion
-                      {/* Elegant underline */}
                       <div className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                    {/* Subtle glow effect on hover */}
                     <div className="absolute inset-0 text-sm font-medium tracking-wide text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]">
                       Demo Pavilion
                     </div>
@@ -592,7 +549,6 @@ export default function Home() {
                     <div className="flex items-center">
                       <div>
                         <div className="text-base md:text-lg font-semibold tracking-wide">Create Pavilion</div>
-                        {/* Sub-mode toggle - small capsule buttons */}
                         <div className="mt-2 mb-3 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
                           <button
                             onClick={() => setCreateSubMode('new')}
@@ -610,19 +566,17 @@ export default function Home() {
                           </button>
                         </div>
                         {txDigest ? (
-                          <div className="mt-5 mb-5">
-                            <div className="flex items-center justify-center">
-                              <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">Pavilion Created</span>
-                              <a
-                                href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label="View on SuiScan"
-                                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
-                              >
-                                <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
-                              </a>
-                            </div>
+                          <div className="mt-5 mb-5 flex items-center justify-center">
+                            <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">Pavilion Created</span>
+                            <a
+                              href={`https://suiscan.xyz/testnet/tx/${txDigest}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="View on SuiScan"
+                              className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
+                            >
+                              <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
+                            </a>
                           </div>
                         ) : (
                           <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
@@ -647,14 +601,13 @@ export default function Home() {
                                 className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
                               />
                             </div>
-                            {/* Spacer to fill remaining space */}
                             <div className="flex-1"></div>
                           </div>
                         ) : null}
                         {createSubMode !== 'new' && !txDigest ? (
                           <div className="mt-4 flex flex-col flex-1">
                             {!selectedKioskId ? (
-                              /* Step 1: Select Kiosk */
+                              // Step 1: Select Kiosk
                               <div className="flex-1 flex flex-col space-y-2">
                                 <label className="text-[14px] uppercase tracking-widest text-white/70">Step 1: Select a Kiosk</label>
                                 <div className="flex-1 flex flex-col justify-center">
@@ -697,7 +650,7 @@ export default function Home() {
                                 </div>
                               </div>
                             ) : (
-                              /* Step 2: Enter Pavilion Name */
+                              // Step 2: Enter Pavilion Name
                               <div className="flex-1 flex flex-col space-y-4">
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
@@ -720,7 +673,6 @@ export default function Home() {
                                     className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
                                   />
                                 </div>
-                                {/* Show selected kiosk info */}
                                 <div className="flex-1 flex items-end">
                                   <div className="flex items-center space-x-2">
                                     <label className="text-[12px] uppercase tracking-widest text-white/60 whitespace-nowrap">Selected Kiosk:</label>
@@ -751,7 +703,7 @@ export default function Home() {
                       )}
                       <button
                         onClick={onMainAction}
-                        disabled={creating || loadingState.backgroundAnimating}
+                        disabled={creating || loadingState.backgroundAnimating || (createSubMode === 'existing' && fetchingKiosks)}
                         title={createSubMode === 'new' && !pavilionName.trim() ? 'Pavilion name is required' : undefined}
                         aria-label={txDigest ? 'Enter pavilion' : 'Create pavilion'}
                         className={`group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 ${txDigest ? 'bg-white/15 border-white/30 shadow-[0_0_22px_rgba(200,200,220,0.35)] ring-1 ring-white/20' : 'bg-white/10 border-white/20'}`}
@@ -779,14 +731,12 @@ export default function Home() {
                           </svg>
                         )}
                       </button>
-                      {/* no trailing arrow */}
                     </div>
                   </div>
                 </div>
                 {error && (
                   <div className="px-5 py-3 text-[12px] text-red-300">{error}</div>
                 )}
-                {/* Divider */}
                 <div className="flex justify-center items-center py-2">
                   <div className="slab-divider w-full" />
                 </div>
@@ -803,7 +753,6 @@ export default function Home() {
                     <div className="flex-1">
                       <div>
                         <div className="text-base md:text-lg font-semibold tracking-wide">Visit Pavilion</div>
-                        {/* Visit sub-mode toggle - small capsule buttons */}
                         <div className="mt-2 mb-3 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
                           <button
                             onClick={() => setVisitSubMode('my')}
@@ -823,7 +772,7 @@ export default function Home() {
                         <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
                           <span>
                             {visitSubMode === 'my'
-                              ? (fetchingPavilionKiosks ? 'Loading pavilions...' : 'Select a pavilion from your address')
+                              ? (fetchingKiosks ? 'Loading pavilions...' : 'Select a pavilion from your address')
                               : 'Enter an existing Pavilion by Kiosk ID'}
                           </span>
                         </div>
@@ -851,7 +800,7 @@ export default function Home() {
                                 ))}
                               </ul>
                             ) : (
-                              fetchingPavilionKiosks ? (
+                              fetchingKiosks ? (
                                 <div className="px-3 py-2 text-[12px] text-white/60">Loading...</div>
                               ) : (
                                 !currentAccount ? (
@@ -881,7 +830,7 @@ export default function Home() {
 
                     <button
                       onClick={onVisitPavilion}
-                      disabled={(visitSubMode === 'my' && !selectedVisitKioskId) || (visitSubMode === 'external' && !kioskId.trim()) || loadingState.backgroundAnimating}
+                      disabled={(visitSubMode === 'my' && (!selectedVisitKioskId || fetchingKiosks)) || (visitSubMode === 'external' && !kioskId.trim()) || loadingState.backgroundAnimating}
                       aria-label="Visit pavilion"
                       className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/30"
                     >
@@ -905,7 +854,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Architectural Frame (static during transition to avoid thick glowing borders) */}
+      {/* Architectural Frame */}
       <div className={`architect-frame`} />
     </div>
   );
