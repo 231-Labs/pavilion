@@ -119,8 +119,6 @@ function PavilionContent() {
     const kioskItems = kioskState.kioskItems;
 
     if (kioskItems && kioskItems.length > 0) {
-      // console.log('Analyzing kiosk items for blob IDs:', kioskItems.length);
-
       // Analyze kiosk items to find blob IDs
       if (!sceneManager) {
         console.warn('SceneManager not available for kiosk item analysis');
@@ -134,11 +132,6 @@ function PavilionContent() {
       const foundWalrusItems = analyses.filter(item => item.type === 'walrus' && item.blobId);
 
       if (foundWalrusItems.length > 0) {
-        // console.log('Found Walrus blob IDs:', foundWalrusItems.map(item => ({
-        //   name: item.name,
-        //   blobId: item.blobId
-        // })));
-
         setWalrusItems(foundWalrusItems);
       } else {
         setWalrusItems([]);
