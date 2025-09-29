@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface LoadingState {
   isLoading: boolean;
@@ -31,15 +31,15 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
     preloadStage: ''
   });
 
-  const setLoading = (isLoading: boolean) => {
+  const setLoading = useCallback((isLoading: boolean) => {
     setLoadingStateInternal(prev => ({ 
       ...prev,
       isLoading,
       backgroundAnimating: isLoading // Auto-trigger background animation with loading
     }));
-  };
+  }, []);
 
-  const setPreloading = (preloading: boolean, progress: number = 0, stage: string = '') => {
+  const setPreloading = useCallback((preloading: boolean, progress: number = 0, stage: string = '') => {
     setLoadingStateInternal(prev => ({
       ...prev,
       preloadingModels: preloading,
@@ -49,7 +49,7 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
     }));
     
     console.log(`🎬 Preloading state: ${preloading}, progress: ${progress}%, stage: ${stage}`);
-  };
+  }, []);
 
   return (
     <LoadingContext.Provider value={{

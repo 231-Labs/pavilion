@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-// @ts-ignore
+// @ts-expect-error - Three.js examples don't have proper TypeScript definitions
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
-// @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DefaultScene, DefaultSceneConfig } from './DefaultScene';
 import { ThreeSceneConfig, LoadGLBOptions } from '../../types/three';

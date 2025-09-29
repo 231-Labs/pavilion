@@ -439,23 +439,6 @@ export function SculptureControlPanel({
     }
   };
 
-  const clearAllModels = () => {
-    if (!sceneManager) return;
-
-    // Clear all loaded models from scene
-    sceneManager.removeAllLoadedModels();
-
-    // Clear local state
-    setLoadedModels([]);
-    setError(null);
-
-    // Clear current selection if it's an external model
-    if (selectedSculpture && selectedSculpture.startsWith('external_')) {
-      setSelectedSculpture(null);
-    }
-
-    // console.log('All loaded models cleared');
-  };
 
   // Handle external model position updates
   const handleExternalPositionUpdate = (objectId: string, position: { x: number; y: number; z: number }) => {
@@ -867,7 +850,6 @@ export function SculptureControlPanel({
           error={error}
           loadedModels={loadedModels}
           onLoadWalrus={loadWalrusModel}
-          onClearModels={clearAllModels}
           onLoadAllModels={loadAllModels}
         />
       )}

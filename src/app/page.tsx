@@ -7,7 +7,19 @@ import { useKioskClient } from '../components/KioskClientProvider';
 import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents, readPavilionName } from '../lib/tx/pavilion';
 import { useKioskState } from '../components/KioskStateProvider';
 import { useLoading } from '../components/LoadingProvider';
-import { PreloadService, PreloadedSceneData } from '../lib/three/PreloadService';
+import { PreloadService } from '../lib/three/PreloadService';
+
+// Types for Sui transaction results
+interface SuiTransactionResult {
+  digest?: string;
+  objectChanges?: SuiObjectChange[];
+}
+
+interface SuiObjectChange {
+  type: string;
+  objectType?: string;
+  objectId?: string;
+}
 
 export default function Home() {
   const [kioskId, setKioskId] = useState('');
@@ -17,7 +29,6 @@ export default function Home() {
   const [txDigest, setTxDigest] = useState<string | null>(null);
   const [pavilionName, setPavilionName] = useState('');
   const [createdKioskId, setCreatedKioskId] = useState<string | null>(null);
-  const [createdKioskCapId, setCreatedKioskCapId] = useState<string | null>(null);
   const [createSubMode, setCreateSubMode] = useState<'new' | 'existing'>('new');
   const [ownedKiosks, setOwnedKiosks] = useState<{ objectId: string; kioskId: string; isPersonal?: boolean }[] | null>(null);
   const [fetchingKiosks, setFetchingKiosks] = useState(false);
@@ -32,8 +43,6 @@ export default function Home() {
   const kioskClient = useKioskClient();
   const suiClient = useSuiClient();
   const { setLoading, setPreloading, loadingState } = useLoading();
-  const [preloadService, setPreloadService] = useState<PreloadService | null>(null);
-  const [preloadedData, setPreloadedData] = useState<PreloadedSceneData | null>(null);
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
       await suiClient.executeTransactionBlock({
@@ -139,7 +148,7 @@ export default function Home() {
     };
     void run();
     return () => { aborted = true; };
-  }, [currentAccount, kioskClient, suiClient]);
+  }, [currentAccount, kioskClient, suiClient, PAVILION_PACKAGE_ID]);
 
   const onCreatePavilion = async () => {
     setError(null);
@@ -167,26 +176,25 @@ export default function Home() {
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
-      const digest = (result as any)?.digest ?? null;
+      const digest = (result as SuiTransactionResult)?.digest ?? null;
       setTxDigest(digest);
       // console.log('Create Pavilion tx result:', result);
 
       // Extract new kiosk & cap ids directly from objectChanges and fetch kiosk contents
       // TODO: find simpler way to do this
       try {
-        const changes = (result as any)?.objectChanges ?? [];
+        const changes = (result as SuiTransactionResult)?.objectChanges ?? [];
         let kioskIdNew: string | undefined;
         let kioskOwnerCapIdNew: string | undefined;
         for (const ch of changes) {
           if (ch.type !== 'created') continue;
-          const t = (ch as any).objectType as string | undefined;
-          const id = (ch as any).objectId as string | undefined;
+          const t = ch.objectType;
+          const id = ch.objectId;
           if (!t || !id) continue;
           if (t.endsWith('::kiosk::Kiosk')) kioskIdNew = id;
           if (t.endsWith('::kiosk::KioskOwnerCap')) kioskOwnerCapIdNew = id;
         }
         if (kioskIdNew) setCreatedKioskId(kioskIdNew);
-        if (kioskOwnerCapIdNew) setCreatedKioskCapId(kioskOwnerCapIdNew);
         if (kioskIdNew || kioskOwnerCapIdNew) kioskState.setKioskFromIds({ kioskId: kioskIdNew, kioskOwnerCapId: kioskOwnerCapIdNew });
         if (kioskIdNew) await fetchKioskContents({ kioskClient, kioskId: kioskIdNew });
       } catch (parseErr) {
@@ -232,17 +240,15 @@ export default function Home() {
         onProgress: (progress, stage, details) => {
           setPreloading(true, progress, details ? `${stage} (${details})` : stage);
         },
-        onComplete: (sceneManager, data) => {
+        onComplete: () => {
           console.log('🎉 Scene preload completed successfully!');
-          setPreloadedData(data);
+          // Data is handled internally by PreloadService
         },
         onError: (error) => {
           console.error('❌ Preload error:', error);
           setPreloading(false);
         }
       });
-
-      setPreloadService(service);
       
       // Start preloading
       await service.startPreloading();
@@ -321,7 +327,7 @@ export default function Home() {
           kioskOwnerCapId: cap,
         });
         const result = await signAndExecuteTransaction({ transaction: tx });
-        const digest = (result as any)?.digest ?? null;
+        const digest = (result as SuiTransactionResult)?.digest ?? null;
         setTxDigest(digest);
         // set global kiosk state so /pavilion and Wallet panel can reflect selection
         kioskState.setKioskFromIds({ kioskId: selectedKioskId, kioskOwnerCapId: cap });
