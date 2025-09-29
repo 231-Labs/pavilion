@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SculptureInstance } from '../types/sculpture';
 import { SceneManager } from '../lib/three/SceneManager';
 import * as THREE from 'three';
@@ -25,6 +25,8 @@ interface SculptureControlPanelProps {
   // Scene restoration props
   initialDisplayedItems?: Set<string>; // Items that should be displayed based on loaded scene config
   initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>; // Initial transforms from loaded scene config
+  // Loading state callback
+  onLoadingStateChange?: (isLoading: boolean) => void; // Callback to report auto-loading state
 }
 
 // Interface for controllable objects
@@ -32,6 +34,37 @@ interface ControllableObject extends ControllableObjectType {
   object?: THREE.Object3D;
 }
 
+// Local logger to centralize logging without changing output behavior
+type ConsoleArgs = Parameters<typeof console.log>;
+const logger = {
+  log: (...args: ConsoleArgs) => console.log(...args),
+  warn: (...args: ConsoleArgs) => console.warn(...args),
+  error: (...args: ConsoleArgs) => console.error(...args),
+};
+
+// Helper to build kiosk NFT model names consistently
+const kioskModelName = (name: string, id: string) => `KioskNFT_${name}_${id.slice(-8)}`;
+
+// Helper to safely traverse scene and apply operation to a specific model group
+const withKioskModelGroup = (
+  sceneManager: SceneManager | undefined,
+  modelName: string,
+  onGroup: (group: THREE.Group) => void,
+  warnMessage: string
+) => {
+  const scene = sceneManager?.getScene();
+  if (scene) {
+    try {
+      scene.traverse((child) => {
+        if (child && child.name === modelName && child instanceof THREE.Group) {
+          onGroup(child);
+        }
+      });
+    } catch (error) {
+      logger.warn(warnMessage, error);
+    }
+  }
+};
 
 export function SculptureControlPanel({
   sculptures,
@@ -43,7 +76,8 @@ export function SculptureControlPanel({
   kioskItems = [],
   onTrackChange,
   initialDisplayedItems,
-  initialTransforms
+  initialTransforms,
+  onLoadingStateChange
 }: SculptureControlPanelProps) {
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -59,14 +93,24 @@ export function SculptureControlPanel({
   const [displayedNftItems, setDisplayedNftItems] = useState<Set<string>>(new Set());
   const [kioskNftTransforms, setKioskNftTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
 
+  // Normalize loading state instead of early-returning
+  useEffect(() => {
+    if (!displayedNftItems.size && isLoading) {
+      setIsLoading(false);
+    }
+  }, [displayedNftItems, isLoading]);
+      
+  // Report loading state changes to parent
+  useEffect(() => {
+    onLoadingStateChange?.(isLoading);
+  }, [isLoading, onLoadingStateChange]);
+
   // Sync initial state from loaded scene config
   useEffect(() => {
-    if (initialDisplayedItems) {
-      console.log('🔄 Syncing initial displayed items from scene config:', initialDisplayedItems);
+    if (initialDisplayedItems && initialDisplayedItems.size > 0) {
       setDisplayedNftItems(new Set(initialDisplayedItems));
     }
     if (initialTransforms) {
-      console.log('🔄 Syncing initial transforms from scene config:', initialTransforms);
       setKioskNftTransforms(new Map(initialTransforms));
     }
   }, [initialDisplayedItems, initialTransforms]);
@@ -74,35 +118,37 @@ export function SculptureControlPanel({
   // Auto-load models for items that should be displayed (from scene config)
   useEffect(() => {
     const autoLoadDisplayedModels = async () => {
-      if (!sceneManager || displayedNftItems.size === 0 || kioskNftItems.length === 0 || isLoading) {
+      if (!sceneManager) {
         return;
       }
-
+      
       // Find items that should be displayed but models aren't loaded yet
       const itemsToLoad = kioskNftItems.filter(nftItem => {
         const itemId = nftItem.id;
-        const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+        const modelName = kioskModelName(nftItem.name, itemId);
         return displayedNftItems.has(itemId) && !loadedModels.includes(modelName);
       });
 
       if (itemsToLoad.length === 0) {
-        console.log('✅ All displayed models are already loaded');
+        if (isLoading) {
+          setIsLoading(false);
+        }
         return;
       }
 
-      console.log(`🚀 Auto-loading ${itemsToLoad.length} models that should be displayed:`, 
-        itemsToLoad.map(item => item.name));
+      // Prevent starting new loading if already loading the same items
+      if (isLoading) { return; }
 
       // Load models one by one to avoid overwhelming the system
       for (const nftItem of itemsToLoad) {
         const itemId = nftItem.id;
-        const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+        const modelName = kioskModelName(nftItem.name, itemId);
         
         // Double-check it's not loaded (in case of race conditions)
         if (loadedModels.includes(modelName)) continue;
 
         try {
-          console.log(`📦 Loading model for ${nftItem.name}...`);
+          logger.log(`📦 Loading model for ${nftItem.name}...`);
           
           setIsLoading(true);
           setError(null);
@@ -112,7 +158,7 @@ export function SculptureControlPanel({
           
           await sceneManager.loadGLBModel(url, {
             name: modelName,
-            position: kioskNftTransforms.get(itemId)?.position || { x: 0, y: 2, z: 0 },
+            position: kioskNftTransforms.get(itemId)?.position || { x: 0, y: 0, z: 0 },
             rotation: kioskNftTransforms.get(itemId)?.rotation || { x: 0, y: 0, z: 0 },
             scale: kioskNftTransforms.get(itemId)?.scale || { x: 1, y: 1, z: 1 },
             onProgress: (progress) => {
@@ -123,24 +169,24 @@ export function SculptureControlPanel({
 
           // Update loaded models list
           setLoadedModels(prev => [...prev, modelName]);
-          console.log(`✅ Successfully loaded model: ${modelName}`);
+          logger.log(`✅ Successfully loaded model: ${modelName}`);
 
           // Small delay between loads to prevent overwhelming
           await new Promise(resolve => setTimeout(resolve, 100));
 
         } catch (error) {
-          console.error(`❌ Failed to load model for ${nftItem.name}:`, error);
+          logger.error(`❌ Failed to load model for ${nftItem.name}:`, error);
           setError(`Failed to load ${nftItem.name}: ${error}`);
         }
       }
 
       setIsLoading(false);
       setLoadingProgress(0);
-      console.log('🎉 Finished auto-loading displayed models');
+      logger.log('🎉 Finished auto-loading displayed models');
     };
 
     // Add a small delay to ensure all state is settled
-    const timeoutId = setTimeout(autoLoadDisplayedModels, 300);
+    const timeoutId = setTimeout(autoLoadDisplayedModels, 500);
     return () => clearTimeout(timeoutId);
   }, [displayedNftItems, kioskNftItems, loadedModels, sceneManager, isLoading, kioskNftTransforms]);
 
@@ -191,36 +237,75 @@ export function SculptureControlPanel({
     }
   }, [kioskItems]);
 
+  const loadWalrusModel = useCallback(async (overrideBlobId?: string) => {
+    if (!sceneManager) return;
+    const sourceId = (overrideBlobId ?? walrusBlobId).trim();
+    if (!sourceId) {
+      setError('Please enter a valid Walrus Blob ID');
+      return;
+    }
+
+    // Limit the number of external models to avoid too many models in the scene
+    const externalCount = loadedModels.length;
+    if (externalCount >= 10) {
+      setError('Too many external models loaded, please clear some models first');
+      return;
+    }
+
+    const modelName = `Walrus_${sourceId.slice(0, 8)}`;
+
+    setIsLoading(true);
+    setError(null);
+    setLoadingProgress(0);
+
+    try {
+      const url = `/api/walrus/${encodeURIComponent(sourceId)}`;
+      await sceneManager.loadGLBModel(url, {
+        position: { x: 0, y: 0, z: 0 },
+        name: modelName,
+        onProgress: (progress) => {
+          if (progress.lengthComputable) {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            setLoadingProgress(percent);
+          }
+        }
+      });
+
+      setLoadedModels(prev => [...prev, modelName]);
+      setWalrusBlobId('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Walrus loading failed');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sceneManager, walrusBlobId, loadedModels]);
+
   // Auto-load blob IDs from kiosk items
   useEffect(() => {
     if (autoLoadBlobIds.length > 0 && sceneManager && !isLoading) {
-      // console.log('Auto-loading blob IDs from kiosk items:', autoLoadBlobIds);
 
       // Load each blob ID sequentially to avoid overwhelming the system
       const loadBlobIdsSequentially = async () => {
         for (const blobId of autoLoadBlobIds) {
           // Skip if blobId is not a valid string
           if (!blobId || typeof blobId !== 'string' || !blobId.trim()) {
-            // console.log('Skipping invalid blob ID:', blobId);
             continue;
           }
 
           // Check if this blob ID is already loaded
           const modelName = `Walrus_${blobId.slice(0, 8)}`;
           if (loadedModels.includes(modelName)) {
-            // console.log(`Blob ID ${blobId} already loaded as ${modelName}`);
             continue;
           }
 
-          // console.log(`Auto-loading blob ID: ${blobId}`);
           setWalrusBlobId(blobId);
-          await loadWalrusModel();
+          await loadWalrusModel(blobId);
         }
       };
 
       loadBlobIdsSequentially();
     }
-  }, [autoLoadBlobIds, sceneManager, isLoading, loadedModels]);
+  }, [autoLoadBlobIds, sceneManager, isLoading, loadedModels, loadWalrusModel]);
 
   // Update controllable objects list
   useEffect(() => {
@@ -251,13 +336,11 @@ export function SculptureControlPanel({
           }
         });
       } catch (error) {
-        console.warn('Error traversing scene for logging:', error);
+        logger.warn('Error traversing scene for logging:', error);
       }
-      // console.log('All objects in scene:', allSceneObjects);
-
+      
       try {
         scene.traverse((child) => {
-        // console.log('Checking object:', child.type, child.name, child instanceof THREE.Group);
 
         if (child instanceof THREE.Group &&
             child.name &&
@@ -265,7 +348,6 @@ export function SculptureControlPanel({
 
           // Skip Kiosk NFT models - they should not be in external models
           if (child.name.startsWith('KioskNFT_')) {
-            // console.log('Skipping Kiosk NFT model:', child.name);
             return;
           }
 
@@ -273,12 +355,10 @@ export function SculptureControlPanel({
 
           // Skip if we've already seen this model
           if (seenIds.has(modelId)) {
-            // console.log('Skipping duplicate model:', child.name);
             return;
           }
 
           seenIds.add(modelId);
-          // console.log('Found external model:', child.name);
 
           externalObjects.push({
             id: modelId,
@@ -292,22 +372,14 @@ export function SculptureControlPanel({
         }
       });
       } catch (error) {
-        console.warn('Error traversing scene for external objects:', error);
+        logger.warn('Error traversing scene for external objects:', error);
       }
     }
 
     const allObjects = [...sculptureObjects, ...externalObjects];
     setControllableObjects(allObjects);
 
-    // Debug logging
-    // console.log('SculptureControlPanel - Updated controllable objects:', {
-    //   sculptures: sculptureObjects.length,
-    //   external: externalObjects.length,
-    //   total: allObjects.length,
-    //   externalNames: externalObjects.map(obj => obj.name),
-    //   externalIds: externalObjects.map(obj => obj.id)
-    // });
-
+    
     // Auto-select first object if none selected or if selected object no longer exists
     const selectedExistsInControllableObjects = allObjects.some(obj => obj.id === selectedSculpture);
     const displayedKioskNftItems = kioskNftItems.filter(item => displayedNftItems.has(item.id));
@@ -367,67 +439,6 @@ export function SculptureControlPanel({
     }
   };
 
-  const loadWalrusModel = async () => {
-    if (!sceneManager) return;
-    const blobId = walrusBlobId.trim();
-    if (!blobId) {
-      setError('Please enter a valid Walrus Blob ID');
-      return;
-    }
-
-    // Limit the number of external models to avoid too many models in the scene
-    const externalCount = loadedModels.length;
-    if (externalCount >= 10) {
-      setError('Too many external models loaded, please clear some models first');
-      return;
-    }
-
-    const modelName = `Walrus_${blobId.slice(0, 8)}`;
-
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    try {
-      const url = `/api/walrus/${encodeURIComponent(blobId)}`;
-      await sceneManager.loadGLBModel(url, {
-        position: { x: 0, y: 2, z: 0 },
-        name: modelName,
-        onProgress: (progress) => {
-          if (progress.lengthComputable) {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setLoadingProgress(percent);
-          }
-        }
-      });
-
-      setLoadedModels(prev => [...prev, modelName]);
-      // console.log('Walrus model loaded successfully:', modelName);
-      setWalrusBlobId('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Walrus loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const clearAllModels = () => {
-    if (!sceneManager) return;
-
-    // Clear all loaded models from scene
-    sceneManager.removeAllLoadedModels();
-
-    // Clear local state
-    setLoadedModels([]);
-    setError(null);
-
-    // Clear current selection if it's an external model
-    if (selectedSculpture && selectedSculpture.startsWith('external_')) {
-      setSelectedSculpture(null);
-    }
-
-    // console.log('All loaded models cleared');
-  };
 
   // Handle external model position updates
   const handleExternalPositionUpdate = (objectId: string, position: { x: number; y: number; z: number }) => {
@@ -465,7 +476,7 @@ export function SculptureControlPanel({
     if (!sceneManager) return;
 
     const itemId = nftItem.id;
-    const modelName = `KioskNFT_${nftItem.name}_${itemId.slice(-8)}`;
+    const modelName = kioskModelName(nftItem.name, itemId);
     const wasDisplayed = displayedNftItems.has(itemId);
 
     // Track the change
@@ -535,7 +546,7 @@ export function SculptureControlPanel({
                 }
               });
             } catch (error) {
-              console.warn('Error applying stored transforms:', error);
+              logger.warn('Error applying stored transforms:', error);
             }
           }
         }
@@ -594,7 +605,7 @@ export function SculptureControlPanel({
               }
             });
           } catch (error) {
-            console.warn('Error removing model from scene:', error);
+            logger.warn('Error removing model from scene:', error);
           }
         }
         setLoadedModels(prev => prev.filter(name => name !== modelName));
@@ -611,7 +622,7 @@ export function SculptureControlPanel({
   // Create a unified object for controls
   const currentControllableObject = currentObject || (currentNftItem ? {
     id: currentNftItem.id,
-    name: `KioskNFT_${currentNftItem.name}_${currentNftItem.id.slice(-8)}`,
+    name: kioskModelName(currentNftItem.name, currentNftItem.id),
     type: 'kiosk_nft' as const,
     ...(kioskNftTransforms.get(currentNftItem.id) || {
       position: { x: 0, y: 2, z: 0 }, // Default position for kiosk NFTs
@@ -680,21 +691,12 @@ export function SculptureControlPanel({
                             onUpdateRotation?.(currentControllableObject.id, { x: 0, y: 0, z: 0 });
                             onUpdateScale?.(currentControllableObject.id, { x: 1, y: 1, z: 1 });
                           } else if (currentControllableObject.type === 'kiosk_nft') {
-                            const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                            const scene = sceneManager?.getScene();
-                            if (scene) {
-                              try {
-                                scene.traverse((child) => {
-                                  if (child && child.name === modelName && child instanceof THREE.Group) {
-                                    child.position.set(0, 2, 0);
-                                    child.rotation.set(0, 0, 0);
-                                    child.scale.set(1, 1, 1);
-                                  }
-                                });
-                              } catch (error) {
-                                console.warn('Error resetting Kiosk NFT transforms:', error);
-                              }
-                            }
+                            const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                            withKioskModelGroup(sceneManager, modelName, (child) => {
+                              child.position.set(0, 2, 0);
+                              child.rotation.set(0, 0, 0);
+                              child.scale.set(1, 1, 1);
+                            }, 'Error resetting Kiosk NFT transforms:');
                             setKioskNftTransforms(prev => {
                               const newMap = new Map(prev);
                               newMap.set(currentControllableObject.id, {
@@ -714,19 +716,10 @@ export function SculptureControlPanel({
                                 if (currentControllableObject.type === 'sculpture') {
                                   onUpdatePosition(currentControllableObject.id, newPosition);
                                 } else if (currentControllableObject.type === 'kiosk_nft') {
-                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                  const scene = sceneManager?.getScene();
-                                  if (scene) {
-                                    try {
-                                      scene.traverse((child) => {
-                                        if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.position.set(newPosition.x, newPosition.y, newPosition.z);
-                                        }
-                                      });
-                                    } catch (error) {
-                                      console.warn('Error updating Kiosk NFT position:', error);
-                                    }
-                                  }
+                                  const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                  withKioskModelGroup(sceneManager, modelName, (child) => {
+                                    child.position.set(newPosition.x, newPosition.y, newPosition.z);
+                                  }, 'Error updating Kiosk NFT position:');
                                   setKioskNftTransforms(prev => {
                                     const newMap = new Map(prev);
                                     const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
@@ -744,19 +737,10 @@ export function SculptureControlPanel({
                                 if (currentControllableObject.type === 'sculpture') {
                   onUpdatePosition(currentControllableObject.id, { x: 0, y: 1, z: 0 });
                                 } else if (currentControllableObject.type === 'kiosk_nft') {
-                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                  const scene = sceneManager?.getScene();
-                                  if (scene) {
-                                    try {
-                                      scene.traverse((child) => {
-                                        if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.position.set(0, 2, 0);
-                                        }
-                                      });
-                                    } catch (error) {
-                      console.warn('Error resetting Kiosk NFT position:', error);
-                                    }
-                                  }
+                                  const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                  withKioskModelGroup(sceneManager, modelName, (child) => {
+                                    child.position.set(0, 2, 0);
+                                  }, 'Error resetting Kiosk NFT position:');
                                   setKioskNftTransforms(prev => {
                                     const newMap = new Map(prev);
                                     newMap.set(currentControllableObject.id, {
@@ -774,19 +758,10 @@ export function SculptureControlPanel({
                                     if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
                                       onUpdateRotation(currentControllableObject.id, newRotation);
                                     } else if (currentControllableObject.type === 'kiosk_nft') {
-                                      const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                      const scene = sceneManager?.getScene();
-                                      if (scene) {
-                                        try {
-                                          scene.traverse((child) => {
-                                            if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.rotation.set(newRotation.x, newRotation.y, newRotation.z);
-                                            }
-                                          });
-                                        } catch (error) {
-                                          console.warn('Error updating Kiosk NFT rotation:', error);
-                                        }
-                                      }
+                                      const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                      withKioskModelGroup(sceneManager, modelName, (child) => {
+                                        child.rotation.set(newRotation.x, newRotation.y, newRotation.z);
+                                      }, 'Error updating Kiosk NFT rotation:');
                                       setKioskNftTransforms(prev => {
                                         const newMap = new Map(prev);
                                         const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
@@ -804,29 +779,11 @@ export function SculptureControlPanel({
                                     if (currentControllableObject.type === 'sculpture' && onUpdateRotation) {
                   onUpdateRotation(currentControllableObject.id, { x: 0, y: 0, z: 0 });
                                     } else if (currentControllableObject.type === 'kiosk_nft') {
-                                      const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                      const scene = sceneManager?.getScene();
-                                      if (scene) {
-                                        try {
-                                          scene.traverse((child) => {
-                                            if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.rotation.set(0, 0, 0);
-                                            }
-                                          });
-                                        } catch (error) {
-                      console.warn('Error resetting Kiosk NFT rotation:', error);
-                                    }
-                                  }
-                                  setKioskNftTransforms(prev => {
-                                    const newMap = new Map(prev);
-                                    newMap.set(currentControllableObject.id, {
-                                      position: newMap.get(currentControllableObject.id)?.position || { x: 0, y: 2, z: 0 },
-                      rotation: { x: 0, y: 0, z: 0 },
-                      scale: newMap.get(currentControllableObject.id)?.scale || { x: 1, y: 1, z: 1 }
-                                    });
-                                    return newMap;
-                                  });
-                                } else {
+                                      const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                      withKioskModelGroup(sceneManager, modelName, (child) => {
+                                        child.rotation.set(0, 0, 0);
+                                      }, 'Error resetting Kiosk NFT rotation:');
+                                    } else {
                   handleExternalRotationUpdate(currentControllableObject.id, { x: 0, y: 0, z: 0 });
                 }
               }}
@@ -834,19 +791,10 @@ export function SculptureControlPanel({
                                 if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
                                   onUpdateScale(currentControllableObject.id, newScale);
                                 } else if (currentControllableObject.type === 'kiosk_nft') {
-                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                  const scene = sceneManager?.getScene();
-                                  if (scene) {
-                                    try {
-                                      scene.traverse((child) => {
-                                        if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.scale.set(newScale.x, newScale.y, newScale.z);
-                                        }
-                                      });
-                                    } catch (error) {
-                                      console.warn('Error updating Kiosk NFT scale:', error);
-                                    }
-                                  }
+                                  const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                  withKioskModelGroup(sceneManager, modelName, (child) => {
+                                    child.scale.set(newScale.x, newScale.y, newScale.z);
+                                  }, 'Error updating Kiosk NFT scale:');
                                   setKioskNftTransforms(prev => {
                                     const newMap = new Map(prev);
                                     const current = newMap.get(currentControllableObject.id) || { position: { x: 0, y: 2, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
@@ -864,19 +812,10 @@ export function SculptureControlPanel({
                                 if (currentControllableObject.type === 'sculpture' && onUpdateScale) {
                   onUpdateScale(currentControllableObject.id, { x: 1, y: 1, z: 1 });
                                 } else if (currentControllableObject.type === 'kiosk_nft') {
-                                  const modelName = `KioskNFT_${currentNftItem?.name}_${currentNftItem?.id.slice(-8)}`;
-                                  const scene = sceneManager?.getScene();
-                                  if (scene) {
-                                    try {
-                                      scene.traverse((child) => {
-                                        if (child && child.name === modelName && child instanceof THREE.Group) {
-                          child.scale.set(1, 1, 1);
-                                        }
-                                      });
-                                    } catch (error) {
-                      console.warn('Error resetting Kiosk NFT scale:', error);
-                                    }
-                                  }
+                                  const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                                  withKioskModelGroup(sceneManager, modelName, (child) => {
+                                    child.scale.set(1, 1, 1);
+                                  }, 'Error resetting Kiosk NFT scale:');
                                   setKioskNftTransforms(prev => {
                                     const newMap = new Map(prev);
                                     newMap.set(currentControllableObject.id, {
@@ -911,7 +850,6 @@ export function SculptureControlPanel({
           error={error}
           loadedModels={loadedModels}
           onLoadWalrus={loadWalrusModel}
-          onClearModels={clearAllModels}
           onLoadAllModels={loadAllModels}
         />
       )}

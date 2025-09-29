@@ -29,6 +29,7 @@ const eslintConfig = [
       "@next/next/no-img-element": "warn",
       "@typescript-eslint/no-empty-object-type": "warn",
       "no-empty": ["error", { "allowEmptyCatch": true }],
+      "prefer-const": "warn",
     },
   },
 ];
