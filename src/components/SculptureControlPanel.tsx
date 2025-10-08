@@ -10,6 +10,7 @@ import { TransformControlsSection } from './controlPanel/TransformControlsSectio
 import { ExternalModelsSection } from './controlPanel/ExternalModelsSection';
 import { ControllableObject as ControllableObjectType } from '../types/controlPanel';
 import { NFTProcessor, ProcessedNFTItem } from '../lib/nft/NFTProcessor';
+import { fetchModels, getWalrusUrl } from '../lib/walrus/client';
 
 interface SculptureControlPanelProps {
   sculptures: SculptureInstance[];
@@ -165,7 +166,7 @@ export function SculptureControlPanel({
           setError(null);
           setLoadingProgress(0);
 
-          const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
+          const url = getWalrusUrl(nftItem.blobId);
           
           await sceneManager.loadGLBModel(url, {
             name: modelName,
@@ -262,7 +263,7 @@ export function SculptureControlPanel({
     setLoadingProgress(0);
 
     try {
-      const url = `/api/walrus/${encodeURIComponent(sourceId)}`;
+      const url = getWalrusUrl(sourceId);
       await sceneManager.loadGLBModel(url, {
         position: { x: 0, y: 0, z: 0 },
         name: modelName,
@@ -411,11 +412,7 @@ export function SculptureControlPanel({
 
     // TODO: turn this into a walrus uploader later
     try {
-      const res = await fetch('/api/models');
-      if (!res.ok) {
-        throw new Error('Failed to list models');
-      }
-      const data: { files?: Array<{ name: string; url: string }>; error?: string } = await res.json();
+      const data = await fetchModels();
       const files = data.files || [];
 
       if (files.length === 0) {
@@ -541,7 +538,7 @@ export function SculptureControlPanel({
           // Handle 3D model
           console.log(`🎯 Loading 3D model NFT: ${processedItem.name}`);
           const url = processedItem.resourceInfo.blobId 
-            ? `/api/walrus/${encodeURIComponent(processedItem.resourceInfo.blobId)}`
+            ? getWalrusUrl(processedItem.resourceInfo.blobId)
             : processedItem.resourceInfo.url!;
 
           await sceneManager.loadGLBModel(url, {

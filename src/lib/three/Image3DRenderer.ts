@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getWalrusUrl } from '../walrus/client';
 
 /**
  * 2D Image to 3D Renderer
@@ -80,7 +81,7 @@ export class Image3DRenderer {
       // Check if it's a Walrus blob ID (no http/https prefix)
       const imageUrl = imageSource.startsWith('http') 
         ? imageSource 
-        : `/api/walrus/${imageSource}`;
+        : getWalrusUrl(imageSource);
       
       this.textureLoader.load(
         imageUrl,
