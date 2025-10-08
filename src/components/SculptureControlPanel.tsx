@@ -9,9 +9,9 @@ import { KioskNftItemsSection } from './controlPanel/KioskNftItemsSection';
 import { ObjectSelector } from './controlPanel/ObjectSelector';
 import { TransformControlsSection } from './controlPanel/TransformControlsSection';
 import { ExternalModelsSection } from './controlPanel/ExternalModelsSection';
-import { useModelLoader } from '../hooks/useModelLoader';
-import { useNftItemsManager } from '../hooks/useNftItemsManager';
-import { useTransformControls } from '../hooks/useTransformControls';
+import { useModelLoader } from '../hooks/scene/useModelLoader';
+import { useNftItemsManager } from '../hooks/nft/useNftItemsManager';
+import { useTransformControls } from '../hooks/scene/useTransformControls';
 import { kioskModelName, withKioskModelGroup } from '../utils/sculptureHelpers';
 
 interface SculptureControlPanelProps {

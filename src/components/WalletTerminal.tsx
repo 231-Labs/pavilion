@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKioskState } from './KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { ObjectChange } from '../hooks/useObjectChanges';
+import { ObjectChange } from '../hooks/common/useObjectChanges';
 import { SceneConfigManager } from '../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../types/scene';
-import { useClickOutside } from '../hooks/useClickOutside';
+import { useClickOutside } from '../hooks/common/useClickOutside';
 
 interface WalletTerminalProps {
   objectChanges: Map<string, ObjectChange>;

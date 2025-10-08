@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useThreeScene } from '../useThreeScene';
+import { useThreeScene } from '../scene/useThreeScene';
 import { useSceneConfiguration } from './useSceneConfiguration';
 import { useWalrusItems } from './useWalrusItems';
 import { useKioskState } from '../../components/KioskStateProvider';

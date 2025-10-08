@@ -1,7 +1,7 @@
 import React from 'react';
 import { WalletTerminal } from '../WalletTerminal';
 import { SculptureControlPanel } from '../SculptureControlPanel';
-import { useObjectChanges } from '../../hooks/useObjectChanges';
+import { useObjectChanges } from '../../hooks/common/useObjectChanges';
 import { useKioskState } from '../KioskStateProvider';
 import type { WalrusItem, PanelTransform } from '../../types/pavilion';
 

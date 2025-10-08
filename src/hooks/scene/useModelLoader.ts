@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { SceneManager } from '../lib/three/SceneManager';
-import { fetchModels, getWalrusUrl } from '../lib/walrus/client';
+import { SceneManager } from '../../lib/three/SceneManager';
+import { fetchModels, getWalrusUrl } from '../../lib/walrus/client';
 
 /**
  * Model loading state and logic management hook

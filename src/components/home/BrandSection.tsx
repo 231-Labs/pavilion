@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLoading } from '../LoadingProvider';
-import { usePreloadNavigation } from '../../hooks/usePreloadNavigation';
+import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
 
 export function BrandSection() {
   const { loadingState } = useLoading();
