@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import type { UseWalrusItemsReturn, WalrusItem } from '../../types/pavilion';
 

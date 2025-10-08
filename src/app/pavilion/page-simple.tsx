@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useThreeScene } from '../../hooks/useThreeScene';
+import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { useKioskClient } from '../../components/KioskClientProvider';
+import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
-import { useObjectChanges } from '../../hooks/useObjectChanges';
-import { SculptureControlPanel } from '../../components/SculptureControlPanel';
-import { WalletTerminal } from '../../components/WalletTerminal';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useObjectChanges } from '../../hooks/common/useObjectChanges';
+import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
+import { WalletTerminal } from '../../components/panels/WalletTerminal';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';

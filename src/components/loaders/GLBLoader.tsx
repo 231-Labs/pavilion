@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { SceneManager } from '../lib/three/SceneManager';
-import { fetchModels } from '../lib/walrus/client';
+import { SceneManager } from '../../lib/three/SceneManager';
+import { fetchModels } from '../../lib/walrus/client';
 
 interface GLBLoaderProps {
   sceneManager: SceneManager;

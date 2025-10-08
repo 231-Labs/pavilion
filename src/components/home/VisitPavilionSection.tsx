@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useLoading } from '../LoadingProvider';
-import { usePreloadNavigation } from '../../hooks/usePreloadNavigation';
-import { useKioskData } from '../../hooks/useKioskData';
+import { useLoading } from '../providers/LoadingProvider';
+import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
+import { useKioskData } from '../../hooks/nft/useKioskData';
 import { KioskSelector } from './KioskSelector';
 import type { VisitSubMode } from '../../types/home';
 

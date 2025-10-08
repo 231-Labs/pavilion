@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { useKioskClient } from '../../components/KioskClientProvider';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useKioskClient } from '../../components/providers/KioskClientProvider';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import type { UseSceneConfigurationReturn } from '../../types/pavilion';

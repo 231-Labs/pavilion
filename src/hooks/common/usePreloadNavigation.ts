@@ -1,10 +1,10 @@
 import { useRouter } from 'next/navigation';
 import { useSuiClient } from '@mysten/dapp-kit';
-import { useKioskClient } from '../components/providers/KioskClientProvider';
-import { useLoading } from '../components/providers/LoadingProvider';
-import { PreloadService } from '../lib/three/PreloadService';
-import { fetchKioskContents } from '../lib/tx/pavilion';
-import type { UsePreloadNavigationReturn } from '../types/home';
+import { useKioskClient } from '../../components/providers/KioskClientProvider';
+import { useLoading } from '../../components/providers/LoadingProvider';
+import { PreloadService } from '../../lib/three/PreloadService';
+import { fetchKioskContents } from '../../lib/tx/pavilion';
+import type { UsePreloadNavigationReturn } from '../../types/home';
 
 export function usePreloadNavigation(): UsePreloadNavigationReturn {
   const router = useRouter();

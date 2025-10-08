@@ -1,4 +1,4 @@
-import { useThreeScene } from '../useThreeScene';
+import { useThreeScene } from '../scene/useThreeScene';
 import { useSceneConfiguration } from './useSceneConfiguration';
 import { useWalrusItems } from './useWalrusItems';
 import { usePanelState } from './usePanelState';

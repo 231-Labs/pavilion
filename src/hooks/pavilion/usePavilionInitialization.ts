@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { useKioskClient } from '../../components/KioskClientProvider';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useKioskClient } from '../../components/providers/KioskClientProvider';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
 import type { UsePavilionInitializationReturn } from '../../types/pavilion';
 

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { SceneManager } from '../lib/three/SceneManager';
-import { ThreeSceneConfig } from '../types/three';
-import { SculptureInstance } from '../types/sculpture';
-import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../lib/three/KioskItemConverter';
-import { DefaultSceneConfig } from '../lib/three/DefaultScene';
-import { useLoading } from '../components/providers/LoadingProvider';
+import { SceneManager } from '../../lib/three/SceneManager';
+import { ThreeSceneConfig } from '../../types/three';
+import { SculptureInstance } from '../../types/sculpture';
+import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../../lib/three/KioskItemConverter';
+import { DefaultSceneConfig } from '../../lib/three/DefaultScene';
+import { useLoading } from '../../components/providers/LoadingProvider';
 
 export interface UseThreeSceneOptions extends ThreeSceneConfig {
   createGallery?: boolean;

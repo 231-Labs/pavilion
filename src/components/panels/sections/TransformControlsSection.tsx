@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ControllableObject, Vector3Like } from '../../types/controlPanel';
+import { ControllableObject, Vector3Like } from '../../../types/controlPanel';
 
 interface TransformControlsSectionProps {
   expanded: boolean;

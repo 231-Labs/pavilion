@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ControllableObject, KioskNftItem } from '../../types/controlPanel';
+import { ControllableObject, KioskNftItem } from '../../../types/controlPanel';
 
 interface ObjectSelectorProps {
   selectedId: string | null;

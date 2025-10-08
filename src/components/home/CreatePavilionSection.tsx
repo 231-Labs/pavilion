@@ -1,9 +1,9 @@
 import React from 'react';
-import { useLoading } from '../LoadingProvider';
-import { useKioskState } from '../KioskStateProvider';
-import { usePreloadNavigation } from '../../hooks/usePreloadNavigation';
-import { usePavilionActions } from '../../hooks/usePavilionActions';
-import { useKioskData } from '../../hooks/useKioskData';
+import { useLoading } from '../providers/LoadingProvider';
+import { useKioskState } from '../providers/KioskStateProvider';
+import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
+import { usePavilionActions } from '../../hooks/pavilion/usePavilionActions';
+import { useKioskData } from '../../hooks/nft/useKioskData';
 import { KioskSelector } from './KioskSelector';
 import type { CreateSubMode } from '../../types/home';
 
