@@ -4,7 +4,7 @@ import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { ReactNode } from 'react';
-import { elegantTheme } from '../styles/dappKitTheme';
+import { elegantTheme } from '../../styles/dappKitTheme';
 import { KioskClientProvider } from './KioskClientProvider';
 import { KioskStateProvider } from './KioskStateProvider';
 import { LoadingProvider } from './LoadingProvider';

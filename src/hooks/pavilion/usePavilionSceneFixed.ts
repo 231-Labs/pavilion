@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useThreeScene } from '../scene/useThreeScene';
 import { useSceneConfiguration } from './useSceneConfiguration';
 import { useWalrusItems } from './useWalrusItems';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import type { PanelTransform } from '../../types/pavilion';
 
 interface UsePavilionSceneProps {

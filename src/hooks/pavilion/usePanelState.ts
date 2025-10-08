@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useKioskState } from '../../components/KioskStateProvider';
+import { useKioskState } from '../../components/providers/KioskStateProvider';
 import type { UsePanelStateReturn, PanelTransform } from '../../types/pavilion';
 
 interface UsePanelStateProps {

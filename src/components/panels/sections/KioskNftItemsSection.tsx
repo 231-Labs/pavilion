@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { KioskNftItem } from '../../types/controlPanel';
+import { KioskNftItem } from '../../../types/controlPanel';
 
 interface KioskNftItemsSectionProps {
   items: KioskNftItem[];

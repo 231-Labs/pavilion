@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLoading } from '../LoadingProvider';
+import { useLoading } from '../providers/LoadingProvider';
 import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
 
 export function BrandSection() {

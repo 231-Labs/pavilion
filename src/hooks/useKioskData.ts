@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { readPavilionName } from '../../lib/tx/pavilion';
-import type { KioskData, UseKioskDataReturn } from '../../types/home';
+import { useKioskClient } from '../components/providers/KioskClientProvider';
+import { readPavilionName } from '../lib/tx/pavilion';
+import type { KioskData, UseKioskDataReturn } from '../types/home';
 
 export function useKioskData(): UseKioskDataReturn {
   const [ownedKiosks, setOwnedKiosks] = useState<KioskData[] | null>(null);

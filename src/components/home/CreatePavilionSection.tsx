@@ -1,6 +1,6 @@
 import React from 'react';
-import { useLoading } from '../LoadingProvider';
-import { useKioskState } from '../KioskStateProvider';
+import { useLoading } from '../providers/LoadingProvider';
+import { useKioskState } from '../providers/KioskStateProvider';
 import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
 import { usePavilionActions } from '../../hooks/pavilion/usePavilionActions';
 import { useKioskData } from '../../hooks/nft/useKioskData';
