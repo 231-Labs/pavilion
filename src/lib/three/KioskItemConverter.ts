@@ -208,13 +208,8 @@ export class KioskItemConverter {
           break;
 
         case 'image':
-          try {
-            object3D = await this.createImagePlane(config);
-          } catch (imageError) {
-            console.warn(`❌ Image loading failed for ${item.objectId}, URL: ${config.url}`);
-            console.warn(`   Image error:`, imageError);
-            throw imageError;
-          }
+          console.log(`📸 Image item detected for ${item.objectId} - will create on demand`);
+          object3D = null;
           break;
 
         case 'geometry':

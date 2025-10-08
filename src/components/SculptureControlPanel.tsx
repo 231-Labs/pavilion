@@ -9,6 +9,8 @@ import { ObjectSelector } from './controlPanel/ObjectSelector';
 import { TransformControlsSection } from './controlPanel/TransformControlsSection';
 import { ExternalModelsSection } from './controlPanel/ExternalModelsSection';
 import { ControllableObject as ControllableObjectType } from '../types/controlPanel';
+import { NFTProcessor, ProcessedNFTItem } from '../lib/nft/NFTProcessor';
+import { fetchModels, getWalrusUrl } from '../lib/walrus/client';
 
 interface SculptureControlPanelProps {
   sculptures: SculptureInstance[];
@@ -90,6 +92,8 @@ export function SculptureControlPanel({
   const [controllableObjects, setControllableObjects] = useState<ControllableObject[]>([]);
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
   const [kioskNftItems, setKioskNftItems] = useState<any[]>([]);
+  const [processedNftItems, setProcessedNftItems] = useState<ProcessedNFTItem[]>([]);
+  const [nftProcessor, setNftProcessor] = useState<NFTProcessor | null>(null);
   const [displayedNftItems, setDisplayedNftItems] = useState<Set<string>>(new Set());
   const [kioskNftTransforms, setKioskNftTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
 
@@ -104,6 +108,14 @@ export function SculptureControlPanel({
   useEffect(() => {
     onLoadingStateChange?.(isLoading);
   }, [isLoading, onLoadingStateChange]);
+
+  // Initialize NFT processor when scene manager is available
+  useEffect(() => {
+    if (sceneManager && !nftProcessor) {
+      const processor = new NFTProcessor(sceneManager.getScene());
+      setNftProcessor(processor);
+    }
+  }, [sceneManager, nftProcessor]);
 
   // Sync initial state from loaded scene config
   useEffect(() => {
@@ -154,7 +166,7 @@ export function SculptureControlPanel({
           setError(null);
           setLoadingProgress(0);
 
-          const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
+          const url = getWalrusUrl(nftItem.blobId);
           
           await sceneManager.loadGLBModel(url, {
             name: modelName,
@@ -190,52 +202,44 @@ export function SculptureControlPanel({
     return () => clearTimeout(timeoutId);
   }, [displayedNftItems, kioskNftItems, loadedModels, sceneManager, isLoading, kioskNftTransforms]);
 
-  // Extract NFT items with glb_file from kiosk items
+  // Process NFT items using the new NFT processor
   useEffect(() => {
-    if (kioskItems.length > 0) {
-      const nftItems = kioskItems
-        .filter((item: any) => {
-          // Check if item has display data with glb_file
-          const displayData = item.data?.display?.data;
-          if (displayData && typeof displayData === 'object') {
-            return displayData.glb_file || displayData.blob_id || displayData.walrus_blob_id;
-          }
-
-          // Check if item has content fields with glb_file
-          const contentFields = item.data?.content?.fields;
-          if (contentFields && typeof contentFields === 'object') {
-            return contentFields.glb_file || contentFields.blob_id || contentFields.walrus_blob_id;
-          }
-
-          return false;
-        })
-        .map((item: any) => {
-          const displayData = item.data?.display?.data || {};
-          const contentFields = item.data?.content?.fields || {};
-
-          // Extract name from display data or content fields
-          const name = displayData.name || contentFields.name || `NFT ${item.objectId.slice(-8)}`;
-
-          // Extract blob ID from various possible fields
-          const blobId = displayData.glb_file || displayData.blob_id || displayData.walrus_blob_id ||
-                        contentFields.glb_file || contentFields.blob_id || contentFields.walrus_blob_id;
-
-          return {
-            id: item.objectId,
-            name,
-            blobId,
-            displayData,
-            contentFields,
-            fullItem: item
-          };
-        });
-
-      // console.log('Found NFT items with 3D models:', nftItems.length);
-      setKioskNftItems(nftItems);
+    if (kioskItems.length > 0 && nftProcessor) {
+      const processItems = async () => {
+        try {
+          const processed = await nftProcessor.processNFTItems(kioskItems);
+          setProcessedNftItems(processed);
+          
+          // Create legacy format for backward compatibility
+          const legacyItems = processed.map(item => ({
+            id: item.id,
+            name: item.name,
+            blobId: item.resourceInfo.blobId || '',
+            displayData: item.sceneObject,
+            contentFields: {},
+            fullItem: kioskItems.find(k => k.objectId === item.id),
+            resourceType: item.resourceInfo.type, // Add resource type info
+          }));
+          
+          setKioskNftItems(legacyItems);
+          
+          console.log(`📦 Processed ${processed.length} NFT items:`, {
+            '3D models': processed.filter(p => p.resourceInfo.type === '3d-model').length,
+            '2D images': processed.filter(p => p.resourceInfo.type === '2d-image').length,
+          });
+        } catch (error) {
+          console.error('Failed to process NFT items:', error);
+          setKioskNftItems([]);
+          setProcessedNftItems([]);
+        }
+      };
+      
+      processItems();
     } else {
       setKioskNftItems([]);
+      setProcessedNftItems([]);
     }
-  }, [kioskItems]);
+  }, [kioskItems, nftProcessor]);
 
   const loadWalrusModel = useCallback(async (overrideBlobId?: string) => {
     if (!sceneManager) return;
@@ -259,7 +263,7 @@ export function SculptureControlPanel({
     setLoadingProgress(0);
 
     try {
-      const url = `/api/walrus/${encodeURIComponent(sourceId)}`;
+      const url = getWalrusUrl(sourceId);
       await sceneManager.loadGLBModel(url, {
         position: { x: 0, y: 0, z: 0 },
         name: modelName,
@@ -408,11 +412,7 @@ export function SculptureControlPanel({
 
     // TODO: turn this into a walrus uploader later
     try {
-      const res = await fetch('/api/models');
-      if (!res.ok) {
-        throw new Error('Failed to list models');
-      }
-      const data: { files?: Array<{ name: string; url: string }>; error?: string } = await res.json();
+      const data = await fetchModels();
       const files = data.files || [];
 
       if (files.length === 0) {
@@ -473,7 +473,7 @@ export function SculptureControlPanel({
 
   // Handle NFT item display toggle
   const handleNftItemDisplayToggle = async (nftItem: any, show: boolean) => {
-    if (!sceneManager) return;
+    if (!sceneManager || !nftProcessor) return;
 
     const itemId = nftItem.id;
     const modelName = kioskModelName(nftItem.name, itemId);
@@ -495,60 +495,92 @@ export function SculptureControlPanel({
         return;
       }
 
-      // Load from Walrus
+      // Find the processed NFT item
+      const processedItem = processedNftItems.find(p => p.id === itemId);
+      if (!processedItem) {
+        console.error(`Processed NFT item not found for ID: ${itemId}`);
+        return;
+      }
+
+      // Load based on resource type
       setIsLoading(true);
       setError(null);
       setLoadingProgress(0);
 
       try {
-        const url = `/api/walrus/${encodeURIComponent(nftItem.blobId)}`;
-        // console.log(`Loading NFT model from Walrus: ${url}`);
-
         // Use stored transform if available, otherwise use default position
-        const storedTransform = kioskNftTransforms.get(nftItem.id);
+        const storedTransform = kioskNftTransforms.get(itemId);
         const position = storedTransform?.position || { x: 0, y: 2, z: 0 };
 
-        // console.log(`Loading NFT model at position:`, position);
+        let object3D: THREE.Group;
 
-        await sceneManager.loadGLBModel(url, {
-          position: position,
-          name: modelName,
-          onProgress: (progress) => {
-            if (progress.lengthComputable) {
-              const percent = Math.round((progress.loaded / progress.total) * 100);
-              setLoadingProgress(percent);
-            }
+        if (processedItem.resourceInfo.type === '2d-image') {
+          // Handle 2D image
+          console.log(`📸 Loading 2D image NFT: ${processedItem.name}`);
+          
+          if (processedItem.threejsObject) {
+            // Use pre-created 3D object
+            object3D = processedItem.threejsObject.clone();
+          } else {
+            // Create 3D object on demand
+            const imageSource = processedItem.resourceInfo.blobId || processedItem.resourceInfo.url!;
+            const imageOptions = {
+              style: processedItem.sceneObject.resource?.imageStyle || 'framed',
+              width: 2,
+            } as any;
+            
+            // Create image 3D renderer on demand
+            const { Image3DRenderer } = await import('../lib/three/Image3DRenderer');
+            const imageRenderer = new Image3DRenderer(sceneManager.getScene()!);
+            object3D = await imageRenderer.create3DImageObject(imageSource, imageOptions);
           }
-        });
+        } else {
+          // Handle 3D model
+          console.log(`🎯 Loading 3D model NFT: ${processedItem.name}`);
+          const url = processedItem.resourceInfo.blobId 
+            ? getWalrusUrl(processedItem.resourceInfo.blobId)
+            : processedItem.resourceInfo.url!;
+
+          await sceneManager.loadGLBModel(url, {
+            position: position,
+            name: modelName,
+            onProgress: (progress) => {
+              if (progress.lengthComputable) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                setLoadingProgress(percent);
+              }
+            }
+          });
+
+          // Get the loaded object
+          const scene = sceneManager.getScene();
+          object3D = scene?.getObjectByName(modelName) as THREE.Group;
+        }
+
+        // Set position and name for 2D images
+        if (processedItem.resourceInfo.type === '2d-image' && object3D) {
+          object3D.position.set(position.x, position.y, position.z);
+          object3D.name = modelName;
+          sceneManager.getScene()?.add(object3D);
+        }
 
         // After loading, apply stored rotation and scale if available
-        if (storedTransform) {
-          const scene = sceneManager.getScene();
-          if (scene) {
-            try {
-              scene.traverse((child) => {
-                if (child && child.name === modelName && child instanceof THREE.Group) {
-                  if (storedTransform.rotation) {
-                    child.rotation.set(
-                      storedTransform.rotation.x,
-                      storedTransform.rotation.y,
-                      storedTransform.rotation.z
-                    );
-                  }
-                  if (storedTransform.scale) {
-                    child.scale.set(
-                      storedTransform.scale.x,
-                      storedTransform.scale.y,
-                      storedTransform.scale.z
-                    );
-                  }
-                  // console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
-                }
-              });
-            } catch (error) {
-              logger.warn('Error applying stored transforms:', error);
-            }
+        if (storedTransform && object3D) {
+          if (storedTransform.rotation) {
+            object3D.rotation.set(
+              storedTransform.rotation.x,
+              storedTransform.rotation.y,
+              storedTransform.rotation.z
+            );
           }
+          if (storedTransform.scale) {
+            object3D.scale.set(
+              storedTransform.scale.x,
+              storedTransform.scale.y,
+              storedTransform.scale.z
+            );
+          }
+          console.log(`Applied stored transforms to ${modelName}:`, storedTransform);
         }
 
         setLoadedModels(prev => [...prev, modelName]);

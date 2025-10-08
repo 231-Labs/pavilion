@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SceneManager } from '../lib/three/SceneManager';
+import { fetchModels } from '../lib/walrus/client';
 
 interface GLBLoaderProps {
   sceneManager: SceneManager;
@@ -18,11 +19,7 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
     setLoadingProgress(0);
 
     try {
-      const res = await fetch('/api/models');
-      if (!res.ok) {
-        throw new Error('Failed to list models');
-      }
-      const data: { files?: Array<{ name: string; url: string }>; error?: string } = await res.json();
+      const data = await fetchModels();
       const files = data.files || [];
 
       if (files.length === 0) {

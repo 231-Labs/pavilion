@@ -37,8 +37,21 @@ export function KioskNftItemsSection({
               className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/10"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white/90 truncate">{nftItem.name}</div>
-                <div className="text-xs text-white/60 truncate">{nftItem.blobId.slice(0, 16)}...</div>
+                <div className="flex items-center space-x-2">
+                  <div className="text-sm font-medium text-white/90 truncate">{nftItem.name}</div>
+                  {(nftItem as any).resourceType && (
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      (nftItem as any).resourceType === '2d-image' 
+                        ? 'bg-purple-500/20 text-purple-300' 
+                        : 'bg-blue-500/20 text-blue-300'
+                    }`}>
+                      {(nftItem as any).resourceType === '2d-image' ? '2D' : '3D'}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-white/60 truncate">
+                  {nftItem.blobId ? `${nftItem.blobId.slice(0, 16)}...` : 'External URL'}
+                </div>
               </div>
               <div className="flex items-center space-x-2 ml-2">
                 {isLoadingThisItem && (

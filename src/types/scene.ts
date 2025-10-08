@@ -19,7 +19,7 @@ export interface SceneObject {
   name: string;
   
   /** Object type */
-  type: 'kiosk_nft' | 'external_model' | 'sculpture' | 'walrus_blob';
+  type: 'kiosk_nft' | 'external_model' | 'sculpture' | 'walrus_blob' | '2d_image';
   
   /** Whether to display in the scene */
   displayed: boolean;
@@ -40,7 +40,9 @@ export interface SceneObject {
     /** Direct model URL */
     url?: string;
     /** Model format */
-    format?: 'glb' | 'gltf' | 'obj' | 'stl';
+    format?: 'glb' | 'gltf' | 'obj' | 'stl' | 'jpg' | 'png' | 'gif' | 'webp';
+    /** 2D image display style (only for 2d_image type) */
+    imageStyle?: 'flat' | 'framed' | 'canvas' | 'floating';
   };
   
   /** Optional: material configuration */
@@ -152,7 +154,7 @@ export function createDefaultSceneObject(
     id,
     name,
     type,
-    displayed: true,
+    displayed: false, // Default to false, user needs to manually enable
     position,
     rotation: { x: 0, y: 0, z: 0 },
     scale: 1,

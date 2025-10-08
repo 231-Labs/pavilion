@@ -24,9 +24,21 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Persist only kioskId for rehydration
+  // Persist only kioskId for rehydration (but not in demo mode)
   useEffect(() => {
     try {
+      // Check if we're on pavilion page without kioskId parameter (demo mode)
+      const isOnPavilionPage = window.location.pathname === '/pavilion';
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKioskId = urlParams.get('kioskId');
+      
+      // If we're on pavilion page without kioskId parameter, it's demo mode - don't load from localStorage
+      if (isOnPavilionPage && !urlKioskId) {
+        console.log('🎭 Demo mode detected: not loading kiosk from localStorage');
+        return;
+      }
+      
+      // Otherwise, load from localStorage as usual
       const saved = localStorage.getItem('pavilion:lastKioskId');
       if (saved) setKioskId(saved);
     } catch {}
@@ -34,6 +46,16 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     try {
+      // Don't save to localStorage in demo mode
+      const isOnPavilionPage = window.location.pathname === '/pavilion';
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKioskId = urlParams.get('kioskId');
+      
+      if (isOnPavilionPage && !urlKioskId) {
+        // Demo mode - don't persist
+        return;
+      }
+      
       if (kioskId) localStorage.setItem('pavilion:lastKioskId', kioskId);
     } catch {}
   }, [kioskId]);

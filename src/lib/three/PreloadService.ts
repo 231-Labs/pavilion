@@ -1,6 +1,7 @@
 'use client';
 
 import { SceneManager } from './SceneManager';
+import { getWalrusUrl } from '../walrus/client';
 import { ThreeSceneConfig } from '../../types/three';
 import { KioskItemConverter } from './KioskItemConverter';
 import { SceneConfigManager } from '../scene/SceneConfigManager';
@@ -138,7 +139,7 @@ export class PreloadService {
               
               try {
                 const modelName = `KioskNFT_${name}_${item.objectId.slice(-8)}`;
-                const url = `/api/walrus/${encodeURIComponent(blobId)}`;
+                const url = getWalrusUrl(blobId);
                 const itemTransform = transforms.get(item.objectId);
                 
                 await sceneManager.loadGLBModel(url, {
