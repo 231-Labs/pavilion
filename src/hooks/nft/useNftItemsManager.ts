@@ -77,15 +77,22 @@ export function useNftItemsManager({
           setProcessedNftItems(processed);
           
           // Create legacy format for backward compatibility
-          const legacyItems = processed.map(item => ({
-            id: item.id,
-            name: item.name,
-            blobId: item.resourceInfo.blobId || '',
-            displayData: item.sceneObject,
-            contentFields: {},
-            fullItem: kioskItems.find(k => k.objectId === item.id),
-            resourceType: item.resourceInfo.type,
-          }));
+          const legacyItems = processed.map(item => {
+            const fullKioskItem = kioskItems.find(k => k.objectId === item.id);
+            return {
+              id: item.id,
+              name: item.name,
+              blobId: item.resourceInfo.blobId || '',
+              displayData: item.sceneObject,
+              contentFields: {},
+              fullItem: fullKioskItem,
+              resourceType: item.resourceInfo.type,
+              // Extract listing information from fullKioskItem
+              isListed: fullKioskItem?.listing?.isListed || false,
+              listPrice: fullKioskItem?.listing?.price || undefined,
+              itemType: fullKioskItem?.type || undefined,
+            };
+          });
           
           setKioskNftItems(legacyItems);
           

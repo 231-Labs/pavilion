@@ -28,6 +28,7 @@ interface SculptureControlPanelProps {
   initialDisplayedItems?: Set<string>;
   initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>;
   onLoadingStateChange?: (isLoading: boolean) => void;
+  onListItems?: (itemIds: string[], price: string) => Promise<void>;
 }
 
 interface ControllableObject extends ControllableObjectType {
@@ -45,7 +46,8 @@ export function SculptureControlPanel({
   onTrackChange,
   initialDisplayedItems,
   initialTransforms,
-  onLoadingStateChange
+  onLoadingStateChange,
+  onListItems
 }: SculptureControlPanelProps) {
   // UI state
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
@@ -234,6 +236,7 @@ export function SculptureControlPanel({
               loadingProgress={modelLoader.loadingProgress}
               loadingItemId={selectedSculpture}
               onToggleItem={nftManager.handleNftItemDisplayToggle}
+              onListItems={onListItems}
             />
           )}
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
-import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
 import { useObjectChanges } from '../../hooks/common/useObjectChanges';
@@ -15,6 +15,7 @@ import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { MOCK_2D_NFTS } from '../../config/nft-test-config';
+import { buildBatchListItemsTx, suiToMist } from '../../lib/tx/listing';
 
 function PavilionContent() {
   const searchParams = useSearchParams();
@@ -26,6 +27,7 @@ function PavilionContent() {
   const currentAccount = useCurrentAccount();
   const kioskClient = useKioskClient();
   const suiClient = useSuiClient();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const [currentSceneConfig, setCurrentSceneConfig] = useState<SceneConfig | null>(null);
   const [sceneConfigManager, setSceneConfigManager] = useState<SceneConfigManager | null>(null);
   
@@ -40,6 +42,67 @@ function PavilionContent() {
   // Create a wrapper function for tracking changes
   const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
     trackKioskNftChange(objectId, objectName, property, fromValue, toValue, new Set(), new Map());
+  };
+
+  // Handle listing items
+  const handleListItems = async (itemIds: string[], price: string) => {
+    if (!kioskState.kioskId || !kioskState.kioskOwnerCapId) {
+      throw new Error('Kiosk ID or Kiosk Owner Cap ID not available');
+    }
+
+    if (!currentAccount) {
+      throw new Error('Wallet not connected');
+    }
+
+    // Get all kiosk items to find the item types
+    const allKioskItems = [...(kioskState.kioskItems || []), ...injectedMockData];
+    
+    // Build the items array with types
+    const itemsToList = itemIds.map(itemId => {
+      const item = allKioskItems.find(i => i.objectId === itemId);
+      if (!item) {
+        throw new Error(`Item ${itemId} not found in kiosk items`);
+      }
+      
+      return {
+        itemId,
+        itemType: item.type || '',
+        price: suiToMist(parseFloat(price)),
+      };
+    });
+
+    // Build the transaction
+    const tx = buildBatchListItemsTx({
+      kioskClient,
+      kioskId: kioskState.kioskId,
+      kioskOwnerCapId: kioskState.kioskOwnerCapId,
+      items: itemsToList,
+    });
+
+    // Execute the transaction
+    return new Promise<void>((resolve, reject) => {
+      signAndExecuteTransaction(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: async (result) => {
+            console.log('✅ List transaction successful:', result);
+            
+            // Refresh kiosk data to get updated listing status
+            if (kioskState.kioskId) {
+              await kioskState.refetchKiosk();
+            }
+            
+            resolve();
+          },
+          onError: (error) => {
+            console.error('❌ List transaction failed:', error);
+            reject(error);
+          },
+        }
+      );
+    });
   };
 
   // Clear storage and ensure clean state in Demo mode, then auto-load mock data
@@ -301,6 +364,8 @@ function PavilionContent() {
           initialTransforms={panelTransforms}
           // Loading state callback
           onLoadingStateChange={setSculptureControlPanelLoading}
+          // List items handler
+          onListItems={isDemoMode ? undefined : handleListItems}
         />
       </div>
       <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
