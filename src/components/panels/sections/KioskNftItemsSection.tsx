@@ -114,51 +114,17 @@ export function KioskNftItemsSection({
               key={nftItem.id}
               className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
                 isSelected 
-                  ? 'bg-white/10 border-white/20' 
-                  : 'bg-black/20 border-white/10'
-              }`}
+                  ? 'bg-white/15 border-white/30 shadow-lg' 
+                  : 'bg-black/20 border-white/10 hover:bg-white/5 hover:border-white/15'
+              } ${onListItems ? 'cursor-pointer' : ''}`}
+              onClick={() => onListItems && handleSelectItem(nftItem.id, !isSelected)}
             >
-              <div className="flex items-center space-x-2 flex-1 min-w-0">
-                {onListItems && (
-                  <label className="relative flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={(e) => handleSelectItem(nftItem.id, e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`
-                      w-5 h-5 rounded-md border transition-all duration-300 flex items-center justify-center
-                      ${isSelected 
-                        ? 'bg-white/15 border-white/40 shadow-[0_0_8px_rgba(220,230,240,0.3)]' 
-                        : 'bg-black/20 border-white/20 group-hover:border-white/30 group-hover:bg-white/5'
-                      }
-                    `}>
-                      <svg 
-                        className={`w-3.5 h-3.5 transition-all duration-300 ${
-                          isSelected 
-                            ? 'opacity-100 scale-100 text-white/90' 
-                            : 'opacity-0 scale-50 text-white/60'
-                        }`}
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor" 
-                        strokeWidth="3"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          d="M5 13l4 4L19 7" 
-                        />
-                      </svg>
-                    </div>
-                  </label>
-                )}
+              <div className="flex items-center space-x-2 flex-1 min-w-0 pointer-events-none">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 flex-wrap">
-                    <div className="text-sm font-medium text-white/90 truncate">{nftItem.name}</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="text-sm font-medium text-white/90 truncate flex-shrink min-w-0">{nftItem.name}</div>
                     {(nftItem as any).resourceType && (
-                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      <span className={`flex-shrink-0 px-2 py-[2px] text-[10px] font-semibold rounded-full leading-tight ${
                         (nftItem as any).resourceType === '2d-image' 
                           ? 'bg-white/8 text-gray-300/90 border border-white/15' 
                           : 'bg-white/10 text-gray-200/90 border border-white/20'
@@ -167,7 +133,7 @@ export function KioskNftItemsSection({
                       </span>
                     )}
                     {nftItem.isListed && (
-                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                      <span className="flex-shrink-0 px-2 py-[2px] text-[10px] font-semibold rounded-full leading-tight bg-green-500/20 text-green-300 border border-green-500/30">
                         Listed
                       </span>
                     )}
@@ -177,7 +143,7 @@ export function KioskNftItemsSection({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2 ml-2">
+              <div className="flex items-center space-x-2 ml-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 {isLoadingThisItem && (
                   <div className="text-sm text-white/70">{loadingProgress}%</div>
                 )}
