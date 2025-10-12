@@ -122,7 +122,7 @@ export function KioskNftItemsSection({
         </div>
       )}
 
-      <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
+      <div className="space-y-2 max-h-90 overflow-y-auto scrollbar-hide">
         {items.map((nftItem) => {
           const isDisplayed = displayedItemIds.has(nftItem.id);
           const isLoadingThisItem = isLoading && loadingItemId === nftItem.id;

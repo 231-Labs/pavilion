@@ -53,8 +53,8 @@ export function SculptureControlPanel({
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [glbPanelExpanded, setGlbPanelExpanded] = useState(false);
-  const [transformControlsExpanded, setTransformControlsExpanded] = useState(false);
   const [controllableObjects, setControllableObjects] = useState<ControllableObject[]>([]);
+  const [activeTab, setActiveTab] = useState<'kiosk' | 'objects'>('kiosk');
 
   // Use model loader hook
   const modelLoader = useModelLoader(sceneManager);
@@ -89,6 +89,14 @@ export function SculptureControlPanel({
   useEffect(() => {
     onLoadingStateChange?.(modelLoader.isLoading);
   }, [modelLoader.isLoading, onLoadingStateChange]);
+
+  // Set default tab on first load based on available content
+  useEffect(() => {
+    // Only auto-switch on initial load when default tab has no content
+    if (activeTab === 'kiosk' && nftManager.kioskNftItems.length === 0 && controllableObjects.length > 0) {
+      setActiveTab('objects');
+    }
+  }, []);  // Empty dependency array - only runs once on mount
 
   // Auto-load blob IDs
   useEffect(() => {
@@ -226,88 +234,132 @@ export function SculptureControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="p-3 space-y-3" style={{ fontSize: '13px' }}>
-          {/* Kiosk NFT Items Section */}
-          {nftManager.kioskNftItems.length > 0 && (
-            <KioskNftItemsSection
-              items={nftManager.kioskNftItems}
-              displayedItemIds={nftManager.displayedNftItems}
-              isLoading={modelLoader.isLoading}
-              loadingProgress={modelLoader.loadingProgress}
-              loadingItemId={selectedSculpture}
-              onToggleItem={nftManager.handleNftItemDisplayToggle}
-              onListItems={onListItems}
-            />
-          )}
+        <div className="space-y-3" style={{ fontSize: '13px' }}>
+          {/* Tab Navigation */}
+          <div className="flex border-b border-white/10">
+            <button
+              onClick={() => setActiveTab('kiosk')}
+              className={`flex-1 py-3 px-4 text-xs font-semibold tracking-wider uppercase transition-all duration-200 ${
+                activeTab === 'kiosk'
+                  ? 'text-white/95 bg-white/10 border-b-2 border-white/40'
+                  : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+              }`}
+            >
+              Kiosk NFTs
+              {nftManager.kioskNftItems.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-white/15 rounded-full">
+                  {nftManager.kioskNftItems.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('objects')}
+              className={`flex-1 py-3 px-4 text-xs font-semibold tracking-wider uppercase transition-all duration-200 ${
+                activeTab === 'objects'
+                  ? 'text-white/95 bg-white/10 border-b-2 border-white/40'
+                  : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+              }`}
+            >
+              Objects
+              {controllableObjects.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-white/15 rounded-full">
+                  {controllableObjects.length}
+                </span>
+              )}
+            </button>
+          </div>
 
-          {/* Object selector */}
-          <ObjectSelector
-            selectedId={selectedSculpture}
-            onChangeSelected={(id) => setSelectedSculpture(id)}
-            displayedKioskItems={nftManager.kioskNftItems.filter((nftItem) => 
-              nftManager.displayedNftItems.has(nftItem.id)
+          {/* Tab Content */}
+          <div className="p-3">
+            {/* Kiosk NFT Items Tab */}
+            {activeTab === 'kiosk' && (
+              nftManager.kioskNftItems.length > 0 ? (
+                <KioskNftItemsSection
+                  items={nftManager.kioskNftItems}
+                  displayedItemIds={nftManager.displayedNftItems}
+                  isLoading={modelLoader.isLoading}
+                  loadingProgress={modelLoader.loadingProgress}
+                  loadingItemId={selectedSculpture}
+                  onToggleItem={nftManager.handleNftItemDisplayToggle}
+                  onListItems={onListItems}
+                />
+              ) : (
+                <div className="text-xs text-white/50 text-center py-8">
+                  No Kiosk NFT items available
+                </div>
+              )
             )}
-            controllableObjects={controllableObjects}
-          />
 
-          {/* Transform controls */}
-          {currentControllableObject ? (
-            <TransformControlsSection
-              expanded={transformControlsExpanded}
-              onToggleExpanded={() => setTransformControlsExpanded(!transformControlsExpanded)}
-              current={currentControllableObject as any}
-              canRotate={(!!onUpdateRotation && currentControllableObject.type === 'sculpture') || 
-                         currentControllableObject.type === 'external' || 
-                         currentControllableObject.type === 'kiosk_nft'}
-              canScale={(!!onUpdateScale && currentControllableObject.type === 'sculpture') || 
-                        currentControllableObject.type === 'external' || 
-                        currentControllableObject.type === 'kiosk_nft'}
-              onResetAll={() => {
-                if (currentControllableObject.type === 'sculpture') {
-                  onUpdatePosition?.(currentControllableObject.id, { x: 0, y: 1, z: 0 });
-                  onUpdateRotation?.(currentControllableObject.id, { x: 0, y: 0, z: 0 });
-                  onUpdateScale?.(currentControllableObject.id, { x: 1, y: 1, z: 1 });
-                } else if (currentControllableObject.type === 'kiosk_nft') {
-                  const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
-                  withKioskModelGroup(sceneManager, modelName, (child) => {
-                    child.position.set(0, 2, 0);
-                    child.rotation.set(0, 0, 0);
-                    child.scale.set(1, 1, 1);
-                  }, 'Error resetting Kiosk NFT transforms:');
-                  nftManager.setKioskNftTransforms(prev => {
-                    const newMap = new Map(prev);
-                    newMap.set(currentControllableObject.id, {
-                      position: { x: 0, y: 2, z: 0 },
-                      rotation: { x: 0, y: 0, z: 0 },
-                      scale: { x: 1, y: 1, z: 1 }
-                    });
-                    return newMap;
-                  });
-                } else {
-                  transformControls.handleExternalPositionUpdate(
-                    currentControllableObject.id, 
-                    { x: 0, y: 1, z: 0 }, 
-                    controllableObjects, 
-                    setControllableObjects
-                  );
-                  transformControls.handleExternalRotationUpdate(
-                    currentControllableObject.id, 
-                    { x: 0, y: 0, z: 0 }, 
-                    controllableObjects, 
-                    setControllableObjects
-                  );
-                  transformControls.handleExternalScaleUpdate(
-                    currentControllableObject.id, 
-                    { x: 1, y: 1, z: 1 }, 
-                    controllableObjects, 
-                    setControllableObjects
-                  );
-                }
-              }}
-              onChangePosition={(newPosition) => {
-                if (currentControllableObject.type === 'sculpture') {
-                  onUpdatePosition(currentControllableObject.id, newPosition);
-                } else if (currentControllableObject.type === 'kiosk_nft') {
+            {/* Objects Tab */}
+            {activeTab === 'objects' && (
+              <div className="space-y-3">
+                {controllableObjects.length > 0 || nftManager.displayedNftItems.size > 0 ? (
+                  <>
+                    <ObjectSelector
+                      selectedId={selectedSculpture}
+                      onChangeSelected={(id) => setSelectedSculpture(id)}
+                      displayedKioskItems={nftManager.kioskNftItems.filter((nftItem) => 
+                        nftManager.displayedNftItems.has(nftItem.id)
+                      )}
+                      controllableObjects={controllableObjects}
+                    />
+                    
+                    {/* Transform controls */}
+                    {currentControllableObject && (
+                      <TransformControlsSection
+                        current={currentControllableObject as any}
+                        canRotate={(!!onUpdateRotation && currentControllableObject.type === 'sculpture') || 
+                                   currentControllableObject.type === 'external' || 
+                                   currentControllableObject.type === 'kiosk_nft'}
+                        canScale={(!!onUpdateScale && currentControllableObject.type === 'sculpture') || 
+                                  currentControllableObject.type === 'external' || 
+                                  currentControllableObject.type === 'kiosk_nft'}
+                        onResetAll={() => {
+                          if (currentControllableObject.type === 'sculpture') {
+                            onUpdatePosition?.(currentControllableObject.id, { x: 0, y: 1, z: 0 });
+                            onUpdateRotation?.(currentControllableObject.id, { x: 0, y: 0, z: 0 });
+                            onUpdateScale?.(currentControllableObject.id, { x: 1, y: 1, z: 1 });
+                          } else if (currentControllableObject.type === 'kiosk_nft') {
+                            const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
+                            withKioskModelGroup(sceneManager, modelName, (child) => {
+                              child.position.set(0, 2, 0);
+                              child.rotation.set(0, 0, 0);
+                              child.scale.set(1, 1, 1);
+                            }, 'Error resetting Kiosk NFT transforms:');
+                            nftManager.setKioskNftTransforms(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(currentControllableObject.id, {
+                                position: { x: 0, y: 2, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                scale: { x: 1, y: 1, z: 1 }
+                              });
+                              return newMap;
+                            });
+                          } else {
+                            transformControls.handleExternalPositionUpdate(
+                              currentControllableObject.id, 
+                              { x: 0, y: 1, z: 0 }, 
+                              controllableObjects, 
+                              setControllableObjects
+                            );
+                            transformControls.handleExternalRotationUpdate(
+                              currentControllableObject.id, 
+                              { x: 0, y: 0, z: 0 }, 
+                              controllableObjects, 
+                              setControllableObjects
+                            );
+                            transformControls.handleExternalScaleUpdate(
+                              currentControllableObject.id, 
+                              { x: 1, y: 1, z: 1 }, 
+                              controllableObjects, 
+                              setControllableObjects
+                            );
+                          }
+                        }}
+                        onChangePosition={(newPosition) => {
+                          if (currentControllableObject.type === 'sculpture') {
+                            onUpdatePosition(currentControllableObject.id, newPosition);
+                          } else if (currentControllableObject.type === 'kiosk_nft') {
                   const modelName = kioskModelName(currentNftItem!.name, currentNftItem!.id);
                   withKioskModelGroup(sceneManager, modelName, (child) => {
                     child.position.set(newPosition.x, newPosition.y, newPosition.z);
@@ -464,11 +516,16 @@ export function SculptureControlPanel({
                 }
               }}
             />
-          ) : (
-            <div className="text-sm text-white/60">
-              No objects available
-            </div>
-          )}
+                    )}
+                  </>
+                ) : (
+                  <div className="text-xs text-white/50 text-center py-8">
+                    No objects in scene
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
