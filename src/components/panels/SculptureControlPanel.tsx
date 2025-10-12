@@ -29,6 +29,8 @@ interface SculptureControlPanelProps {
   initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>;
   onLoadingStateChange?: (isLoading: boolean) => void;
   onListItems?: (items: Array<{ itemId: string; price: string }>) => Promise<void>;
+  onDelistItem?: (itemId: string, itemType: string) => Promise<void>;
+  mistToSui?: (mistAmount: string | number) => number;
 }
 
 interface ControllableObject extends ControllableObjectType {
@@ -47,7 +49,9 @@ export function SculptureControlPanel({
   initialDisplayedItems,
   initialTransforms,
   onLoadingStateChange,
-  onListItems
+  onListItems,
+  onDelistItem,
+  mistToSui
 }: SculptureControlPanelProps) {
   // UI state
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
@@ -292,6 +296,8 @@ export function SculptureControlPanel({
                   loadingItemId={selectedSculpture}
                   onToggleItem={nftManager.handleNftItemDisplayToggle}
                   onListItems={onListItems}
+                  onDelistItem={onDelistItem}
+                  mistToSui={mistToSui}
                 />
               ) : (
                 <div className="text-xs text-white/50 text-center py-8">
