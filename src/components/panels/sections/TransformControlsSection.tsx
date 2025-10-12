@@ -36,7 +36,7 @@ export function TransformControlsSection({
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-          Transform Controls
+          Transform
         </label>
         <button
           onClick={onResetAll}
@@ -51,7 +51,7 @@ export function TransformControlsSection({
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                Position Vector
+                Position
               </label>
               <button
                 onClick={onResetPosition}
@@ -104,7 +104,7 @@ export function TransformControlsSection({
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                  Rotation Matrix
+                  Rotation
                 </label>
                 <button
                   onClick={onResetRotation}
@@ -161,7 +161,7 @@ export function TransformControlsSection({
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                  Scale Factor
+                  Scale
                 </label>
                 <button
                   onClick={onResetScale}

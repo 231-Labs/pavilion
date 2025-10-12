@@ -89,15 +89,21 @@ export function KioskNftItemsSection({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-          Kiosk NFT Items
-        </label>
-        {onListItems && (
+      {onListItems && (
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={handleSelectAll}
+            className="flex-1 px-3 py-1.5 text-xs font-semibold tracking-wide uppercase rounded-lg transition-all duration-200 bg-white/10 text-white/90 border border-white/20 hover:bg-white/15 hover:border-white/30 whitespace-nowrap"
+          >
+            {allSelected ? 'Deselect All' : 'Select All'}
+            <span className="ml-2 text-white/60">
+              {selectedCount}/{items.length}
+            </span>
+          </button>
           <button
             onClick={handleListSelected}
             disabled={!canList || isListing}
-            className={`px-3 py-1.5 text-xs font-semibold tracking-wide uppercase rounded-lg transition-all duration-200 ${
+            className={`flex-1 px-3 py-1.5 text-xs font-semibold tracking-wide uppercase rounded-lg transition-all duration-200 whitespace-nowrap ${
               canList && !isListing
                 ? 'bg-white/10 text-white/90 border border-white/20 hover:bg-white/15 hover:border-white/30'
                 : 'bg-white/5 text-white/40 border border-white/5 cursor-not-allowed'
@@ -105,20 +111,6 @@ export function KioskNftItemsSection({
           >
             {isListing ? 'Listing...' : `List (${selectedCount})`}
           </button>
-        )}
-      </div>
-
-      {onListItems && (
-        <div className="flex items-center justify-between px-2 py-1.5 bg-black/10 rounded-lg border border-white/5">
-          <button
-            onClick={handleSelectAll}
-            className="text-xs font-medium tracking-wide uppercase text-white/70 hover:text-white/90 transition-colors"
-          >
-            {allSelected ? 'Deselect All' : 'Select All'}
-          </button>
-          <span className="text-xs text-white/60">
-            {selectedCount} / {items.length}
-          </span>
         </div>
       )}
 
