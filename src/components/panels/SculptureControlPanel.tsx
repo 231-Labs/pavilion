@@ -28,7 +28,7 @@ interface SculptureControlPanelProps {
   initialDisplayedItems?: Set<string>;
   initialTransforms?: Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>;
   onLoadingStateChange?: (isLoading: boolean) => void;
-  onListItems?: (itemIds: string[], price: string) => Promise<void>;
+  onListItems?: (items: Array<{ itemId: string; price: string }>) => Promise<void>;
 }
 
 interface ControllableObject extends ControllableObjectType {

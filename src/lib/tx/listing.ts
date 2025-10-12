@@ -56,7 +56,7 @@ export function buildListItemTx(params: ListItemParams): Transaction {
   // List the item with the specified price
   kioskTx.list({
     itemType,
-    itemId: tx.object(itemId),
+    itemId,
     price,
   });
 
@@ -80,7 +80,7 @@ export function buildDelistItemTx(params: DelistItemParams): Transaction {
   // Delist the item
   kioskTx.delist({
     itemType,
-    itemId: tx.object(itemId),
+    itemId,
   });
 
   kioskTx.finalize();
@@ -105,7 +105,7 @@ export function buildBatchListItemsTx(params: BatchListItemsParams): Transaction
   for (const item of items) {
     kioskTx.list({
       itemType: item.itemType,
-      itemId: tx.object(item.itemId),
+      itemId: item.itemId,
       price: item.price,
     });
   }

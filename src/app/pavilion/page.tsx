@@ -45,7 +45,7 @@ function PavilionContent() {
   };
 
   // Handle listing items
-  const handleListItems = async (itemIds: string[], price: string) => {
+  const handleListItems = async (items: Array<{ itemId: string; price: string }>) => {
     if (!kioskState.kioskId || !kioskState.kioskOwnerCapId) {
       throw new Error('Kiosk ID or Kiosk Owner Cap ID not available');
     }
@@ -57,8 +57,8 @@ function PavilionContent() {
     // Get all kiosk items to find the item types
     const allKioskItems = [...(kioskState.kioskItems || []), ...injectedMockData];
     
-    // Build the items array with types
-    const itemsToList = itemIds.map(itemId => {
+    // Build the items array with types and convert prices to MIST
+    const itemsToList = items.map(({ itemId, price }) => {
       const item = allKioskItems.find(i => i.objectId === itemId);
       if (!item) {
         throw new Error(`Item ${itemId} not found in kiosk items`);
@@ -91,7 +91,7 @@ function PavilionContent() {
             
             // Refresh kiosk data to get updated listing status
             if (kioskState.kioskId) {
-              await kioskState.refetchKiosk();
+              await kioskState.refresh();
             }
             
             resolve();
