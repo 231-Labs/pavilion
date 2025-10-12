@@ -182,6 +182,24 @@ module demo_nft_2d::demo_nft_2d {
             config
         );
     }
+
+    /// remove royalty rule from TransferPolicy
+    public fun remove_royalty_rule(
+        policy: &mut transfer_policy::TransferPolicy<DemoNFT2D>,
+        policy_cap: &transfer_policy::TransferPolicyCap<DemoNFT2D>,
+    ) {
+        transfer_policy::remove_rule<DemoNFT2D, RoyaltyRule, RoyaltyConfig>(
+            policy,
+            policy_cap
+        );
+    }
+
+    /// check if royalty rule is set
+    public fun has_royalty_rule(
+        policy: &transfer_policy::TransferPolicy<DemoNFT2D>
+    ): bool {
+        transfer_policy::has_rule<DemoNFT2D, RoyaltyRule>(policy)
+    }
     
     /// pay royalty and add receipt
     public fun pay_royalty_and_add_receipt(

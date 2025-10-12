@@ -121,6 +121,24 @@ module demo_nft::demo_nft{
             config
         );
     }
+
+    /// Remove royalty rule from TransferPolicy
+    public fun remove_royalty_rule(
+        policy: &mut transfer_policy::TransferPolicy<DemoNFT>,
+        policy_cap: &transfer_policy::TransferPolicyCap<DemoNFT>,
+    ) {
+        transfer_policy::remove_rule<DemoNFT, RoyaltyRule, RoyaltyConfig>(
+            policy,
+            policy_cap
+        );
+    }
+
+    /// Check if royalty rule is set
+    public fun has_royalty_rule(
+        policy: &transfer_policy::TransferPolicy<DemoNFT>
+    ): bool {
+        transfer_policy::has_rule<DemoNFT, RoyaltyRule>(policy)
+    }
     
     /// Pay royalty and add receipt
     public fun pay_royalty_and_add_receipt(
