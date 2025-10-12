@@ -4,8 +4,6 @@ import React from 'react';
 import { ControllableObject, Vector3Like } from '../../../types/controlPanel';
 
 interface TransformControlsSectionProps {
-  expanded: boolean;
-  onToggleExpanded: () => void;
   current: ControllableObject;
   canRotate: boolean;
   canScale: boolean;
@@ -19,8 +17,6 @@ interface TransformControlsSectionProps {
 }
 
 export function TransformControlsSection({
-  expanded,
-  onToggleExpanded,
   current,
   canRotate,
   canScale,
@@ -39,36 +35,23 @@ export function TransformControlsSection({
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <div
-          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={onToggleExpanded}
+        <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+          Transform
+        </label>
+        <button
+          onClick={onResetAll}
+          className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
         >
-          <label className="block text-base font-medium tracking-wide uppercase control-label-primary mr-2">
-            Transform Controls
-          </label>
-          <span className="elegant-expand-arrow" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-            ▼
-          </span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {expanded && (
-            <button
-              onClick={onResetAll}
-              className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
-            >
-              Reset All
-            </button>
-          )}
-        </div>
+          Reset All
+        </button>
       </div>
 
-      {expanded && (
-        <div className="space-y-3">
+      <div className="space-y-3">
           {/* Position */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                Position Vector
+                Position
               </label>
               <button
                 onClick={onResetPosition}
@@ -121,7 +104,7 @@ export function TransformControlsSection({
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                  Rotation Matrix
+                  Rotation
                 </label>
                 <button
                   onClick={onResetRotation}
@@ -178,7 +161,7 @@ export function TransformControlsSection({
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
-                  Scale Factor
+                  Scale
                 </label>
                 <button
                   onClick={onResetScale}
@@ -218,8 +201,7 @@ export function TransformControlsSection({
               </div>
             </div>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

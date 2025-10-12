@@ -38,7 +38,6 @@ export function useNftItemsManager({
   onTrackChange,
   isLoading,
   setIsLoading,
-  loadingProgress,
   setLoadingProgress,
   loadedModels,
   setLoadedModels,
@@ -70,22 +69,48 @@ export function useNftItemsManager({
 
   // Process NFT items
   useEffect(() => {
+    console.log('🔄 useNftItemsManager: kioskItems changed, count:', kioskItems.length);
     if (kioskItems.length > 0 && nftProcessor) {
       const processItems = async () => {
         try {
           const processed = await nftProcessor.processNFTItems(kioskItems);
           setProcessedNftItems(processed);
+          console.log('✅ useNftItemsManager: Processed NFT items');
           
           // Create legacy format for backward compatibility
-          const legacyItems = processed.map(item => ({
-            id: item.id,
-            name: item.name,
-            blobId: item.resourceInfo.blobId || '',
-            displayData: item.sceneObject,
-            contentFields: {},
-            fullItem: kioskItems.find(k => k.objectId === item.id),
-            resourceType: item.resourceInfo.type,
-          }));
+          const legacyItems = processed.map(item => {
+            const fullKioskItem = kioskItems.find(k => k.objectId === item.id);
+            
+            // Debug: Log the full item structure to understand listing data format
+            if (fullKioskItem) {
+              console.log('📦 Kiosk Item Structure:', {
+                objectId: fullKioskItem.objectId,
+                isLocked: fullKioskItem.isLocked,
+                listing: fullKioskItem.listing,
+                // Show all keys to understand the structure
+                keys: Object.keys(fullKioskItem)
+              });
+            }
+            
+            // According to official Mysten Kiosk SDK:
+            // - item.listing exists and is not null/undefined if the item is listed
+            // - item.listing contains the price information
+            const listing = fullKioskItem?.listing;
+            const isListed = listing !== null && listing !== undefined;
+            
+            return {
+              id: item.id,
+              name: item.name,
+              blobId: item.resourceInfo.blobId || '',
+              displayData: item.sceneObject,
+              contentFields: {},
+              fullItem: fullKioskItem,
+              resourceType: item.resourceInfo.type,
+              isListed: isListed,
+              listPrice: listing?.price || undefined,
+              itemType: fullKioskItem?.type || undefined,
+            };
+          });
           
           setKioskNftItems(legacyItems);
           
@@ -93,6 +118,16 @@ export function useNftItemsManager({
             '3D models': processed.filter(p => p.resourceInfo.type === '3d-model').length,
             '2D images': processed.filter(p => p.resourceInfo.type === '2d-image').length,
           });
+          
+          // Log listing status for debugging
+          const listedItems = legacyItems.filter(item => item.isListed);
+          console.log(`✅ Listed items (${listedItems.length}/${legacyItems.length}):`, 
+            listedItems.map(item => ({
+              name: item.name,
+              id: item.id.substring(0, 8),
+              price: item.listPrice
+            }))
+          );
         } catch (error) {
           console.error('Failed to process NFT items:', error);
           setKioskNftItems([]);
@@ -102,6 +137,7 @@ export function useNftItemsManager({
       
       processItems();
     } else {
+      console.log('📦 useNftItemsManager: No items to process or NFT processor not ready');
       setKioskNftItems([]);
       setProcessedNftItems([]);
     }

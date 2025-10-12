@@ -24,6 +24,9 @@ export interface KioskNftItem {
   displayData?: Record<string, unknown>;
   contentFields?: Record<string, unknown>;
   fullItem?: unknown;
+  isListed?: boolean;
+  listPrice?: string; // Price in MIST
+  itemType?: string; // Full type string for transactions
 }
 
 export type KioskNftTransformsMap = Map<string, {

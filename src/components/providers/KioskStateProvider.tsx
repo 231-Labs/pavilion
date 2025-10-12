@@ -62,6 +62,7 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
 
   const refresh = useCallback(async () => {
     if (!kioskId) return;
+    console.log('🔄 KioskStateProvider: Starting refresh for kiosk:', kioskId);
     setLoading(true);
     setError(null);
     try {
@@ -74,8 +75,10 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
           objectOptions: { showDisplay: true, showContent: true },
         },
       });
+      console.log('✅ KioskStateProvider: Fetched kiosk data, items count:', data.items?.length ?? 0);
       setKioskItems(data.items ?? []);
     } catch (e) {
+      console.error('❌ KioskStateProvider: Failed to refresh:', e);
       setError((e as Error).message || 'Failed to fetch kiosk contents');
       setKioskItems(null);
     } finally {

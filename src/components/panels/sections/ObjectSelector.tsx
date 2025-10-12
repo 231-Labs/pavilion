@@ -19,7 +19,7 @@ export function ObjectSelector({
   return (
     <div className="space-y-2">
       <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-        Select Object
+        Object Selector
       </label>
       <select
         value={selectedId || ''}
