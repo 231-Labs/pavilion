@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLoading } from '../providers/LoadingProvider';
 import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
 import { useKioskData } from '../../hooks/nft/useKioskData';
 import { KioskSelector } from './KioskSelector';
+import { useKioskClient } from '../providers/KioskClientProvider';
+import { isPavilionKiosk } from '../../lib/tx/pavilion-utils';
 import type { VisitSubMode } from '../../types/home';
 
 interface VisitPavilionSectionProps {
@@ -13,8 +16,11 @@ interface VisitPavilionSectionProps {
 
 export function VisitPavilionSection({ visitSubMode, setVisitSubMode, onError }: VisitPavilionSectionProps) {
   const [kioskId, setKioskId] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const { loadingState } = useLoading();
   const { navigateToKiosk } = usePreloadNavigation();
+  const kioskClient = useKioskClient();
+  const router = useRouter();
   const { 
     pavilionKiosks, 
     fetchingKiosks, 
@@ -31,15 +37,36 @@ export function VisitPavilionSection({ visitSubMode, setVisitSubMode, onError }:
         return;
       }
       targetKioskId = selectedVisitKioskId;
+      // My pavilions are already verified, navigate directly
+      await navigateToKiosk(targetKioskId);
     } else {
+      // External mode - need to verify
       if (!kioskId.trim()) {
         onError('Please enter a kiosk ID');
         return;
       }
       targetKioskId = kioskId.trim();
+      
+      // Verify if it's a pavilion kiosk
+      setIsVerifying(true);
+      try {
+        const isPavilion = await isPavilionKiosk(kioskClient, targetKioskId);
+        
+        if (!isPavilion) {
+          onError('The entered kiosk is not a Pavilion. Please enter a valid Pavilion Kiosk ID.');
+          setIsVerifying(false);
+          return;
+        }
+        
+        // Navigate to visitor mode
+        router.push(`/pavilion/visit?kioskId=${targetKioskId}`);
+      } catch (error) {
+        onError('Failed to verify kiosk. Please check the ID and try again.');
+        console.error('Kiosk verification error:', error);
+      } finally {
+        setIsVerifying(false);
+      }
     }
-
-    await navigateToKiosk(targetKioskId);
   };
 
   return (
@@ -109,11 +136,11 @@ export function VisitPavilionSection({ visitSubMode, setVisitSubMode, onError }:
 
         <button
           onClick={onVisitPavilion}
-          disabled={(visitSubMode === 'my' && (!selectedVisitKioskId || fetchingKiosks)) || (visitSubMode === 'external' && !kioskId.trim()) || loadingState.backgroundAnimating}
+          disabled={(visitSubMode === 'my' && (!selectedVisitKioskId || fetchingKiosks)) || (visitSubMode === 'external' && !kioskId.trim()) || loadingState.backgroundAnimating || isVerifying}
           aria-label="Visit pavilion"
           className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/30"
         >
-          {loadingState.backgroundAnimating ? (
+          {(loadingState.backgroundAnimating || isVerifying) ? (
             <div className="loading-spinner" />
           ) : (
             <svg
