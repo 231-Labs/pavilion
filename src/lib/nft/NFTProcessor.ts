@@ -1,7 +1,7 @@
 import { NFTFieldConfigManager, NFTResourceInfo } from '../../types/nft-field-config';
 import { SceneObject, createDefaultSceneObject } from '../../types/scene';
-import { Image3DRenderer, Image3DOptions } from '../three/Image3DRenderer';
-import { NFTCollectionConfigLoader } from '../config/NFTCollectionConfigLoader';
+import { Image3DRenderer, Image3DOptions } from '../scene/Image3DRenderer';
+import { NFTCollectionConfigLoader } from './NFTCollectionConfigLoader';
 import * as THREE from 'three';
 
 /**

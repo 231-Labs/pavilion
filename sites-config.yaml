@@ -23,7 +23,7 @@ contexts:
        wallet_env: mainnet
        walrus_context: mainnet # Assumes a Walrus CLI setup with a multi-config containing the "mainnet" context.
        walrus_package: 0xfdc88f7d7cf30afab2f82e8380d11ee8f70efb90e863d1de8616fae1bb09ea77
-       # wallet_address: 0x1234...
+       wallet_address: 0x7dd2687d223800eb41ea5edf645941ee49f75862dff5e35f5efd07855dbea292
        # rpc_url: https://fullnode.mainnet.sui.io:443
        # wallet: /path/to/.sui/sui_config/client.yaml
        # walrus_binary: /path/to/walrus

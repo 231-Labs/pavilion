@@ -1,4 +1,5 @@
 import type { KioskClient } from '@mysten/kiosk';
+import type { Transaction } from '@mysten/sui/transactions';
 
 export type PavilionTxConfig =
   | {
@@ -7,6 +8,9 @@ export type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     }
   | {
       mode: 'existing';
@@ -16,6 +20,9 @@ export type PavilionTxConfig =
       ownerAddress: string;
       kioskId: string;
       kioskOwnerCapId: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     }
   | {
       mode: 'auto';
@@ -23,6 +30,9 @@ export type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     };
 
 export interface PavilionTxParams {
@@ -30,6 +40,9 @@ export interface PavilionTxParams {
   packageId: string;
   pavilionName: string;
   ownerAddress: string;
+  platformConfigId: string;
+  platformRecipient: string;
+  suiClient: any;
 }
 
 export interface ExistingKioskParams extends PavilionTxParams {
@@ -78,4 +91,19 @@ export interface SetSceneConfigParams {
 export interface DebugDynamicFieldsParams {
   suiClient: any;
   kioskId: string;
+}
+
+export interface PurchaseTransactionParams {
+  kioskClient: KioskClient;
+  itemId: string;
+  itemType: string;
+  price: string;
+  sellerKiosk: string;
+  buyerAddress: string;
+}
+
+export interface PurchaseTransactionResult {
+  transaction: Transaction;
+  isNewKiosk: boolean;
+  buyerKioskId?: string;
 }

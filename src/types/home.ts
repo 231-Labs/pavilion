@@ -3,6 +3,12 @@
 export interface SuiTransactionResult {
   digest?: string;
   objectChanges?: SuiObjectChange[];
+  effects?: {
+    status?: {
+      status?: string;
+      error?: string;
+    };
+  };
 }
 
 export interface SuiObjectChange {

@@ -2,8 +2,8 @@ import { useRouter } from 'next/navigation';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { useLoading } from '../../components/providers/LoadingProvider';
-import { PreloadService } from '../../lib/three/PreloadService';
-import { fetchKioskContents } from '../../lib/tx/pavilion';
+import { PreloadService } from '../../lib/scene/PreloadService';
+import { fetchKioskContents } from '../../lib/blockchain/pavilion';
 import type { UsePreloadNavigationReturn } from '../../types/home';
 
 export function usePreloadNavigation(): UsePreloadNavigationReturn {
@@ -62,12 +62,12 @@ export function usePreloadNavigation(): UsePreloadNavigationReturn {
     
     if (preloadSuccess) {
       setTimeout(() => {
-        router.push(`/pavilion?kioskId=${targetKioskId}`);
+        router.push(`/manage?kioskId=${targetKioskId}`);
       }, 300);
     } else {
       setLoading(true);
       setTimeout(() => {
-        router.push(`/pavilion?kioskId=${targetKioskId}`);
+        router.push(`/manage?kioskId=${targetKioskId}`);
       }, 800);
     }
   };
@@ -75,7 +75,7 @@ export function usePreloadNavigation(): UsePreloadNavigationReturn {
   const navigateToDemo = () => {
     setLoading(true);
     setTimeout(() => {
-      router.push('/pavilion');
+      router.push('/demo');
     }, 800);
   };
 

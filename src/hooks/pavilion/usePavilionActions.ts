@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
-import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../../lib/tx/pavilion';
+import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../../lib/blockchain/pavilion';
 import type { SuiTransactionResult, UsePavilionActionsReturn } from '../../types/home';
 
 export function usePavilionActions(): UsePavilionActionsReturn {
@@ -18,6 +18,8 @@ export function usePavilionActions(): UsePavilionActionsReturn {
   const kioskState = useKioskState();
   
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
+  const PLATFORM_CONFIG_ID = process.env.NEXT_PUBLIC_PLATFORM_CONFIG_ID as string | undefined;
+  const PLATFORM_RECIPIENT = process.env.NEXT_PUBLIC_PLATFORM_RECIPIENT as string | undefined;
 
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
@@ -26,6 +28,7 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         signature,
         options: {
           showRawEffects: true,
+          showEffects: true,
           showObjectChanges: true,
           showEvents: false,
         },
@@ -35,6 +38,7 @@ export function usePavilionActions(): UsePavilionActionsReturn {
   const createPavilion = async () => {
     setError(null);
     setTxDigest(null);
+    setCreatedKioskId(null);
     
     if (!currentAccount) {
       setError('Please connect your wallet');
@@ -43,6 +47,16 @@ export function usePavilionActions(): UsePavilionActionsReturn {
     
     if (!PAVILION_PACKAGE_ID) {
       setError('Missing NEXT_PUBLIC_PAVILION_PACKAGE_ID environment variable');
+      return;
+    }
+    
+    if (!PLATFORM_CONFIG_ID) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID environment variable');
+      return;
+    }
+    
+    if (!PLATFORM_RECIPIENT) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_RECIPIENT environment variable');
       return;
     }
     
@@ -58,9 +72,25 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         packageId: PAVILION_PACKAGE_ID,
         pavilionName,
         ownerAddress: currentAccount.address,
+        platformConfigId: PLATFORM_CONFIG_ID,
+        platformRecipient: PLATFORM_RECIPIENT,
+        suiClient,
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
+      
+      // Check if transaction was successful
+      const effects = (result as SuiTransactionResult)?.effects;
+      const status = effects?.status?.status;
+      
+      if (status !== 'success') {
+        // Transaction failed
+        const errorMsg = effects?.status?.error || 'Transaction execution failed';
+        setError(errorMsg);
+        return;
+      }
+
+      // Only set digest if transaction succeeded
       const digest = (result as SuiTransactionResult)?.digest ?? null;
       setTxDigest(digest);
 
@@ -88,15 +118,35 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         // Failed to parse kiosk ids from transaction
       }
     } catch (e) {
-      setError((e as Error).message ?? 'Create Pavilion transaction failed');
+      const error = e as Error;
+      // Handle user rejection
+      if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
+        setError('Transaction cancelled by user');
+      } else {
+        setError(error.message ?? 'Create Pavilion transaction failed');
+      }
     } finally {
       setCreating(false);
     }
   };
 
   const initializeExistingKiosk = async (selectedKioskId: string, selectedCap: string) => {
+    setError(null);
+    setTxDigest(null);
+    setCreatedKioskId(null);
+    
     if (!currentAccount || !PAVILION_PACKAGE_ID) {
       setError('Missing requirements for initialization');
+      return;
+    }
+    
+    if (!PLATFORM_CONFIG_ID) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID environment variable');
+      return;
+    }
+    
+    if (!PLATFORM_RECIPIENT) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_RECIPIENT environment variable');
       return;
     }
 
@@ -107,7 +157,6 @@ export function usePavilionActions(): UsePavilionActionsReturn {
 
     setCreating(true);
     try {
-      setError(null);
       const tx = await buildInitializePavilionWithExistingKioskTx({
         kioskClient,
         packageId: PAVILION_PACKAGE_ID,
@@ -115,9 +164,25 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         ownerAddress: currentAccount.address,
         kioskId: selectedKioskId,
         kioskOwnerCapId: selectedCap,
+        platformConfigId: PLATFORM_CONFIG_ID,
+        platformRecipient: PLATFORM_RECIPIENT,
+        suiClient,
       });
       
       const result = await signAndExecuteTransaction({ transaction: tx });
+      
+      // Check if transaction was successful
+      const effects = (result as SuiTransactionResult)?.effects;
+      const status = effects?.status?.status;
+      
+      if (status !== 'success') {
+        // Transaction failed
+        const errorMsg = effects?.status?.error || 'Transaction execution failed';
+        setError(errorMsg);
+        return;
+      }
+
+      // Only set digest if transaction succeeded
       const digest = (result as SuiTransactionResult)?.digest ?? null;
       setTxDigest(digest);
       
@@ -127,7 +192,13 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         await fetchKioskContents({ kioskClient, kioskId: selectedKioskId });
       } catch {}
     } catch (e) {
-      setError((e as Error).message || 'Failed to initialize pavilion with existing kiosk');
+      const error = e as Error;
+      // Handle user rejection
+      if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
+        setError('Transaction cancelled by user');
+      } else {
+        setError(error.message || 'Failed to initialize pavilion with existing kiosk');
+      }
     } finally {
       setCreating(false);
     }

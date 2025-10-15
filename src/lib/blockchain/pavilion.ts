@@ -15,7 +15,7 @@ export {
   resolveKioskOwnerCapId,
   fetchKioskContents,
   debugDynamicFields,
-} from './kiosk-utils';
+} from './kiosk';
 
 // Re-export scene configuration functions
 export {

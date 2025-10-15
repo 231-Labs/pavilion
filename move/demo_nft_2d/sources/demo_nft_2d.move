@@ -11,6 +11,9 @@ module demo_nft_2d::demo_nft_2d {
         sui::SUI
     };
 
+    /// Constants
+    const BASE_POINT: u64 = 10000;
+
     /// struct for demo nft 2d
     public struct DemoNFT2D has key, store {
         id: UID,
@@ -232,7 +235,7 @@ module demo_nft_2d::demo_nft_2d {
             RoyaltyRule {},
             policy
         );
-        (price * config.rate_bp) / 10000
+        (price * config.rate_bp) / BASE_POINT
     }
 
     // == query functions ==

@@ -15,9 +15,5 @@ export function clearDemoStorage() {
 export function isDemoMode(): boolean {
   if (typeof window === 'undefined') return false;
   
-  const isOnPavilionPage = window.location.pathname === '/pavilion';
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlKioskId = urlParams.get('kioskId');
-  
-  return isOnPavilionPage && !urlKioskId;
+  return window.location.pathname === '/demo';
 }

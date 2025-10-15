@@ -140,4 +140,4 @@ temp/
 .dynamodb/
 
 # TernJS port file
-.tern-port
+.tern-portsites-config.yaml
