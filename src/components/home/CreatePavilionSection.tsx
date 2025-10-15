@@ -17,7 +17,8 @@ export function CreatePavilionSection({ createSubMode, setCreateSubMode }: Creat
   const kioskState = useKioskState();
   const { navigateToKiosk } = usePreloadNavigation();
   const { 
-    creating, 
+    creating,
+    error,
     txDigest, 
     pavilionName, 
     setPavilionName, 
@@ -196,6 +197,20 @@ export function CreatePavilionSection({ createSubMode, setCreateSubMode }: Creat
                 )}
               </div>
             ) : null}
+            {error && !txDigest && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-red-400 text-[11px] tracking-wide">{error}</span>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400/60 hover:text-red-400 transition-colors"
+                  aria-label="Close error"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -42,8 +42,6 @@ module pavilion::pavilion {
 
     // == Public Functions ==
 
-    // == TransferPolicy Integration Examples ==
-    
     /// Purchase with policy-enforced commission (confirm_request phase)
     /// Flow: purchase -> pay commission -> add receipt -> confirm_request
     public fun purchase_with_policy_commission<T: key + store>(
@@ -53,7 +51,6 @@ module pavilion::pavilion {
         policy: &TransferPolicy<T>,
         commission_payment: Coin<SUI>,
         commission_recipient: address,
-        _ctx: &mut TxContext
     ): T {
         // 1) Kiosk purchase
         let (nft, mut transfer_request) = kiosk::purchase<T>(kiosk, item_id, payment);
@@ -143,10 +140,8 @@ module pavilion::pavilion {
     public fun update_pavilion_name(self: &mut Kiosk, cap: &KioskOwnerCap, name: String) {
         // Ensure this is a pavilion kiosk
         assert_is_pavilion_kiosk(self);
-        
         // Validate name length
         validate_pavilion_name(&name);
-        
         set_dynamic_field(self, cap, PavilionName {}, name);
     }
 
@@ -155,7 +150,6 @@ module pavilion::pavilion {
     public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
         // Ensure this is a pavilion kiosk
         assert_is_pavilion_kiosk(self);
-        
         set_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
