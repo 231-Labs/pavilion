@@ -25,7 +25,11 @@ module pavilion::pavilion {
 
     // == Constants ==
 
+    /// Pavilion extension permissions
+    /// 3 = PLACE (1) + LOCK (2) - allows placing and locking items in kiosk
     const PAVILION_PERMISSIONS: u128 = 3;
+    
+    /// Name validation constants
     const MAX_NAME_LENGTH: u64 = 20;
     const MIN_NAME_LENGTH: u64 = 1;
     
@@ -34,6 +38,7 @@ module pavilion::pavilion {
     // Error codes
     #[error] const E_INVALID_NAME_LENGTH: u8 = 0;
     #[error] const E_NOT_PAVILION: u8 = 1;
+    #[error] const E_ALREADY_PAVILION: u8 = 2;
 
     // == Public Functions ==
 
@@ -109,25 +114,29 @@ module pavilion::pavilion {
     // Kiosk Management Functions
     
     /// Initialize pavilion functionality on an existing kiosk
-    /// This function can be called multiple times - first call installs extension, subsequent calls update settings
+    /// Requires payment of creation fee (obtained from PlatformConfig)
+    /// Note: Cannot be called on a kiosk that is already a pavilion
     public fun initialize_pavilion(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
         name: String,
+        platform_config: &platform::PlatformConfig,
+        payment: Coin<SUI>,
+        platform_recipient: address,
         ctx: &mut TxContext
     ) { 
+        // Ensure kiosk is not already a pavilion
+        assert!(!is_pavilion_kiosk(kiosk), E_ALREADY_PAVILION);
+        
         // Validate name length
         validate_pavilion_name(&name);
         
-        // Check if this kiosk already has pavilion extension installed
-        if (is_pavilion_kiosk(kiosk)) {
-            // This is already a pavilion kiosk, just update the name
-            set_dynamic_field(kiosk, cap, PavilionName {}, name);
-        } else {
-            // This is a new pavilion, install extension and initialize everything
-            kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
-            set_dynamic_field(kiosk, cap, PavilionName {}, name);
-        };
+        // Collect creation fee
+        platform::collect_creation_fee(platform_config, payment, platform_recipient);
+        
+        // Install extension and initialize everything
+        kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
+        set_dynamic_field(kiosk, cap, PavilionName {}, name);
     }
 
     /// Update pavilion name (only works on existing pavilion kiosks)
@@ -152,12 +161,16 @@ module pavilion::pavilion {
 
     /// Remove pavilion functionality from kiosk
     public fun remove_pavilion(self: &mut Kiosk, cap: &KioskOwnerCap) {
+        // Remove dynamic fields
         if (df::exists_(self.uid(), PavilionName {})) {
             let _name: String = df::remove(self.uid_mut_as_owner(cap), PavilionName {});
         };
         if (df::exists_(self.uid(), SceneConfig {})) {
             let _blob: String = df::remove(self.uid_mut_as_owner(cap), SceneConfig {});
         };
+        
+        // Remove pavilion extension
+        kiosk_extension::remove<PavilionExtension>(self, cap);
     }
 
     // Query Functions
@@ -202,7 +215,7 @@ module pavilion::pavilion {
 
     /// Validate pavilion name length
     fun validate_pavilion_name(name: &String) {
-        assert!(string::length(name) > MIN_NAME_LENGTH, E_INVALID_NAME_LENGTH);
+        assert!(string::length(name) >= MIN_NAME_LENGTH, E_INVALID_NAME_LENGTH);
         assert!(string::length(name) <= MAX_NAME_LENGTH, E_INVALID_NAME_LENGTH);
     }
 

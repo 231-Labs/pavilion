@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getWalrusUrl } from '../walrus/client';
+import { getWalrusUrl } from '../services/walrus-client';
 
 /**
  * 2D Image to 3D Renderer

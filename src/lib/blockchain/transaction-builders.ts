@@ -1,5 +1,5 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { KioskTransaction } from '@mysten/kiosk';
+import { KioskTransaction, type KioskClient } from '@mysten/kiosk';
 import type { PavilionTxConfig, PavilionTxParams, ExistingKioskParams, SetSceneConfigParams } from './types';
 
 /**

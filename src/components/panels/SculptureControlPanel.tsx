@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { SculptureInstance } from '../../types/sculpture';
-import { SceneManager } from '../../lib/three/SceneManager';
+import { SceneManager } from '../../lib/scene/SceneManager';
 import { ControllableObject as ControllableObjectType } from '../../types/controlPanel';
 import { KioskNftItemsSection } from './sections/KioskNftItemsSection';
 import { ObjectSelector } from './sections/ObjectSelector';
 import { TransformControlsSection } from './sections/TransformControlsSection';
 import { ExternalModelsSection } from './sections/ExternalModelsSection';
 import { useModelLoader } from '../../hooks/scene/useModelLoader';
-import { useNftItemsManager } from '../../hooks/nft/useNftItemsManager';
+import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';
 import { useTransformControls } from '../../hooks/scene/useTransformControls';
 import { kioskModelName, withKioskModelGroup } from '../../utils/sculptureHelpers';
 

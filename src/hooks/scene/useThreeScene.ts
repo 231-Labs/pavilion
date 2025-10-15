@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { SceneManager } from '../../lib/three/SceneManager';
+import { SceneManager } from '../../lib/scene/SceneManager';
 import { ThreeSceneConfig } from '../../types/three';
 import { SculptureInstance } from '../../types/sculpture';
-import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../../lib/three/KioskItemConverter';
-import { DefaultSceneConfig } from '../../lib/three/DefaultScene';
+import { KioskItemConverter, KioskItem, KioskItem3DResult } from '../../lib/scene/KioskItemConverter';
+import { DefaultSceneConfig } from '../../lib/scene/DefaultScene';
 import { useLoading } from '../../components/providers/LoadingProvider';
 
 export interface UseThreeSceneOptions extends ThreeSceneConfig {

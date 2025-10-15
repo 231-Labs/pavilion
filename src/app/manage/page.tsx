@@ -5,22 +5,19 @@ import { useSearchParams } from 'next/navigation';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
-import { useObjectChanges } from '../../hooks/common/useObjectChanges';
+import { resolveKioskOwnerCapId } from '../../lib/blockchain/pavilion';
+import { useObjectChanges } from '../../hooks/state/useObjectChanges';
 import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
 import { WalletTerminal } from '../../components/panels/WalletTerminal';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
-import { clearDemoStorage } from '../../utils/clearDemoStorage';
-import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
+import { KioskItemConverter } from '../../lib/scene/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
-import { MOCK_2D_NFTS } from '../../config/nft-test-config';
-import { useNftListing } from '../../hooks/nft/useNftListing';
+import { useNftListing } from '../../hooks/kiosk/useNftListing';
 
-function PavilionContent() {
+function ManageContent() {
   const searchParams = useSearchParams();
   const kioskId = searchParams.get('kioskId');
-  const isDemoMode = !kioskId; // Demo mode when no specific kiosk ID is provided
   const kioskState = useKioskState();
   const { objectChanges, trackKioskNftChange, clearChanges } = useObjectChanges();
   const [walrusItems, setWalrusItems] = useState<any[]>([]);
@@ -34,15 +31,9 @@ function PavilionContent() {
   // Panel state for scene restoration
   const [panelDisplayedItems, setPanelDisplayedItems] = useState<Set<string>>(new Set());
   const [panelTransforms, setPanelTransforms] = useState<Map<string, { position: { x: number; y: number; z: number }; rotation: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } }>>(new Map());
-  const [injectedMockData, setInjectedMockData] = useState<any[]>([]);
   
   // SculptureControlPanel loading state
   const [sculptureControlPanelLoading, setSculptureControlPanelLoading] = useState<boolean>(false);
-
-  // Memoize combined kiosk items to ensure proper re-rendering
-  const combinedKioskItems = React.useMemo(() => {
-    return [...(kioskState.kioskItems || []), ...injectedMockData];
-  }, [kioskState.kioskItems, injectedMockData]);
 
   // Create a wrapper function for tracking changes
   const handleTrackChange = (objectId: string, objectName: string, property: string, fromValue: any, toValue: any) => {
@@ -51,29 +42,13 @@ function PavilionContent() {
 
   // Handle listing items
   const handleListItems = async (items: Array<{ itemId: string; price: string }>) => {
-    // Get all kiosk items to find the item types
-    const allKioskItems = combinedKioskItems;
-    
-    // Use the listing hook
-    return listItems({ items, allKioskItems });
+    return listItems({ items, allKioskItems: kioskState.kioskItems || [] });
   };
 
   // Handle delisting an item
   const handleDelistItem = async (itemId: string, itemType: string) => {
     return delistItem({ itemId, itemType });
   };
-
-  // Clear storage and ensure clean state in Demo mode, then auto-load mock data
-  useEffect(() => {
-    if (isDemoMode) {
-      clearDemoStorage();
-      console.log('🎭 Demo mode initialized: clean state');
-      
-      // Auto-inject mock 2D NFT data for demo
-      setInjectedMockData(MOCK_2D_NFTS);
-      console.log('🖼️ Auto-loaded mock 2D NFT data for demo mode');
-    }
-  }, [isDemoMode]);
 
   // Handle kioskId parameter - update kiosk state for WalletTerminal display
   useEffect(() => {
@@ -102,18 +77,6 @@ function PavilionContent() {
     initializeKiosk();
   }, [kioskId, currentAccount, kioskClient, kioskState]);
 
-  // Process kiosk content when kiosk state changes (content is already fetched by kioskState)
-  useEffect(() => {
-    const kioskItems = kioskState.kioskItems;
-
-    if (kioskItems && kioskItems.length > 0) {
-      // console.log(`Processing ${kioskItems.length} items from kiosk state`);
-
-    } else if (kioskId && !kioskState.loading) {
-      // console.log('No items found in kiosk or still loading');
-    }
-  }, [kioskState.kioskItems, kioskState.loading, kioskId]);
-
   // Use Three.js scene management hook
   const {
     canvasRef,
@@ -122,16 +85,13 @@ function PavilionContent() {
     updateSculpturePosition,
     updateSculptureRotation,
     updateSculptureScale,
-    // Kiosk items
     loadKioskItems,
     clearKioskItems
   } = useThreeScene({
     backgroundColor: 0x1a1a1a,
-    // backgroundColor: 0xFFFFFF,
     cameraPosition: [0, 1.6, 8],
     createGallery: true,
     enableKioskItems: true,
-    // Pass SculptureControlPanel loading state
     sculptureControlPanelLoading,
   });
 
@@ -153,18 +113,10 @@ function PavilionContent() {
 
   // Analyze kiosk items and extract blob IDs when kiosk state changes
   useEffect(() => {
-    const itemsToProcess = isDemoMode 
-      ? combinedKioskItems
-      : (kioskState.kioskItems || []);
+    const itemsToProcess = kioskState.kioskItems || [];
 
-    if (itemsToProcess.length > 0) {
-      // Analyze kiosk items to find blob IDs
-      if (!sceneManager) {
-        console.warn('SceneManager not available for kiosk item analysis');
-        return;
-      }
-
-      console.log(`🎯 Processing ${itemsToProcess.length} items${isDemoMode ? ' (Demo mode with mock data)' : ''}`);
+    if (itemsToProcess.length > 0 && sceneManager) {
+      console.log(`🎯 Processing ${itemsToProcess.length} items from kiosk`);
 
       const converter = new KioskItemConverter(sceneManager);
       const analyses = converter.analyzeKioskItems(itemsToProcess);
@@ -178,7 +130,7 @@ function PavilionContent() {
         setWalrusItems([]);
       }
 
-      // Load non-Walrus, non-image items directly (images are handled by SculptureControlPanel on demand)
+      // Load non-Walrus, non-image items directly
       const nonWalrusNonImageItems = itemsToProcess.filter(item => {
         const analysis = analyses.find(a => a.kioskItem.objectId === item.objectId);
         return analysis && analysis.type !== 'walrus' && analysis.type !== 'image';
@@ -188,7 +140,7 @@ function PavilionContent() {
         loadKioskItems(nonWalrusNonImageItems);
       }
       
-      // Log info about 2D images (they will be handled by SculptureControlPanel)
+      // Log info about 2D images
       const imageItems = itemsToProcess.filter(item => {
         const analysis = analyses.find(a => a.kioskItem.objectId === item.objectId);
         return analysis && analysis.type === 'image';
@@ -198,46 +150,28 @@ function PavilionContent() {
         console.log(`📸 Found ${imageItems.length} 2D image(s) - will be created on demand via SculptureControlPanel`);
       }
     } else {
-      // Clear 3D scene if no kiosk items
       clearKioskItems();
     }
-  }, [combinedKioskItems, isDemoMode, loadKioskItems, clearKioskItems, sceneManager, kioskState.kioskItems]);
+  }, [kioskState.kioskItems, loadKioskItems, clearKioskItems, sceneManager]);
 
   // Update current scene config when kiosk items change
   useEffect(() => {
-    if (!sceneConfigManager) {
-      setCurrentSceneConfig(null);
-      return;
-    }
-
-    const itemsToProcess = isDemoMode 
-      ? combinedKioskItems
-      : (kioskState.kioskItems || []);
-
-    if (itemsToProcess.length === 0) {
+    if (!sceneConfigManager || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
       setCurrentSceneConfig(null);
       return;
     }
 
     const config = sceneConfigManager.createSceneConfigFromKioskItems(
-      itemsToProcess,
-      isDemoMode ? undefined : (kioskState.kioskId || undefined),
+      kioskState.kioskItems,
+      kioskState.kioskId || undefined,
       currentAccount?.address
     );
 
     setCurrentSceneConfig(config);
-  }, [sceneConfigManager, combinedKioskItems, isDemoMode, kioskState.kioskId, currentAccount, kioskState.kioskItems]);
+  }, [sceneConfigManager, kioskState.kioskItems, kioskState.kioskId, currentAccount]);
 
-  // Load scene config from chain and sync to panel state (skip in Demo mode)
+  // Load scene config from chain and sync to panel state
   useEffect(() => {
-    if (isDemoMode) {
-      // In Demo mode, don't load from chain, just reset to clean state
-      console.log('🎭 Demo mode: skipping on chain config loading');
-      setPanelDisplayedItems(new Set());
-      setPanelTransforms(new Map());
-      return;
-    }
-
     const loadAndSyncSceneConfig = async () => {
       if (!sceneConfigManager || !kioskId || !kioskState.kioskItems || kioskState.kioskItems.length === 0) {
         return;
@@ -264,13 +198,11 @@ function PavilionContent() {
           });
         } else {
           console.log('💭 No saved scene config found, using default state');
-          // Reset to default state
           setPanelDisplayedItems(new Set());
           setPanelTransforms(new Map());
         }
       } catch (error) {
         console.warn('❌ Failed to load scene config:', error);
-        // Reset to default state on error
         setPanelDisplayedItems(new Set());
         setPanelTransforms(new Map());
       }
@@ -278,7 +210,15 @@ function PavilionContent() {
 
     const timeoutId = setTimeout(loadAndSyncSceneConfig, 500);
     return () => clearTimeout(timeoutId);
-  }, [sceneConfigManager, kioskId, kioskState.kioskItems, isDemoMode]);
+  }, [sceneConfigManager, kioskId, kioskState.kioskItems]);
+
+  if (!kioskId) {
+    return (
+      <div className="flex justify-center items-center h-screen text-white">
+        <p>No kiosk ID provided. Please select a kiosk from the home page.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -296,14 +236,13 @@ function PavilionContent() {
         objectChanges={objectChanges || new Map()}
         sceneConfigManager={sceneConfigManager}
         currentSceneConfig={currentSceneConfig}
-        kioskItems={combinedKioskItems}
+        kioskItems={kioskState.kioskItems || []}
         onSaveSuccess={clearChanges}
         onSaveError={(error) => console.error('Save error:', error)}
       />
 
       {/* Right Control Panels */}
       <div className="absolute top-6 right-6 z-20">
-        {/* Sculpture Control Panel with Integrated GLB Loader */}
         <SculptureControlPanel
           sculptures={sculptures}
           sceneManager={sceneManager}
@@ -311,20 +250,15 @@ function PavilionContent() {
           onUpdateRotation={updateSculptureRotation}
           onUpdateScale={updateSculptureScale}
           autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
-          kioskItems={combinedKioskItems}
-          kioskId={isDemoMode ? undefined : (kioskState.kioskId || undefined)}
-          kioskOwnerCapId={isDemoMode ? undefined : (kioskState.kioskOwnerCapId || undefined)}
+          kioskItems={kioskState.kioskItems || []}
+          kioskId={kioskState.kioskId || undefined}
+          kioskOwnerCapId={kioskState.kioskOwnerCapId || undefined}
           onTrackChange={handleTrackChange}
-          // Pass panel state for scene restoration
           initialDisplayedItems={panelDisplayedItems}
           initialTransforms={panelTransforms}
-          // Loading state callback
           onLoadingStateChange={setSculptureControlPanelLoading}
-          // List items handler
-          onListItems={isDemoMode ? undefined : handleListItems}
-          // Delist item handler
-          onDelistItem={isDemoMode ? undefined : handleDelistItem}
-          // MIST to SUI converter
+          onListItems={handleListItems}
+          onDelistItem={handleDelistItem}
           mistToSui={mistToSui}
         />
       </div>
@@ -336,10 +270,10 @@ function PavilionContent() {
   );
 }
 
-export default function PavilionPage() {
+export default function ManagePage() {
   return (
     <Suspense fallback={<div className="flex justify-center items-center h-screen text-white">Loading...</div>}>
-      <PavilionContent />
+      <ManageContent />
     </Suspense>
   );
 }

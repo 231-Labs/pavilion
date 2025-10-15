@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SceneManager } from '../../lib/three/SceneManager';
+import { SceneManager } from '../../lib/scene/SceneManager';
 import { VisitorNftItemsSection } from './sections/VisitorNftItemsSection';
 import { useModelLoader } from '../../hooks/scene/useModelLoader';
-import { useNftItemsManager } from '../../hooks/nft/useNftItemsManager';
-import { useNftPurchase } from '../../hooks/nft/useNftPurchase';
+import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';
+import { useNftPurchase } from '../../hooks/kiosk/useNftPurchase';
 
 interface VisitorControlPanelProps {
   sceneManager?: SceneManager;

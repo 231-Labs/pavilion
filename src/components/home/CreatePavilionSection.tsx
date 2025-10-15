@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLoading } from '../providers/LoadingProvider';
 import { useKioskState } from '../providers/KioskStateProvider';
-import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
+import { usePreloadNavigation } from '../../hooks/navigation/usePreloadNavigation';
 import { usePavilionActions } from '../../hooks/pavilion/usePavilionActions';
-import { useKioskData } from '../../hooks/nft/useKioskData';
+import { useKioskData } from '../../hooks/kiosk/useKioskData';
 import { KioskSelector } from './KioskSelector';
 import type { CreateSubMode } from '../../types/home';
 
@@ -40,9 +40,9 @@ export function CreatePavilionSection({ createSubMode, setCreateSubMode }: Creat
       if (targetKioskId) {
         await navigateToKiosk(targetKioskId);
       } else {
-        // Navigate to demo pavilion (without kioskId parameter)
+        // Navigate to demo pavilion
         setTimeout(() => {
-          window.location.href = '/pavilion';
+          window.location.href = '/demo';
         }, 800);
       }
       return;

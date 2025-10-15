@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { useClickOutside } from '../../hooks/common/useClickOutside';
+import { useClickOutside } from '../../hooks/ui/useClickOutside';
 
 interface VisitorWalletTerminalProps {
   kioskId: string;

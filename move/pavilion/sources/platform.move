@@ -4,6 +4,7 @@ module pavilion::platform {
         sui::SUI,
         transfer_policy::{Self, TransferPolicy, TransferPolicyCap, TransferRequest},
         package::{Self, Publisher},
+        dynamic_field as df,
     };
 
     // == Structs ==
@@ -15,6 +16,14 @@ module pavilion::platform {
     public struct AdminCap has key, store {
         id: UID,
     }
+    
+    /// Platform configuration storage
+    public struct PlatformConfig has key {
+        id: UID,
+    }
+    
+    /// Dynamic field key for pavilion creation fee
+    public struct CreationFeeKey has copy, store, drop {}
 
     // == TransferPolicy Structures (for future use) ==
 
@@ -31,24 +40,39 @@ module pavilion::platform {
     const DEFAULT_COMMISSION_RATE: u64 = 250; // Default 2.5% commission
     const BASIS_POINTS_DENOMINATOR: u64 = 10000; // 100% = 10000 bp
     
+    /// Creation fee constants (in MIST, 1 SUI = 1_000_000_000 MIST)
+    const DEFAULT_CREATION_FEE: u64 = 1_000_000_000; // 1 SUI default
+    const MAX_CREATION_FEE: u64 = 100_000_000_000; // 100 SUI maximum
+    
     // Error codes
     #[error] const E_INVALID_COMMISSION_RATE: u8 = 0;
     #[error] const E_INSUFFICIENT_PAYMENT: u8 = 1;
+    #[error] const E_INVALID_CREATION_FEE: u8 = 2;
 
     // == Module Initialization ==
 
     /// Module initializer with Publisher setup for TransferPolicy creation
-    /// Creates AdminCap and sets up Publisher for policy creation
+    /// Creates AdminCap, PlatformConfig and sets up Publisher for policy creation
     fun init(otw: PLATFORM, ctx: &mut TxContext) {
         // Claim the package Publisher for creating TransferPolicies
         let publisher = package::claim(otw, ctx);
         
+        // Create admin capability
         let admin_cap = AdminCap {
             id: object::new(ctx),
         };
         
+        // Create platform configuration with default creation fee
+        let mut config = PlatformConfig {
+            id: object::new(ctx),
+        };
+        df::add(&mut config.id, CreationFeeKey {}, DEFAULT_CREATION_FEE);
+        
         // Transfer AdminCap to deployer
         transfer::public_transfer(admin_cap, ctx.sender());
+        
+        // Share PlatformConfig for public read access
+        transfer::share_object(config);
         
         // Transfer Publisher to deployer so they can create TransferPolicies
         transfer::public_transfer(publisher, ctx.sender());
@@ -156,6 +180,56 @@ module pavilion::platform {
         transfer_policy::add_receipt(PlatformCommissionRule {}, transfer_request);
     }
 
+    // == Pavilion Creation Fee Management ==
+
+    /// Set pavilion creation fee (admin only)
+    /// Fee is in MIST (1 SUI = 1_000_000_000 MIST)
+    public fun set_creation_fee(
+        _: &AdminCap,
+        config: &mut PlatformConfig,
+        new_fee: u64
+    ) {
+        assert!(new_fee <= MAX_CREATION_FEE, E_INVALID_CREATION_FEE);
+        
+        if (df::exists_(&config.id, CreationFeeKey {})) {
+            *df::borrow_mut(&mut config.id, CreationFeeKey {}) = new_fee;
+        } else {
+            df::add(&mut config.id, CreationFeeKey {}, new_fee);
+        };
+    }
+
+    /// Get current pavilion creation fee
+    public fun get_creation_fee(config: &PlatformConfig): u64 {
+        if (df::exists_(&config.id, CreationFeeKey {})) {
+            *df::borrow(&config.id, CreationFeeKey {})
+        } else {
+            DEFAULT_CREATION_FEE
+        }
+    }
+
+    /// Collect pavilion creation fee and transfer to platform
+    /// Returns true if fee was collected, false if fee is 0
+    public fun collect_creation_fee(
+        config: &PlatformConfig,
+        payment: Coin<SUI>,
+        platform_recipient: address,
+    ): bool {
+        let fee_amount = get_creation_fee(config);
+        
+        if (fee_amount == 0) {
+            // No fee required, return payment to sender
+            transfer::public_transfer(payment, platform_recipient);
+            false
+        } else {
+            // Verify payment is exact amount
+            assert!(coin::value(&payment) >= fee_amount, E_INSUFFICIENT_PAYMENT);
+            
+            // Transfer payment to platform
+            transfer::public_transfer(payment, platform_recipient);
+            true
+        }
+    }
+
     // == Utility Functions ==
 
     /// Calculate commission for a given amount and rate
@@ -172,11 +246,37 @@ module pavilion::platform {
     public fun max_commission_rate(): u64 {
         MAX_COMMISSION_RATE
     }
+    
+    /// Get default creation fee
+    public fun default_creation_fee(): u64 {
+        DEFAULT_CREATION_FEE
+    }
+    
+    /// Get maximum creation fee
+    public fun max_creation_fee(): u64 {
+        MAX_CREATION_FEE
+    }
 
     // == Test-Only Functions ==
 
     #[test_only]
     public fun test_init(otw: PLATFORM, ctx: &mut TxContext) {
         init(otw, ctx)
+    }
+    
+    #[test_only]
+    public fun create_test_config(ctx: &mut TxContext): PlatformConfig {
+        let mut config = PlatformConfig {
+            id: object::new(ctx),
+        };
+        df::add(&mut config.id, CreationFeeKey {}, DEFAULT_CREATION_FEE);
+        config
+    }
+    
+    #[test_only]
+    public fun create_test_admin_cap(ctx: &mut TxContext): AdminCap {
+        AdminCap {
+            id: object::new(ctx),
+        }
     }
 }

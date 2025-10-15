@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLoading } from '../providers/LoadingProvider';
-import { usePreloadNavigation } from '../../hooks/common/usePreloadNavigation';
-import { useKioskData } from '../../hooks/nft/useKioskData';
+import { usePreloadNavigation } from '../../hooks/navigation/usePreloadNavigation';
+import { useKioskData } from '../../hooks/kiosk/useKioskData';
 import { KioskSelector } from './KioskSelector';
 import { useKioskClient } from '../providers/KioskClientProvider';
-import { isPavilionKiosk } from '../../lib/tx/pavilion-utils';
+import { isPavilionKiosk } from '../../lib/blockchain/pavilion-utils';
 import type { VisitSubMode } from '../../types/home';
 
 interface VisitPavilionSectionProps {
@@ -59,7 +59,7 @@ export function VisitPavilionSection({ visitSubMode, setVisitSubMode, onError }:
         }
         
         // Navigate to visitor mode
-        router.push(`/pavilion/visit?kioskId=${targetKioskId}`);
+        router.push(`/visit?kioskId=${targetKioskId}`);
       } catch (error) {
         onError('Failed to verify kiosk. Please check the ID and try again.');
         console.error('Kiosk verification error:', error);
