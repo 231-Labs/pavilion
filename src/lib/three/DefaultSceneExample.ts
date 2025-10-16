@@ -1,4 +1,4 @@
-import { SceneManager } from '../three/SceneManager';
+import { SceneManager } from './SceneManager';
 
 /**
  * Example usage of the new DefaultScene with cosmic/tech aesthetic

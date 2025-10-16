@@ -1,7 +1,7 @@
 'use client';
 
-import { SceneManager } from '../three/SceneManager';
-import { getWalrusUrl } from '../services/walrus-client';
+import { SceneManager } from './SceneManager';
+import { getWalrusUrl } from '../walrus/client';
 import { ThreeSceneConfig } from '../../types/three';
 import { KioskItemConverter } from './KioskItemConverter';
 import { SceneConfigManager } from '../scene/SceneConfigManager';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SceneManager } from '../../lib/scene/SceneManager';
+import { SceneManager } from '../../lib/three/SceneManager';
 import { fetchModels } from '../../lib/services/walrus-client';
 
 interface GLBLoaderProps {

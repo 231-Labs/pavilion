@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager } from '../lib/scene/SceneManager';
+import { SceneManager } from '../lib/three/SceneManager';
 
 /**
  * Sculpture/NFT helper utility functions

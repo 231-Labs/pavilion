@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager } from '../three/SceneManager';
+import { SceneManager } from './SceneManager';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SceneManager } from '../../lib/scene/SceneManager';
+import { SceneManager } from '../../lib/three/SceneManager';
 import { VisitorNftItemsSection } from './sections/VisitorNftItemsSection';
 import { useModelLoader } from '../../hooks/scene/useModelLoader';
 import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { SceneManager } from '../../lib/three/SceneManager';
 import { NFTProcessor, ProcessedNFTItem } from '../../lib/nft/NFTProcessor';
-import { getWalrusUrl } from '../../lib/services/walrus-client';
+import { getWalrusUrl } from '../../lib/walrus/client';
 import { kioskModelName, logger, removeModelFromScene } from '../../utils/sculptureHelpers';
 
 export interface NftTransform {
@@ -170,7 +170,7 @@ export function useNftItemsManager({
           width: 2,
         } as any;
         
-        const { Image3DRenderer } = await import('../../lib/scene/Image3DRenderer');
+        const { Image3DRenderer } = await import('../../lib/three/Image3DRenderer');
         const imageRenderer = new Image3DRenderer(sceneManager.getScene()!);
         object3D = await imageRenderer.create3DImageObject(imageSource, imageOptions);
       }

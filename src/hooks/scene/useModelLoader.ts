@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { SceneManager } from '../../lib/scene/SceneManager';
+import { SceneManager } from '../../lib/three/SceneManager';
 import { fetchModels, getWalrusUrl } from '../../lib/services/walrus-client';
 
 /**
