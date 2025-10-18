@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { SculptureConfig, SculptureInstance, sculptureGeometryFactories, defaultSculptures } from '../../types/sculpture';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { DefaultScene, DefaultSceneConfig } from './DefaultScene';
 import { ThreeSceneConfig, LoadGLBOptions } from '../../types/three';
 
@@ -16,10 +17,16 @@ export class SceneManager {
   private sculptures: Map<string, SculptureInstance> = new Map();
   private loadedModels: Map<string, THREE.Group> = new Map();
   private defaultScene?: DefaultScene;
+  private dracoLoader: DRACOLoader;
 
   constructor(canvas: HTMLCanvasElement, config: ThreeSceneConfig = {}) {
     // Setup scene
     this.scene = new THREE.Scene();
+
+    // Setup DRACOLoader for compressed GLB models
+    this.dracoLoader = new DRACOLoader();
+    this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    this.dracoLoader.setDecoderConfig({ type: 'js' });
 
     // Setup camera
     this.camera = new THREE.PerspectiveCamera(
@@ -277,6 +284,66 @@ export class SceneManager {
     return this.renderer;
   }
 
+  /**
+   * Transfer this scene manager to a different canvas
+   * Used when moving from preload canvas to actual canvas
+   */
+  transferToCanvas(newCanvas: HTMLCanvasElement): void {
+    // Stop current animation
+    this.stopAnimation();
+
+    // Remove old resize listener
+    window.removeEventListener('resize', this.resizeHandler);
+
+    // Get old canvas and replace it with new one
+    const oldCanvas = this.renderer.domElement;
+    
+    // Update renderer canvas
+    if (oldCanvas.parentNode) {
+      oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+    }
+    
+    // Create new renderer with new canvas
+    const oldRenderer = this.renderer;
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: newCanvas,
+      antialias: true,
+      alpha: true,
+    });
+    this.renderer.setSize(newCanvas.clientWidth, newCanvas.clientHeight);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Dispose old renderer
+    oldRenderer.dispose();
+    
+    // Update camera aspect ratio
+    this.camera.aspect = newCanvas.clientWidth / newCanvas.clientHeight;
+    this.camera.updateProjectionMatrix();
+
+    // Update controls to use new canvas
+    this.controls.dispose();
+    this.controls = new OrbitControls(this.camera, newCanvas);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+
+    // Create new resize handler
+    this.resizeHandler = () => {
+      this.camera.aspect = newCanvas.clientWidth / newCanvas.clientHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(newCanvas.clientWidth, newCanvas.clientHeight);
+    };
+
+    // Add new resize listener
+    window.addEventListener('resize', this.resizeHandler);
+
+    // Restart animation
+    this.startAnimation();
+
+    console.log('✅ Scene manager transferred to new canvas');
+  }
+
   // Dispose resources
   dispose() {
     this.stopAnimation();
@@ -285,6 +352,11 @@ export class SceneManager {
     // Dispose default scene
     if (this.defaultScene) {
       this.defaultScene.dispose();
+    }
+
+    // Dispose DRACOLoader
+    if (this.dracoLoader) {
+      this.dracoLoader.dispose();
     }
 
     // Dispose Three.js resources
@@ -304,7 +376,57 @@ export class SceneManager {
   }
 
   async loadGLBModel(url: string, options: LoadGLBOptions = {}) {
+    // Handle Walrus SDK URLs (for large blobs > 4MB)
+    if (url.startsWith('walrus-sdk://')) {
+      const blobId = url.replace('walrus-sdk://', '');
+      console.log(`📦 Loading large blob via SDK: ${blobId.slice(0, 20)}...`);
+      
+      try {
+        // Notify start of large file loading
+        if (options.onProgress && typeof options.onProgress === 'function' && options.onProgress.length === 2) {
+          (options.onProgress as (progress: number, stage: string) => void)(0, 'Preparing to load large file...');
+        }
+        
+        // Allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Dynamically import SDK client to avoid bundling issues
+        const { readBlobAsObjectURL } = await import('../walrus/sdk-client');
+        
+        // Read blob with progress callback
+        const objectUrl = await readBlobAsObjectURL(blobId, 'model/gltf-binary', {
+          onProgress: (progress, stage) => {
+            // Map download progress to 0-70% range
+            const mappedProgress = progress * 0.7;
+            if (options.onProgress && typeof options.onProgress === 'function' && options.onProgress.length === 2) {
+              (options.onProgress as (progress: number, stage: string) => void)(mappedProgress, stage);
+            }
+          }
+        });
+        
+        // Notify model parsing
+        if (options.onProgress && typeof options.onProgress === 'function' && options.onProgress.length === 2) {
+          (options.onProgress as (progress: number, stage: string) => void)(70, 'Parsing 3D model...');
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Now load the model from the object URL
+        return this.loadGLBModelInternal(objectUrl, options);
+      } catch (error) {
+        console.error(`❌ Failed to load blob via SDK:`, error);
+        throw error;
+      }
+    }
+    
+    // Regular HTTP(S) URL - try normal loading first, fallback to SDK on 403
+    return this.loadGLBModelInternal(url, options, true);
+  }
+
+  private async loadGLBModelInternal(url: string, options: LoadGLBOptions = {}, allowSDKFallback: boolean = false) {
     const loader = new GLTFLoader();
+    
+    // Set DRACOLoader for compressed models
+    loader.setDRACOLoader(this.dracoLoader);
 
     // Check cache
     if (this.loadedModels.has(url)) {
@@ -393,7 +515,6 @@ export class SceneManager {
             }
           });
 
-          // Add to scene
           this.scene.add(model);
 
           // Cache model reference for later removal
@@ -407,10 +528,44 @@ export class SceneManager {
           console.log(`Loading progress ${url}: ${percent}%`);
 
           if (options.onProgress) {
-            options.onProgress(progress);
+            // Handle both ProgressEvent and custom callback format
+            if (typeof options.onProgress === 'function') {
+              if (options.onProgress.length === 1) {
+                // ProgressEvent callback
+                (options.onProgress as (progress: ProgressEvent) => void)(progress);
+              } else {
+                // Custom callback format (progress: number, stage: string)
+                (options.onProgress as (progress: number, stage: string) => void)(percent, 'Downloading...');
+              }
+            }
           }
         },
-        (error) => {
+        async (error) => {
+          // Check if it's a 403 error (size exceeded) and we should fallback to SDK
+          const errorString = error?.toString() || '';
+          const is403Error = errorString.includes('403') || errorString.includes('SIZE_EXCEEDED');
+          
+          if (is403Error && allowSDKFallback && url.includes('walrus')) {
+            console.log(`⚠️ Detected 403 error, attempting SDK fallback...`);
+            
+            try {
+              // Extract blob ID from URL
+              const blobIdMatch = url.match(/\/blobs\/([^/]+)$/);
+              if (blobIdMatch) {
+                const blobId = blobIdMatch[1];
+                const { readBlobAsObjectURL } = await import('../walrus/sdk-client');
+                const objectUrl = await readBlobAsObjectURL(blobId);
+                
+                // Retry with SDK URL
+                const model = await this.loadGLBModelInternal(objectUrl, options, false);
+                resolve(model);
+                return;
+              }
+            } catch (sdkError) {
+              console.error(`❌ SDK fallback also failed:`, sdkError);
+            }
+          }
+          
           console.error(`Failed to load GLB model: ${url}`, error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           reject(new Error(`Failed to load GLB model: ${url}. ${errorMessage}`));

@@ -208,9 +208,11 @@ export function useNftItemsManager({
         position: position,
         rotation: storedTransform?.rotation || { x: 0, y: 0, z: 0 },
         scale: storedTransform?.scale || { x: 1, y: 1, z: 1 },
-        onProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
-          setLoadingProgress(percent);
+        onProgress: (progress: any) => {
+          if (progress && typeof progress === 'object' && 'loaded' in progress && 'total' in progress) {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            setLoadingProgress(percent);
+          }
         }
       });
 
