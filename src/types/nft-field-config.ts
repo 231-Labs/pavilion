@@ -126,6 +126,10 @@ export class NFTFieldConfigManager {
     const resolvedCollectionId = collectionId || this.detectCollectionId(item);
     const config = this.getConfig(resolvedCollectionId);
     
+    console.log(`🔍 [NFT Config] Extracting resource for collection: ${config.collectionName} (ID: ${resolvedCollectionId})`);
+    console.log(`🔍 [NFT Config] Available display fields:`, Object.keys(displayData));
+    console.log(`🔍 [NFT Config] Available content fields:`, Object.keys(contentFields));
+    
     // Try custom extractor first
     if (config.customExtractor) {
       const result = config.customExtractor(displayData, contentFields);
@@ -172,6 +176,7 @@ export class NFTFieldConfigManager {
     for (const fieldName of fields.blobIdFields) {
       const blobId = displayData[fieldName] || contentFields[fieldName];
       if (blobId && this.isValidValue(blobId)) {
+        console.log(`🔍 [NFT Config] Found ${resourceType} blob ID in field '${fieldName}':`, blobId?.slice(0, 20));
         return {
           type: resourceType,
           blobId,
@@ -184,6 +189,7 @@ export class NFTFieldConfigManager {
     for (const fieldName of fields.urlFields) {
       const url = displayData[fieldName] || contentFields[fieldName];
       if (url && this.isValidValue(url)) {
+        console.log(`🔍 [NFT Config] Found ${resourceType} URL in field '${fieldName}':`, url?.slice(0, 50));
         return {
           type: resourceType,
           url,
@@ -199,10 +205,31 @@ export class NFTFieldConfigManager {
    * Detect collection ID from NFT item
    */
   private detectCollectionId(item: any): string {
-    // Try to extract from package ID or other identifying information
-    const packageId = item.data?.type?.split('::')[0];
-    if (packageId) {
-      return packageId;
+    // Try to extract from type field (correct location: item.type)
+    if (item.type && typeof item.type === 'string' && item.type.includes('::')) {
+      const parts = item.type.split('::');
+      const moduleName = parts[1]; // e.g., "demo_nft_3d"
+      if (moduleName) {
+        return moduleName;
+      }
+      // Fallback to package ID
+      const packageId = parts[0];
+      if (packageId) {
+        return packageId;
+      }
+    }
+    
+    // Also check item.data?.type as fallback
+    if (item.data?.type && typeof item.data.type === 'string' && item.data.type.includes('::')) {
+      const parts = item.data.type.split('::');
+      const moduleName = parts[1];
+      if (moduleName) {
+        return moduleName;
+      }
+      const packageId = parts[0];
+      if (packageId) {
+        return packageId;
+      }
     }
     
     // Could also check creator address or other metadata
