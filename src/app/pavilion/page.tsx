@@ -12,7 +12,7 @@ import { WalletTerminal } from '../../components/panels/WalletTerminal';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { clearDemoStorage } from '../../utils/clearDemoStorage';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
-import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
+import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { MOCK_2D_NFTS } from '../../config/nft-test-config';
 import { useNftListing } from '../../hooks/nft/useNftListing';

@@ -170,7 +170,7 @@ export function useNftItemsManager({
           width: 2,
         } as any;
         
-        const { Image3DRenderer } = await import('../../lib/scene/Image3DRenderer');
+        const { Image3DRenderer } = await import('../../lib/three/Image3DRenderer');
         const imageRenderer = new Image3DRenderer(sceneManager.getScene()!);
         object3D = await imageRenderer.create3DImageObject(imageSource, imageOptions);
       }

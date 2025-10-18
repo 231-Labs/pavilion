@@ -1,6 +1,6 @@
 import { NFTFieldConfigManager, NFTResourceInfo } from '../../types/nft-field-config';
 import { SceneObject, createDefaultSceneObject } from '../../types/scene';
-import { Image3DRenderer, Image3DOptions } from '../scene/Image3DRenderer';
+import { Image3DRenderer, Image3DOptions } from '../three/Image3DRenderer';
 import { NFTCollectionConfigLoader } from './NFTCollectionConfigLoader';
 import * as THREE from 'three';
 
@@ -295,13 +295,35 @@ export class NFTProcessor {
    * detect NFT collection ID
    */
   private detectCollectionId(item: any): string {
-    // 1. get package ID from type field
+    // 1. get package ID from type field (correct location: item.type, not item.data.type)
+    if (item.type) {
+      const typeStr = item.type;
+      if (typeof typeStr === 'string' && typeStr.includes('::')) {
+        const parts = typeStr.split('::');
+        const packageId = parts[0];
+        
+        // Also try to match module name for better config matching
+        const moduleName = parts[1]; // e.g., "demo_nft_3d"
+        
+        if (packageId && packageId.startsWith('0x')) {
+          console.log(`🔍 [NFT Processor] Detected package ID: ${packageId}, module: ${moduleName}`);
+          // Return module name if it matches known configs, otherwise return package ID
+          return moduleName || packageId;
+        }
+      }
+    }
+    
+    // Also check item.data?.type as fallback
     if (item.data?.type) {
       const typeStr = item.data.type;
       if (typeof typeStr === 'string' && typeStr.includes('::')) {
-        const packageId = typeStr.split('::')[0];
+        const parts = typeStr.split('::');
+        const packageId = parts[0];
+        const moduleName = parts[1];
+        
         if (packageId && packageId.startsWith('0x')) {
-          return packageId;
+          console.log(`🔍 [NFT Processor] Detected package ID (from data.type): ${packageId}, module: ${moduleName}`);
+          return moduleName || packageId;
         }
       }
     }
@@ -320,6 +342,7 @@ export class NFTProcessor {
     }
     
     // 3. default value
+    console.log(`⚠️ [NFT Processor] Could not detect collection ID, using default`);
     return 'default';
   }
 

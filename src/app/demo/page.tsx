@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { clearDemoStorage } from '../../utils/clearDemoStorage';
-import { KioskItemConverter } from '../../lib/scene/KioskItemConverter';
+import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { MOCK_2D_NFTS } from '../../config/nft-test-config';
 import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
 

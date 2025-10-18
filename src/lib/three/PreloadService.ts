@@ -4,7 +4,7 @@ import { SceneManager } from './SceneManager';
 import { getWalrusUrl } from '../walrus/client';
 import { ThreeSceneConfig } from '../../types/three';
 import { KioskItemConverter } from './KioskItemConverter';
-import { SceneConfigManager } from '../scene/SceneConfigManager';
+import { SceneConfigManager } from './SceneConfigManager';
 
 export interface PreloadServiceOptions {
   kioskClient: any;

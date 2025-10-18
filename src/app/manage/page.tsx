@@ -12,7 +12,7 @@ import { SculptureControlPanel } from '../../components/panels/SculptureControlP
 import { WalletTerminal } from '../../components/panels/WalletTerminal';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
 import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
-import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
+import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useNftListing } from '../../hooks/kiosk/useNftListing';
 import { useOwnershipVerification } from '../../hooks/kiosk/useOwnershipVerification';
