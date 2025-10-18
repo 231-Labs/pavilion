@@ -15,7 +15,7 @@ import {
 } from '../../types/scene';
 import { readSceneConfig, setSceneConfigTx } from '../blockchain/pavilion';
 import { KioskClient } from '@mysten/kiosk';
-import { SceneManager } from './SceneManager';
+import { SceneManager } from '../three/SceneManager';
 import * as THREE from 'three';
 
 export interface SceneConfigManagerOptions {

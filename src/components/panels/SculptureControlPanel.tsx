@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { SculptureInstance } from '../../types/sculpture';
-import { SceneManager } from '../../lib/scene/SceneManager';
+import { SceneManager } from '../../lib/three/SceneManager';
 import { ControllableObject as ControllableObjectType } from '../../types/controlPanel';
 import { KioskNftItemsSection } from './sections/KioskNftItemsSection';
 import { ObjectSelector } from './sections/ObjectSelector';

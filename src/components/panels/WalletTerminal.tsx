@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useKioskState } from '../providers/KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { ObjectChange } from '../../hooks/state/useObjectChanges';
-import { SceneConfigManager } from '../../lib/scene/SceneConfigManager';
+import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
 

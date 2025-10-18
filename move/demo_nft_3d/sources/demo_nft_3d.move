@@ -49,6 +49,7 @@ module demo_nft_3d::demo_nft_3d{
             string::utf8(b"description"),
             string::utf8(b"image_url"), 
             string::utf8(b"glb_file"),
+            string::utf8(b"project_url"),
         ];
 
         let values = vector[
@@ -56,6 +57,7 @@ module demo_nft_3d::demo_nft_3d{
             string::utf8(b"{description}"),
             string::utf8(b"{image}"),
             string::utf8(b"{glb_file}"),
+            string::utf8(b"https://pavilion.wal.app"),
         ];
 
         let mut disp = display::new_with_fields<DemoNFT3D>(&publisher, keys, values, ctx);
@@ -81,6 +83,7 @@ module demo_nft_3d::demo_nft_3d{
         description: String,
         image: String,
         glb_file: String,
+        recipient: address,
         ctx: &mut TxContext
     ) {
         let nft = DemoNFT3D {
@@ -90,7 +93,7 @@ module demo_nft_3d::demo_nft_3d{
             image,
             glb_file,
         };
-        public_transfer(nft, ctx.sender());
+        public_transfer(nft, recipient);
     }
 
     /// Delete a DemoNFT
@@ -99,6 +102,24 @@ module demo_nft_3d::demo_nft_3d{
     ) {
         let DemoNFT3D { id, name: _, description: _, image: _, glb_file: _ } = nft;
         object::delete(id);
+    }
+
+    /// Update image URL (only publisher can update)
+    entry fun update_image(
+        _publisher: &package::Publisher,
+        nft: &mut DemoNFT3D,
+        new_image: String,
+    ) {
+        nft.image = new_image;
+    }
+
+    /// Update GLB file blob ID (only publisher can update)
+    entry fun update_glb_file(
+        _publisher: &package::Publisher,
+        nft: &mut DemoNFT3D,
+        new_glb_file: String,
+    ) {
+        nft.glb_file = new_glb_file;
     }
 
     // == Royalty Rule Functions ==

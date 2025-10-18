@@ -3,7 +3,7 @@ import { useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { useLoading } from '../../components/providers/LoadingProvider';
 import { PreloadService } from '../../lib/three/PreloadService';
-import { fetchKioskContents } from '../../lib/blockchain/pavilion';
+import { fetchKioskContents } from '../../lib/tx/pavilion';
 import type { UsePreloadNavigationReturn } from '../../types/home';
 
 export function usePreloadNavigation(): UsePreloadNavigationReturn {
@@ -62,12 +62,12 @@ export function usePreloadNavigation(): UsePreloadNavigationReturn {
     
     if (preloadSuccess) {
       setTimeout(() => {
-        router.push(`/manage?kioskId=${targetKioskId}`);
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
       }, 300);
     } else {
       setLoading(true);
       setTimeout(() => {
-        router.push(`/manage?kioskId=${targetKioskId}`);
+        router.push(`/pavilion?kioskId=${targetKioskId}`);
       }, 800);
     }
   };
@@ -75,7 +75,7 @@ export function usePreloadNavigation(): UsePreloadNavigationReturn {
   const navigateToDemo = () => {
     setLoading(true);
     setTimeout(() => {
-      router.push('/demo');
+      router.push('/pavilion');
     }, 800);
   };
 

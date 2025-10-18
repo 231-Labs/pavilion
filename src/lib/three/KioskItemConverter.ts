@@ -353,7 +353,7 @@ export class KioskItemConverter {
   private extractWalrusBlobId(displayData?: any, contentFields?: any): string | null {
     // Check for blob ID in display data
     if (displayData) {
-      const possibleKeys = ['blob_id', 'walrus_blob_id', 'blob', 'walrus_id', 'id'];
+      const possibleKeys = ['blob_id', 'walrus_blob_id', 'blob', 'walrus_id'];
       for (const key of possibleKeys) {
         if (displayData[key]) {
           return displayData[key];
@@ -363,7 +363,7 @@ export class KioskItemConverter {
 
     // Check for blob ID in content fields
     if (contentFields) {
-      const possibleKeys = ['blob_id', 'walrus_blob_id', 'blob', 'walrus_id', 'id'];
+      const possibleKeys = ['blob_id', 'walrus_blob_id', 'blob', 'walrus_id'];
       for (const key of possibleKeys) {
         if (contentFields[key]) {
           return contentFields[key];

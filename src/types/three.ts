@@ -2,7 +2,7 @@
  * Three.js related type definitions
  */
 
-import { DefaultSceneConfig } from '../lib/scene/DefaultScene';
+import { DefaultSceneConfig } from '../lib/three/DefaultScene';
 
 // Configuration for Three.js scene rendering
 export interface ThreeSceneConfig {

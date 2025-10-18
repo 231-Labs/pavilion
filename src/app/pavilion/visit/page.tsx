@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useThreeScene } from '../../hooks/scene/useThreeScene';
+import { useThreeScene } from '../../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { useKioskState } from '../../components/providers/KioskStateProvider';
-import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
-import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
-import { VisitorControlPanel } from '../../components/panels/VisitorControlPanel';
-import { VisitorWalletTerminal } from '../../components/panels/VisitorWalletTerminal';
+import { useKioskClient } from '../../../components/providers/KioskClientProvider';
+import { useKioskState } from '../../../components/providers/KioskStateProvider';
+import { KioskItemConverter } from '../../../lib/three/KioskItemConverter';
+import { SceneConfigManager } from '../../../lib/three/SceneConfigManager';
+import { VisitorControlPanel } from '../../../components/panels/VisitorControlPanel';
+import { VisitorWalletTerminal } from '../../../components/panels/VisitorWalletTerminal';
 
 function VisitorPavilionContent() {
   const searchParams = useSearchParams();

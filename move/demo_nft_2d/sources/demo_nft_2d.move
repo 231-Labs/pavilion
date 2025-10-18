@@ -64,7 +64,7 @@ module demo_nft_2d::demo_nft_2d {
             string::utf8(b"{image_url}"),
             string::utf8(b"{creator}"),
             string::utf8(b"{attributes}"),
-            string::utf8(b"https://pavilion.example.com"),
+            string::utf8(b"https://pavilion.wal.app"),
         ];
 
         let mut disp = display::new_with_fields<DemoNFT2D>(&publisher, keys, values, ctx);
@@ -163,6 +163,15 @@ module demo_nft_2d::demo_nft_2d {
     ) {
         assert!(nft.creator == ctx.sender(), ENotCreator);
         nft.attributes.push_back(attribute);
+    }
+
+    /// update image URL (only publisher can update)
+    entry fun update_image_url(
+        _publisher: &package::Publisher,
+        nft: &mut DemoNFT2D,
+        new_image_url: String,
+    ) {
+        nft.image_url = new_image_url;
     }
 
     // == royalty rule functions ==

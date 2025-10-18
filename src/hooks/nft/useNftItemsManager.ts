@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { SceneManager } from '../../lib/three/SceneManager';
 import { NFTProcessor, ProcessedNFTItem } from '../../lib/nft/NFTProcessor';
-import { getWalrusUrl } from '../../lib/services/walrus-client';
+import { getWalrusUrl } from '../../lib/walrus/client';
 import { kioskModelName, logger, removeModelFromScene } from '../../utils/sculptureHelpers';
 
 export interface NftTransform {
