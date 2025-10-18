@@ -12,6 +12,7 @@ export interface UseThreeSceneOptions extends ThreeSceneConfig {
   enableKioskItems?: boolean;
   defaultScene?: DefaultSceneConfig;
   sculptureControlPanelLoading?: boolean; // Loading state from SculptureControlPanel
+  kioskId?: string; // Allow passing kioskId to check preload cache
 }
 
 export function useThreeScene(options: UseThreeSceneOptions = {}) {
@@ -34,9 +35,10 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     setLoading(true);
     setSceneInitialized(false);
 
-    // Simplified scene initialization
+    // Simplified scene initialization - no preloading
     const initializeScene = async () => {
       try {
+        console.log('🔨 Creating new scene manager');
         const sceneConfig: ThreeSceneConfig = {
           ...options,
           // Convert createGallery option to defaultScene config

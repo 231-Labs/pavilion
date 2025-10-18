@@ -24,5 +24,6 @@ export interface LoadGLBOptions {
   castShadow?: boolean;
   receiveShadow?: boolean;
   name?: string;
-  onProgress?: (progress: ProgressEvent) => void;
+  // Support both ProgressEvent (for Three.js loader) and custom progress callback
+  onProgress?: ((progress: ProgressEvent) => void) | ((progress: number, stage: string) => void);
 }

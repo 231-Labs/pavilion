@@ -59,9 +59,11 @@ export const GLBLoader: React.FC<GLBLoaderProps> = ({ sceneManager }) => {
       const model = await sceneManager.loadGLBModel(url, {
         position: { x: 0, y: 0, z: 0 },
         name: `CustomModel_${Date.now()}`,
-        onProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100);
-          setLoadingProgress(percent);
+        onProgress: (progress: any) => {
+          if (progress && typeof progress === 'object' && 'loaded' in progress && 'total' in progress) {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            setLoadingProgress(percent);
+          }
         }
       });
 

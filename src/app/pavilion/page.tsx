@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
-import { useObjectChanges } from '../../hooks/common/useObjectChanges';
+import { resolveKioskOwnerCapId } from '../../lib/blockchain/pavilion';
+import { useObjectChanges } from '../../hooks/state/useObjectChanges';
 import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
 import { WalletTerminal } from '../../components/panels/WalletTerminal';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
@@ -15,10 +15,13 @@ import { KioskItemConverter } from '../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { MOCK_2D_NFTS } from '../../config/nft-test-config';
-import { useNftListing } from '../../hooks/nft/useNftListing';
+import { useNftListing } from '../../hooks/kiosk/useNftListing';
+import { useOwnershipVerification } from '../../hooks/kiosk/useOwnershipVerification';
+import { OwnershipVerificationModal } from '../../components/modals/OwnershipVerificationModal';
 
 function PavilionContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const kioskId = searchParams.get('kioskId');
   const isDemoMode = !kioskId; // Demo mode when no specific kiosk ID is provided
   const kioskState = useKioskState();
@@ -38,6 +41,12 @@ function PavilionContent() {
   
   // SculptureControlPanel loading state
   const [sculptureControlPanelLoading, setSculptureControlPanelLoading] = useState<boolean>(false);
+
+  // Ownership verification state (only for non-demo mode)
+  const [showVerificationModal, setShowVerificationModal] = useState<boolean>(false);
+  const [isOwnershipVerified, setIsOwnershipVerified] = useState<boolean>(false);
+  const [hasAttemptedVerification, setHasAttemptedVerification] = useState<boolean>(false);
+  const { verifyOwnership, isVerifying, verificationResult, clearVerification } = useOwnershipVerification();
 
   // Memoize combined kiosk items to ensure proper re-rendering
   const combinedKioskItems = React.useMemo(() => {
@@ -63,6 +72,48 @@ function PavilionContent() {
     return delistItem({ itemId, itemType });
   };
 
+  // Handle ownership verification
+  const handleVerifyOwnership = async () => {
+    if (!kioskId || !currentAccount) return;
+    await verifyOwnership(kioskId);
+  };
+
+  // Handle verification cancellation
+  const handleVerificationCancel = () => {
+    setShowVerificationModal(false);
+    router.push('/');
+  };
+
+  // Show verification modal when page loads with kioskId and wallet connected (non-demo mode)
+  useEffect(() => {
+    if (kioskId && currentAccount && !isDemoMode) {
+      setIsOwnershipVerified(false);
+      setHasAttemptedVerification(false);
+      setShowVerificationModal(true);
+      clearVerification();
+    }
+  }, [kioskId, currentAccount, isDemoMode, clearVerification]);
+
+  // Auto-trigger verification when modal is first shown (not on retry)
+  useEffect(() => {
+    if (showVerificationModal && !isVerifying && !hasAttemptedVerification && currentAccount && kioskId && !isOwnershipVerified && !isDemoMode) {
+      const timer = setTimeout(() => {
+        handleVerifyOwnership();
+        setHasAttemptedVerification(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showVerificationModal, currentAccount, kioskId, isVerifying, isOwnershipVerified, hasAttemptedVerification, isDemoMode]);
+
+  // Handle successful verification
+  useEffect(() => {
+    if (verificationResult?.verified && !isDemoMode) {
+      setIsOwnershipVerified(true);
+      setShowVerificationModal(false);
+    }
+  }, [verificationResult, isDemoMode]);
+
   // Clear storage and ensure clean state in Demo mode, then auto-load mock data
   useEffect(() => {
     if (isDemoMode) {
@@ -72,13 +123,17 @@ function PavilionContent() {
       // Auto-inject mock 2D NFT data for demo
       setInjectedMockData(MOCK_2D_NFTS);
       console.log('🖼️ Auto-loaded mock 2D NFT data for demo mode');
+      
+      // In demo mode, skip verification
+      setIsOwnershipVerified(true);
     }
   }, [isDemoMode]);
 
   // Handle kioskId parameter - update kiosk state for WalletTerminal display
+  // Only initialize after ownership verification succeeds
   useEffect(() => {
     const initializeKiosk = async () => {
-      if (kioskId && currentAccount) {
+      if (kioskId && currentAccount && isOwnershipVerified) {
         try {
           const capId = await resolveKioskOwnerCapId({
             kioskClient,
@@ -100,7 +155,7 @@ function PavilionContent() {
     };
 
     initializeKiosk();
-  }, [kioskId, currentAccount, kioskClient, kioskState]);
+  }, [kioskId, currentAccount, kioskClient, kioskState, isOwnershipVerified]);
 
   // Process kiosk content when kiosk state changes (content is already fetched by kioskState)
   useEffect(() => {
@@ -332,6 +387,18 @@ function PavilionContent() {
         <div className="w-full h-full border border-white/15"></div>
         <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>
       </div>
+
+      {/* Ownership Verification Modal */}
+      {!isDemoMode && (
+        <OwnershipVerificationModal
+          isOpen={showVerificationModal}
+          isVerifying={isVerifying}
+          verificationError={verificationResult?.error}
+          onVerify={handleVerifyOwnership}
+          onCancel={handleVerificationCancel}
+          kioskId={kioskId || ''}
+        />
+      )}
     </div>
   );
 }

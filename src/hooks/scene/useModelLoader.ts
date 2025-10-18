@@ -8,6 +8,8 @@ import { fetchModels, getWalrusUrl } from '../../lib/services/walrus-client';
 export function useModelLoader(sceneManager: SceneManager | undefined) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState<string>('');
+  const [loadingFileName, setLoadingFileName] = useState<string>('');
   const [loadedModels, setLoadedModels] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
@@ -36,26 +38,45 @@ export function useModelLoader(sceneManager: SceneManager | undefined) {
     setIsLoading(true);
     setError(null);
     setLoadingProgress(0);
+    setLoadingStage('Initializing...');
+    setLoadingFileName(modelName);
+
+    console.log('🔄 [useModelLoader] Starting load:', { modelName, isLoading: true });
 
     try {
       const url = getWalrusUrl(sourceId);
+      
       await sceneManager.loadGLBModel(url, {
         position: { x: 0, y: 0, z: 0 },
         name: modelName,
-        onProgress: (progress) => {
-          if (progress.lengthComputable) {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setLoadingProgress(percent);
+        onProgress: (progressOrPercent: any, stage?: string) => {
+          if (typeof progressOrPercent === 'number' && stage) {
+            setLoadingProgress(progressOrPercent);
+            setLoadingStage(stage);
+          } else if (progressOrPercent && typeof progressOrPercent === 'object' && 'loaded' in progressOrPercent) {
+            if (progressOrPercent.lengthComputable) {
+              const percent = Math.round((progressOrPercent.loaded / progressOrPercent.total) * 100);
+              setLoadingProgress(percent);
+              setLoadingStage('Downloading...');
+            }
           }
         }
       });
 
       setLoadedModels(prev => [...prev, modelName]);
       setWalrusBlobId('');
+      setLoadingProgress(100);
+      setLoadingStage('Complete!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Walrus loading failed');
     } finally {
-      setIsLoading(false);
+      // Delay clearing loading state to show completion
+      setTimeout(() => {
+        setIsLoading(false);
+        setLoadingProgress(0);
+        setLoadingStage('');
+        setLoadingFileName('');
+      }, 500);
     }
   }, [sceneManager, walrusBlobId, loadedModels]);
 
@@ -101,6 +122,10 @@ export function useModelLoader(sceneManager: SceneManager | undefined) {
     setIsLoading,
     loadingProgress,
     setLoadingProgress,
+    loadingStage,
+    setLoadingStage,
+    loadingFileName,
+    setLoadingFileName,
     loadedModels,
     setLoadedModels,
     error,
