@@ -403,46 +403,44 @@ export function DesignerSection() {
           </div>
         )}
 
-        {/* Publish Button */}
-        <div className="mt-8">
-          <div className="flex justify-end">
-            <button
-              onClick={handleMint}
-              disabled={minting || uploading || !currentAccount}
-              className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
-            >
-              {minting || uploading ? (
-                <div className="loading-spinner" />
-              ) : (
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
-                >
-                  <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </button>
-          </div>
-
+        {/* Publish Button and Success Message */}
+        <div className="mt-8 flex items-center justify-between">
           {/* Success Message */}
-          {success && (
-            <div className="mt-3 text-right animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-                <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
-                <a
-                  href={`https://suiscan.xyz/testnet/tx/${success}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
-                >
-                  View on Explorer →
-                </a>
-              </div>
+          {success ? (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+              <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
+              <a
+                href={`https://suiscan.xyz/testnet/tx/${success}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
+              >
+                View on Explorer →
+              </a>
             </div>
+          ) : (
+            <div />
           )}
+
+          <button
+            onClick={handleMint}
+            disabled={minting || uploading || !currentAccount}
+            className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+          >
+            {minting || uploading ? (
+              <div className="loading-spinner" />
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
+              >
+                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
     </div>
