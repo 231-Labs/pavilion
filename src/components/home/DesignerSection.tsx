@@ -272,10 +272,10 @@ export function DesignerSection() {
           </div>
 
           {/* File Uploads - Side by side in 3D mode */}
-          <div className={designerMode === '3d' ? 'grid grid-cols-2 gap-4 items-start' : 'space-y-5'}>
+          <div className={designerMode === '3d' ? 'grid grid-cols-2 gap-4 items-start mt-8' : 'space-y-5 mt-8'}>
             {/* Image Upload */}
             <div className="space-y-2">
-              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">Image:</label>
+              <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">Image:</label>
               <label className="cursor-pointer block">
                 <div className="relative group">
                   <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 min-h-[88px] flex items-center">
@@ -296,7 +296,7 @@ export function DesignerSection() {
                         )}
                         {!imageFile && (
                           <div className="text-[11px] text-white/40 mt-0.5">
-                            PNG, JPG, GIF supported
+                            PNG, JPG, GIF
                           </div>
                         )}
                       </div>
@@ -318,7 +318,7 @@ export function DesignerSection() {
             {/* GLB Upload (3D only) */}
             {designerMode === '3d' && (
               <div className="space-y-2">
-                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">3D Model:</label>
+                <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">3D Model:</label>
                 <label className="cursor-pointer block">
                   <div className="relative group">
                     <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 min-h-[88px] flex items-center">
@@ -339,7 +339,7 @@ export function DesignerSection() {
                           )}
                           {!glbFile && (
                             <div className="text-[11px] text-white/40 mt-0.5">
-                              Only .glb format supported
+                              Only .glb format
                             </div>
                           )}
                         </div>
