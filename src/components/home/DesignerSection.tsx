@@ -272,13 +272,13 @@ export function DesignerSection() {
           </div>
 
           {/* File Uploads - Side by side in 3D mode */}
-          <div className={designerMode === '3d' ? 'grid grid-cols-2 gap-4' : 'space-y-5'}>
+          <div className={designerMode === '3d' ? 'grid grid-cols-2 gap-4 items-start' : 'space-y-5'}>
             {/* Image Upload */}
             <div className="space-y-2">
-              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Image:</label>
+              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">Image:</label>
               <label className="cursor-pointer block">
-                <div className="relative group h-full">
-                  <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 h-full min-h-[88px] flex items-center">
+                <div className="relative group">
+                  <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 min-h-[88px] flex items-center">
                     <div className="flex items-center gap-3 w-full">
                       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all">
                         <svg className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -318,10 +318,10 @@ export function DesignerSection() {
             {/* GLB Upload (3D only) */}
             {designerMode === '3d' && (
               <div className="space-y-2">
-                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">3D Model:</label>
+                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85 h-[24px]">3D Model:</label>
                 <label className="cursor-pointer block">
-                  <div className="relative group h-full">
-                    <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 h-full min-h-[88px] flex items-center">
+                  <div className="relative group">
+                    <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 min-h-[88px] flex items-center">
                       <div className="flex items-center gap-3 w-full">
                         <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all">
                           <svg className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
