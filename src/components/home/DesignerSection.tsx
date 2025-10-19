@@ -261,15 +261,29 @@ export function DesignerSection() {
             setUploadProgress('');
             
             // Fetch full transaction details to get objectChanges
+            // Add retry logic as transaction might not be indexed immediately
+            const fetchTransactionWithRetry = async (digest: string, maxRetries = 5, delay = 1000) => {
+              for (let i = 0; i < maxRetries; i++) {
+                try {
+                  console.log(`🔍 Fetching transaction details (attempt ${i + 1}/${maxRetries}):`, digest);
+                  const txDetails = await suiClient.getTransactionBlock({
+                    digest,
+                    options: {
+                      showObjectChanges: true,
+                      showEffects: true,
+                    },
+                  });
+                  return txDetails;
+                } catch (e: any) {
+                  if (i === maxRetries - 1) throw e;
+                  console.log(`⏳ Transaction not yet indexed, waiting ${delay}ms before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+            };
+            
             try {
-              console.log('🔍 Fetching transaction details for digest:', result.digest);
-              const txDetails = await suiClient.getTransactionBlock({
-                digest: result.digest,
-                options: {
-                  showObjectChanges: true,
-                  showEffects: true,
-                },
-              });
+              const txDetails = await fetchTransactionWithRetry(result.digest);
               
               console.log('📦 Transaction details:', txDetails);
               const changes = txDetails?.objectChanges ?? [];
@@ -295,7 +309,7 @@ export function DesignerSection() {
                 console.warn('⚠️ All changes:', changes);
               }
             } catch (e) {
-              console.error('❌ Failed to fetch transaction details:', e);
+              console.error('❌ Failed to fetch transaction details after retries:', e);
             }
             
             // Reset form
