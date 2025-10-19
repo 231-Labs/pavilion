@@ -387,71 +387,79 @@ export function DesignerSection() {
         {/* Conditional Content: Form or Place in Pavilion */}
         {mintedNftId ? (
           // Place in Pavilion Section (replaces form after successful mint)
-          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-            <div className="text-center space-y-2">
-              <div className="text-white/90 text-sm font-semibold uppercase tracking-widest">
-                Object Published Successfully
+          <div className="flex-1 flex flex-col items-center justify-center px-4">
+            <div className="w-full max-w-lg space-y-8">
+              {/* Success Title */}
+              <div className="text-center space-y-3">
+                <div className="text-white/90 text-base font-semibold uppercase tracking-widest">
+                  Object Published Successfully
+                </div>
+                <div className="text-white/60 text-xs tracking-wide">
+                  Select a pavilion to place your NFT
+                </div>
               </div>
-              <div className="text-white/60 text-xs">
-                Select a pavilion to place your NFT
-              </div>
-            </div>
-            
-            <div className="w-full max-w-md space-y-4">
-              <KioskSelector
-                kiosks={pavilionKiosks}
-                loading={fetchingKiosks}
-                selectedKioskId={selectedKioskId}
-                onSelectKiosk={setSelectedKioskId}
-                emptyMessage="No pavilions found"
-                showNames={true}
-              />
               
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={placeInKiosk}
-                  disabled={!selectedKioskId || placingInKiosk}
-                  className="group relative inline-flex items-center justify-center w-12 h-12 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
-                >
-                  {placingInKiosk ? (
-                    <div className="loading-spinner" />
-                  ) : (
-                    <svg 
-                      className="w-5 h-5 text-white/80 transition-transform duration-200 group-hover:scale-110" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
-                      strokeWidth={1.5}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
-                    </svg>
-                  )}
-                </button>
+              {/* Selector and Action Buttons */}
+              <div className="space-y-6">
+                <div className="w-full">
+                  <KioskSelector
+                    kiosks={pavilionKiosks}
+                    loading={fetchingKiosks}
+                    selectedKioskId={selectedKioskId}
+                    onSelectKiosk={setSelectedKioskId}
+                    emptyMessage="No pavilions found"
+                    showNames={true}
+                  />
+                </div>
                 
-                <button
-                  onClick={() => {
-                    setMintedNftId(null);
-                    setSelectedKioskId(null);
-                    setSuccess(null);
-                  }}
-                  className="text-[11px] text-white/60 hover:text-white/90 uppercase tracking-wide transition-colors"
-                >
-                  Skip & Create New
-                </button>
+                <div className="flex items-center justify-center gap-6">
+                  <button
+                    onClick={placeInKiosk}
+                    disabled={!selectedKioskId || placingInKiosk}
+                    className="group relative inline-flex items-center justify-center w-12 h-12 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+                  >
+                    {placingInKiosk ? (
+                      <div className="loading-spinner" />
+                    ) : (
+                      <svg 
+                        className="w-5 h-5 text-white/80 transition-transform duration-200 group-hover:scale-110" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor" 
+                        strokeWidth={1.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setMintedNftId(null);
+                      setSelectedKioskId(null);
+                      setSuccess(null);
+                    }}
+                    className="text-[11px] text-white/60 hover:text-white/90 uppercase tracking-widest transition-colors"
+                  >
+                    Skip & Create New
+                  </button>
+                </div>
               </div>
+              
+              {/* Transaction Link */}
+              {success && (
+                <div className="text-center pt-4">
+                  <a
+                    href={`https://suiscan.xyz/testnet/tx/${success}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-white/70 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
+                  >
+                    View Transaction on Explorer →
+                  </a>
+                </div>
+              )}
             </div>
-            
-            {/* Success Link */}
-            {success && (
-              <a
-                href={`https://suiscan.xyz/testnet/tx/${success}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-white/70 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
-              >
-                View Transaction on Explorer →
-              </a>
-            )}
           </div>
         ) : (
           // Form Fields
