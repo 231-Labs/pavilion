@@ -387,11 +387,11 @@ export function DesignerSection() {
         )}
 
         {/* Publish Button */}
-        <div className="mt-4 flex justify-end">
+        <div className="mt-8 flex justify-end">
           <button
             onClick={handleMint}
             disabled={minting || uploading || !currentAccount}
-            className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20"
+            className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
           >
             {minting || uploading ? (
               <div className="loading-spinner" />
@@ -400,9 +400,10 @@ export function DesignerSection() {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
+                className="w-5 h-5 text-white/80 transition-all duration-200 group-hover:scale-110 group-hover:text-white"
               >
-                <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
           </button>
