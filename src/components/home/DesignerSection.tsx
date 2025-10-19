@@ -400,10 +400,10 @@ export function DesignerSection() {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-white/80 transition-all duration-200 group-hover:scale-110 group-hover:text-white"
+                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
               >
-                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
           </button>
