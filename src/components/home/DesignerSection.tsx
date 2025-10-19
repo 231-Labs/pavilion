@@ -74,6 +74,10 @@ export function DesignerSection() {
       signAndExecuteTransaction(
         {
           transaction: tx,
+          options: {
+            showObjectChanges: true,
+            showEffects: true,
+          },
         },
         {
           onSuccess: (result: any) => {
@@ -252,16 +256,22 @@ export function DesignerSection() {
       signAndExecuteTransaction(
         {
           transaction: tx,
+          options: {
+            showObjectChanges: true,
+            showEffects: true,
+          },
         },
         {
           onSuccess: (result: any) => {
-            console.log('Mint success:', result);
+            console.log('✅ Mint success:', result);
             setSuccess(result.digest);
             setUploadProgress('');
             
             // Extract minted NFT object ID
             try {
               const changes = result?.objectChanges ?? [];
+              console.log('📦 Object changes:', changes);
+              
               const nftChange = changes.find((ch: any) => 
                 ch.type === 'created' && 
                 (ch.objectType?.includes('DemoNFT2D') || ch.objectType?.includes('DemoNFT3D'))
@@ -271,9 +281,11 @@ export function DesignerSection() {
                 const nftId = nftChange.objectId;
                 console.log('✅ Minted NFT ID:', nftId);
                 setMintedNftId(nftId);
+              } else {
+                console.warn('⚠️ Could not find minted NFT in objectChanges');
               }
             } catch (e) {
-              console.error('Failed to extract NFT ID:', e);
+              console.error('❌ Failed to extract NFT ID:', e);
             }
             
             // Reset form
@@ -289,7 +301,7 @@ export function DesignerSection() {
             }, 12000);
           },
           onError: (error) => {
-            console.error('Mint error:', error);
+            console.error('❌ Mint error:', error);
             setError(`Mint failed: ${error.message}`);
             setUploadProgress('');
           },
