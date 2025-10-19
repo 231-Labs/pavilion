@@ -200,7 +200,7 @@ export function DesignerSection() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-base md:text-lg font-semibold tracking-wide">Publish Object</div>
-            <div className="mt-2 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
+            <div className="mt-2 mb-3 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
               <button
                 onClick={() => setDesignerMode('2d')}
                 aria-pressed={designerMode === '2d'}
@@ -223,6 +223,13 @@ export function DesignerSection() {
               >
                 3D NFT
               </button>
+            </div>
+            <div className="text-white/70 text-xs mt-1 tracking-widest uppercase flex items-center">
+              <span>
+                {designerMode === '2d' 
+                  ? 'Create 2D NFT with image asset' 
+                  : 'Create 3D NFT with image and model assets'}
+              </span>
             </div>
           </div>
         </div>
