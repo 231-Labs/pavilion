@@ -271,18 +271,36 @@ export function DesignerSection() {
             try {
               const changes = result?.objectChanges ?? [];
               console.log('📦 Object changes:', changes);
+              console.log('📦 Total changes count:', changes.length);
               
-              const nftChange = changes.find((ch: any) => 
+              // Log all created objects
+              const createdObjects = changes.filter((ch: any) => ch.type === 'created');
+              console.log('🆕 Created objects:', createdObjects);
+              
+              // Try to find NFT with different matching strategies
+              let nftChange = changes.find((ch: any) => 
                 ch.type === 'created' && 
                 (ch.objectType?.includes('DemoNFT2D') || ch.objectType?.includes('DemoNFT3D'))
               );
               
+              // If not found, try alternative matching
+              if (!nftChange) {
+                console.log('⚠️ First attempt failed, trying alternative matching...');
+                nftChange = changes.find((ch: any) => 
+                  ch.type === 'created' && 
+                  (ch.objectType?.includes('demo_nft_2d') || ch.objectType?.includes('demo_nft_3d'))
+                );
+              }
+              
               if (nftChange?.objectId) {
                 const nftId = nftChange.objectId;
                 console.log('✅ Minted NFT ID:', nftId);
+                console.log('✅ NFT objectType:', nftChange.objectType);
                 setMintedNftId(nftId);
+                console.log('✅ State updated, mintedNftId should now be:', nftId);
               } else {
                 console.warn('⚠️ Could not find minted NFT in objectChanges');
+                console.warn('⚠️ All object types:', createdObjects.map((c: any) => c.objectType));
               }
             } catch (e) {
               console.error('❌ Failed to extract NFT ID:', e);
@@ -548,7 +566,7 @@ export function DesignerSection() {
           </div>
 
           {/* Place in Pavilion Section */}
-          {mintedNftId && (
+          {mintedNftId && pavilionKiosks && pavilionKiosks.length > 0 && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 border-t border-white/10 pt-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-semibold uppercase tracking-widest text-white/85">
