@@ -79,8 +79,14 @@ export function DesignerSection() {
         {
           onSuccess: (result: any) => {
             console.log('✅ NFT placed in kiosk successfully:', result);
+            // Reset everything after successful placement
             setMintedNftId(null);
             setSelectedKioskId(null);
+            setSuccess(null);
+            setName('');
+            setDescription('');
+            setImageFile(null);
+            setGlbFile(null);
           },
           onError: (error) => {
             console.error('❌ Place in kiosk error:', error);
@@ -297,10 +303,10 @@ export function DesignerSection() {
                  ch.objectType?.includes('DemoNFT3D') ||
                  ch.objectType?.includes('demo_nft_2d') ||
                  ch.objectType?.includes('demo_nft_3d'))
-              );
+              ) as any;
               
               if (nftChange?.objectId) {
-                const nftId = nftChange.objectId;
+                const nftId = nftChange.objectId as string;
                 console.log('✅ Minted NFT ID:', nftId);
                 console.log('✅ NFT objectType:', nftChange.objectType);
                 setMintedNftId(nftId);
@@ -312,17 +318,7 @@ export function DesignerSection() {
               console.error('❌ Failed to fetch transaction details after retries:', e);
             }
             
-            // Reset form
-            setName('');
-            setDescription('');
-            setImageFile(null);
-            setGlbFile(null);
-            
-            setTimeout(() => {
-              setSuccess(null);
-              setMintedNftId(null);
-              setSelectedKioskId(null);
-            }, 12000);
+            // Don't reset form yet, wait for user to place in pavilion
           },
           onError: (error) => {
             console.error('❌ Mint error:', error);
@@ -388,8 +384,78 @@ export function DesignerSection() {
         </div>
 
 
-        {/* Form Fields */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mt-2">
+        {/* Conditional Content: Form or Place in Pavilion */}
+        {mintedNftId ? (
+          // Place in Pavilion Section (replaces form after successful mint)
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+            <div className="text-center space-y-2">
+              <div className="text-white/90 text-sm font-semibold uppercase tracking-widest">
+                Object Published Successfully
+              </div>
+              <div className="text-white/60 text-xs">
+                Select a pavilion to place your NFT
+              </div>
+            </div>
+            
+            <div className="w-full max-w-md space-y-4">
+              <KioskSelector
+                kiosks={pavilionKiosks}
+                loading={fetchingKiosks}
+                selectedKioskId={selectedKioskId}
+                onSelectKiosk={setSelectedKioskId}
+                emptyMessage="No pavilions found"
+                showNames={true}
+              />
+              
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={placeInKiosk}
+                  disabled={!selectedKioskId || placingInKiosk}
+                  className="group relative inline-flex items-center justify-center w-12 h-12 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+                >
+                  {placingInKiosk ? (
+                    <div className="loading-spinner" />
+                  ) : (
+                    <svg 
+                      className="w-5 h-5 text-white/80 transition-transform duration-200 group-hover:scale-110" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor" 
+                      strokeWidth={1.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
+                    </svg>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setMintedNftId(null);
+                    setSelectedKioskId(null);
+                    setSuccess(null);
+                  }}
+                  className="text-[11px] text-white/60 hover:text-white/90 uppercase tracking-wide transition-colors"
+                >
+                  Skip & Create New
+                </button>
+              </div>
+            </div>
+            
+            {/* Success Link */}
+            {success && (
+              <a
+                href={`https://suiscan.xyz/testnet/tx/${success}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-white/70 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
+              >
+                View Transaction on Explorer →
+              </a>
+            )}
+          </div>
+        ) : (
+          // Form Fields
+          <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mt-2">
           {/* Name */}
           <div className="flex items-end gap-4 max-w-2xl">
             <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Name:</label>
@@ -512,7 +578,8 @@ export function DesignerSection() {
               <span>{uploadProgress}</span>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -530,26 +597,9 @@ export function DesignerSection() {
           </div>
         )}
 
-        {/* Publish Button and Success Message */}
-        <div className="mt-8 space-y-4">
-          <div className="flex items-center justify-between">
-            {/* Success Message */}
-            {success ? (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
-                <a
-                  href={`https://suiscan.xyz/testnet/tx/${success}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
-                >
-                  View on Explorer →
-                </a>
-              </div>
-            ) : (
-              <div />
-            )}
-
+        {/* Publish Button (only show when not minted) */}
+        {!mintedNftId && (
+          <div className="mt-8 flex items-center justify-end">
             <button
               onClick={handleMint}
               disabled={minting || uploading || !currentAccount}
@@ -570,35 +620,7 @@ export function DesignerSection() {
               )}
             </button>
           </div>
-
-          {/* Place in Pavilion Section */}
-          {mintedNftId && pavilionKiosks && pavilionKiosks.length > 0 && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 border-t border-white/10 pt-4">
-              <div className="space-y-2">
-                <label className="block text-[13px] font-semibold uppercase tracking-widest text-white/85">
-                  Place in Pavilion
-                </label>
-                <div className="flex items-center gap-3">
-                  <KioskSelector
-                    kiosks={pavilionKiosks}
-                    loading={fetchingKiosks}
-                    selectedKioskId={selectedKioskId}
-                    onSelectKiosk={setSelectedKioskId}
-                    emptyMessage="No pavilions found"
-                    showNames={true}
-                  />
-                  <button
-                    onClick={placeInKiosk}
-                    disabled={!selectedKioskId || placingInKiosk}
-                    className="px-4 py-2 rounded-lg border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30 text-[11px] text-white/90 uppercase tracking-wide"
-                  >
-                    {placingInKiosk ? 'Placing...' : 'Place'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
