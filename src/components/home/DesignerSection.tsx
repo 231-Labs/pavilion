@@ -25,6 +25,7 @@ export function DesignerSection() {
   const [mintedNftId, setMintedNftId] = useState<string | null>(null);
   const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
   const [placingInKiosk, setPlacingInKiosk] = useState(false);
+  const [placeSuccess, setPlaceSuccess] = useState<string | null>(null);
   
   // 2D NFT
   const [name, setName] = useState('');
@@ -79,14 +80,20 @@ export function DesignerSection() {
         {
           onSuccess: (result: any) => {
             console.log('✅ NFT placed in kiosk successfully:', result);
-            // Reset everything after successful placement
-            setMintedNftId(null);
-            setSelectedKioskId(null);
-            setSuccess(null);
-            setName('');
-            setDescription('');
-            setImageFile(null);
-            setGlbFile(null);
+            // Show placement success message
+            setPlaceSuccess(result.digest);
+            
+            // Reset after delay
+            setTimeout(() => {
+              setMintedNftId(null);
+              setSelectedKioskId(null);
+              setSuccess(null);
+              setPlaceSuccess(null);
+              setName('');
+              setDescription('');
+              setImageFile(null);
+              setGlbFile(null);
+            }, 8000);
           },
           onError: (error) => {
             console.error('❌ Place in kiosk error:', error);
@@ -404,33 +411,45 @@ export function DesignerSection() {
               <div className="border border-white/15 rounded-lg bg-white/[0.02] backdrop-blur-sm p-6 space-y-6">
                 {/* Instruction Text */}
                 <div className="text-white/60 text-xs tracking-wide text-center">
-                  Select a pavilion to place your NFT
+                  {placeSuccess ? 'NFT placed in pavilion successfully' : 'Select a pavilion to place your NFT'}
                 </div>
                 
-                {/* Selector */}
-                <div className="w-full">
-                  <KioskSelector
-                    kiosks={pavilionKiosks}
-                    loading={fetchingKiosks}
-                    selectedKioskId={selectedKioskId}
-                    onSelectKiosk={setSelectedKioskId}
-                    emptyMessage="No pavilions found"
-                    showNames={true}
-                  />
+                {/* Selector - Centered */}
+                <div className="flex justify-center">
+                  <div className="w-full max-w-md">
+                    <KioskSelector
+                      kiosks={pavilionKiosks}
+                      loading={fetchingKiosks}
+                      selectedKioskId={selectedKioskId}
+                      onSelectKiosk={setSelectedKioskId}
+                      emptyMessage="No pavilions found"
+                      showNames={true}
+                    />
+                  </div>
                 </div>
                 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <button
                     onClick={placeInKiosk}
-                    disabled={!selectedKioskId || placingInKiosk}
-                    className="group relative inline-flex items-center justify-center w-12 h-12 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+                    disabled={!selectedKioskId || placingInKiosk || placeSuccess}
+                    className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
                   >
                     {placingInKiosk ? (
                       <div className="loading-spinner" />
+                    ) : placeSuccess ? (
+                      <svg 
+                        className="w-4 h-4 text-green-400" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor" 
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     ) : (
                       <svg 
-                        className="w-5 h-5 text-white/80 transition-transform duration-200 group-hover:scale-110" 
+                        className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110" 
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor" 
@@ -441,36 +460,58 @@ export function DesignerSection() {
                     )}
                   </button>
                   
-                  <button
-                    onClick={() => {
-                      setMintedNftId(null);
-                      setSelectedKioskId(null);
-                      setSuccess(null);
-                    }}
-                    className="text-[11px] text-white/60 hover:text-white/90 uppercase tracking-widest transition-colors"
-                  >
-                    Skip & Create New
-                  </button>
+                  {!placeSuccess && (
+                    <button
+                      onClick={() => {
+                        setMintedNftId(null);
+                        setSelectedKioskId(null);
+                        setSuccess(null);
+                        setPlaceSuccess(null);
+                      }}
+                      className="text-[11px] text-white/60 hover:text-white/90 uppercase tracking-widest transition-colors underline underline-offset-2 decoration-white/30 hover:decoration-white/60"
+                    >
+                      Skip & Create New
+                    </button>
+                  )}
                 </div>
               </div>
               
-              {/* Transaction Link with Border Lines */}
-              {success && (
-                <div className="relative">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10"></div>
-                    <a
-                      href={`https://suiscan.xyz/testnet/tx/${success}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] text-white/70 hover:text-white uppercase tracking-widest transition-colors whitespace-nowrap"
-                    >
-                      View on Explorer →
-                    </a>
-                    <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10"></div>
+              {/* Transaction Links with Border Lines */}
+              <div className="space-y-3">
+                {success && (
+                  <div className="relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10"></div>
+                      <a
+                        href={`https://suiscan.xyz/testnet/tx/${success}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-white/70 hover:text-white uppercase tracking-widest transition-colors whitespace-nowrap"
+                      >
+                        View Mint TX on Explorer →
+                      </a>
+                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10"></div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                
+                {placeSuccess && (
+                  <div className="relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10"></div>
+                      <a
+                        href={`https://suiscan.xyz/testnet/tx/${placeSuccess}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-green-400/80 hover:text-green-400 uppercase tracking-widest transition-colors whitespace-nowrap"
+                      >
+                        View Place TX on Explorer →
+                      </a>
+                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
