@@ -253,7 +253,7 @@ export function DesignerSection() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter NFT name"
-                className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
+                className="w-full bg-transparent px-0 pt-0 pb-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
               />
             </div>
           </div>
@@ -267,7 +267,7 @@ export function DesignerSection() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter NFT description"
                 rows={2}
-                className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 resize-none"
+                className="w-full bg-transparent px-0 pt-0 pb-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 resize-none"
               />
             </div>
           </div>
