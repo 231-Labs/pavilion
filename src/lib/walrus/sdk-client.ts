@@ -1,6 +1,7 @@
 /**
  * Walrus SDK Client for reading blobs directly from storage nodes
  * Bypasses aggregator 4MB size limit
+ * ⚠️ This module can only be used in the browser (client-side only)
  */
 
 import { SuiClient } from '@mysten/sui/client';
@@ -10,8 +11,14 @@ let walrusClient: ReturnType<typeof createWalrusClient> | null = null;
 
 /**
  * Create Walrus SDK client
+ * Only works in browser environment
  */
 function createWalrusClient() {
+  // Ensure we're in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('Walrus SDK can only be used in browser environment');
+  }
+
   const network = (process.env.NEXT_PUBLIC_SUI_NETWORK || 'testnet') as 'mainnet' | 'testnet';
   const rpcUrl = network === 'mainnet' 
     ? 'https://fullnode.mainnet.sui.io:443'
@@ -32,7 +39,7 @@ function createWalrusClient() {
       storageNodeClientOptions: {
         timeout: 120_000, // 2 minutes timeout for large files
         // Custom fetch to handle SSL issues in development (browser only)
-        fetch: typeof window !== 'undefined' ? window.fetch.bind(window) : undefined,
+        fetch: window.fetch.bind(window),
         onError: (error) => {
           // Only warn about expected SSL errors
           const errorStr = error?.toString() || '';
@@ -49,8 +56,14 @@ function createWalrusClient() {
 
 /**
  * Get or create Walrus client singleton
+ * Only works in browser environment
  */
 export function getWalrusClient() {
+  // Ensure we're in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('Walrus SDK can only be used in browser environment');
+  }
+
   if (!walrusClient) {
     walrusClient = createWalrusClient();
   }

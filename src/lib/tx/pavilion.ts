@@ -23,3 +23,24 @@ export {
   readPavilionName,
 } from './scene-config';
 
+// Re-export NFT minting functions
+export {
+  buildMint2DNFTTx,
+  buildMint3DNFTTx,
+  parseMintedNFTId,
+} from './nft-minting';
+export type {
+  MintNFT2DParams,
+  MintNFT3DParams,
+  ParseMintedNFTParams,
+} from './nft-minting';
+
+// Re-export NFT placement functions
+export {
+  buildPlaceNFTInKioskTx,
+  buildNFTType,
+} from './nft-placement';
+export type {
+  PlaceNFTInKioskParams,
+} from './nft-placement';
+

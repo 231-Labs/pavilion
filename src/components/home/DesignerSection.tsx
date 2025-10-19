@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
-import { NFT_CONTRACTS, WALRUS_CONFIG } from '../../config/nft-contracts';
+import { NFT_CONTRACTS } from '../../config/nft-contracts';
 import { useKioskClient } from '../providers/KioskClientProvider';
 import { useKioskData } from '../../hooks/kiosk/useKioskData';
 import { KioskSelector } from './KioskSelector';
+import { uploadToWalrus } from '../../lib/walrus';
+import { 
+  buildMint2DNFTTx, 
+  buildMint3DNFTTx, 
+  parseMintedNFTId,
+  buildPlaceNFTInKioskTx, 
+  buildNFTType 
+} from '../../lib/tx/pavilion';
 
 type DesignerMode = '2d' | '3d';
 
@@ -12,7 +19,6 @@ export function DesignerSection() {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const suiClient = useSuiClient();
-  const kioskClient = useKioskClient();
   const { 
     pavilionKiosks, 
     fetchingKiosks
@@ -55,20 +61,23 @@ export function DesignerSection() {
       setPlacingInKiosk(true);
       setError(null);
 
-      const tx = new Transaction();
-      const nftType = designerMode === '2d' 
-        ? `${NFT_CONTRACTS.DEMO_NFT_2D.packageId}::${NFT_CONTRACTS.DEMO_NFT_2D.module}::DemoNFT2D`
-        : `${NFT_CONTRACTS.DEMO_NFT_3D.packageId}::${NFT_CONTRACTS.DEMO_NFT_3D.module}::DemoNFT3D`;
+      // Build NFT type string
+      const nftContract = designerMode === '2d' 
+        ? NFT_CONTRACTS.DEMO_NFT_2D 
+        : NFT_CONTRACTS.DEMO_NFT_3D;
+      const nftTypeName = designerMode === '2d' ? 'DemoNFT2D' : 'DemoNFT3D';
+      const nftType = buildNFTType(
+        nftContract.packageId,
+        nftContract.module,
+        nftTypeName
+      );
 
-      // Call kiosk::place to add NFT to kiosk
-      tx.moveCall({
-        target: '0x2::kiosk::place',
-        arguments: [
-          tx.object(selectedKioskId),
-          tx.object(selectedKiosk.objectId),
-          tx.object(mintedNftId),
-        ],
-        typeArguments: [nftType],
+      // Build placement transaction
+      const tx = buildPlaceNFTInKioskTx({
+        kioskId: selectedKioskId,
+        kioskOwnerCapId: selectedKiosk.objectId,
+        nftId: mintedNftId,
+        nftType,
       });
 
       signAndExecuteTransaction(
@@ -127,29 +136,6 @@ export function DesignerSection() {
     }
   };
 
-  const uploadToWalrus = async (file: File): Promise<string> => {
-    const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/blobs?epochs=10`, {
-      method: 'PUT',
-      body: file,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Walrus upload failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    
-    // Handle Walrus response format
-    if (result.newlyCreated?.blobObject?.blobId) {
-      return result.newlyCreated.blobObject.blobId;
-    } else if (result.alreadyCertified?.blobId) {
-      return result.alreadyCertified.blobId;
-    }
-    
-    throw new Error('Failed to get blob ID from Walrus response');
-  };
-
   const handleMint = async () => {
     if (!currentAccount) {
       setError('Please connect your wallet first');
@@ -180,56 +166,45 @@ export function DesignerSection() {
       setUploading(true);
 
       // Upload image to Walrus
-      setUploadProgress('Uploading image to Walrus...');
-      const imageBlobId = await uploadToWalrus(imageFile);
-      const imageUrl = `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${imageBlobId}`;
+      const imageResult = await uploadToWalrus(imageFile, {
+        onProgress: (msg) => setUploadProgress(msg),
+      });
+      const imageUrl = imageResult.url;
 
       let glbBlobId = '';
       if (designerMode === '3d' && glbFile) {
-        setUploadProgress('Uploading 3D model to Walrus...');
-        glbBlobId = await uploadToWalrus(glbFile);
+        const glbResult = await uploadToWalrus(glbFile, {
+          onProgress: (msg) => setUploadProgress(msg),
+        });
+        glbBlobId = glbResult.blobId;
       }
 
       setUploading(false);
       setUploadProgress('Preparing to mint NFT...');
 
-      const tx = new Transaction();
-
-      if (designerMode === '2d') {
-        // Check if package ID is configured
-        if (!NFT_CONTRACTS.DEMO_NFT_2D.packageId) {
-          throw new Error('2D NFT contract Package ID not configured. Please deploy the contract and set NEXT_PUBLIC_DEMO_NFT_2D_PACKAGE_ID');
-        }
-        
-        // Call 2D NFT mint function
-        tx.moveCall({
-          target: `${NFT_CONTRACTS.DEMO_NFT_2D.packageId}::${NFT_CONTRACTS.DEMO_NFT_2D.module}::${NFT_CONTRACTS.DEMO_NFT_2D.mintFunction}`,
-          arguments: [
-            tx.pure.string(name),
-            tx.pure.string(description),
-            tx.pure.string(imageUrl),
-            tx.pure.vector('string', []), // Empty attributes array
-            tx.pure.address(currentAccount.address),
-          ],
-        });
-      } else {
-        // Check if package ID is configured
-        if (!NFT_CONTRACTS.DEMO_NFT_3D.packageId) {
-          throw new Error('3D NFT contract Package ID not configured. Please deploy the contract and set NEXT_PUBLIC_DEMO_NFT_3D_PACKAGE_ID');
-        }
-        
-        // Call 3D NFT mint function
-        tx.moveCall({
-          target: `${NFT_CONTRACTS.DEMO_NFT_3D.packageId}::${NFT_CONTRACTS.DEMO_NFT_3D.module}::${NFT_CONTRACTS.DEMO_NFT_3D.mintFunction}`,
-          arguments: [
-            tx.pure.string(name),
-            tx.pure.string(description),
-            tx.pure.string(imageUrl),
-            tx.pure.string(glbBlobId),
-            tx.pure.address(currentAccount.address),
-          ],
-        });
-      }
+      // Build minting transaction
+      const tx =
+        designerMode === '2d'
+          ? buildMint2DNFTTx({
+              packageId: NFT_CONTRACTS.DEMO_NFT_2D.packageId,
+              module: NFT_CONTRACTS.DEMO_NFT_2D.module,
+              mintFunction: NFT_CONTRACTS.DEMO_NFT_2D.mintFunction,
+              name,
+              description,
+              imageUrl,
+              attributes: [],
+              recipient: currentAccount.address,
+            })
+          : buildMint3DNFTTx({
+              packageId: NFT_CONTRACTS.DEMO_NFT_3D.packageId,
+              module: NFT_CONTRACTS.DEMO_NFT_3D.module,
+              mintFunction: NFT_CONTRACTS.DEMO_NFT_3D.mintFunction,
+              name,
+              description,
+              imageUrl,
+              glbBlobId,
+              recipient: currentAccount.address,
+            });
 
       signAndExecuteTransaction(
         {
@@ -239,46 +214,20 @@ export function DesignerSection() {
           onSuccess: async (result: any) => {
             setSuccess(result.digest);
             setUploadProgress('');
-            
-            // Fetch full transaction details to get objectChanges
-            // Add retry logic as transaction might not be indexed immediately
-            const fetchTransactionWithRetry = async (digest: string, maxRetries = 5, delay = 1000) => {
-              for (let i = 0; i < maxRetries; i++) {
-                try {
-                  const txDetails = await suiClient.getTransactionBlock({
-                    digest,
-                    options: {
-                      showObjectChanges: true,
-                      showEffects: true,
-                    },
-                  });
-                  return txDetails;
-                } catch (e: any) {
-                  if (i === maxRetries - 1) throw e;
-                  await new Promise(resolve => setTimeout(resolve, delay));
-                }
-              }
-            };
-            
+
+            // Parse minted NFT ID from transaction
             try {
-              const txDetails = await fetchTransactionWithRetry(result.digest);
-              const changes = txDetails?.objectChanges ?? [];
-              
-              // Find the minted NFT
-              const nftChange = changes.find((ch: any) => 
-                ch.type === 'created' && 
-                (ch.objectType?.includes('DemoNFT2D') || 
-                 ch.objectType?.includes('DemoNFT3D') ||
-                 ch.objectType?.includes('demo_nft_2d') ||
-                 ch.objectType?.includes('demo_nft_3d'))
-              ) as any;
-              
-              if (nftChange?.objectId) {
-                const nftId = nftChange.objectId as string;
+              const nftId = await parseMintedNFTId({
+                suiClient,
+                digest: result.digest,
+              });
+
+              if (nftId) {
                 setMintedNftId(nftId);
               }
             } catch (e) {
               // Silently fail - user can still see the transaction link
+              console.error('Failed to parse minted NFT ID:', e);
             }
           },
           onError: (error) => {
