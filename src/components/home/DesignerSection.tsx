@@ -50,7 +50,7 @@ export function DesignerSection() {
   };
 
   const uploadToWalrus = async (file: File): Promise<string> => {
-    const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/store`, {
+    const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/store?epochs=10`, {
       method: 'PUT',
       body: file,
     });
