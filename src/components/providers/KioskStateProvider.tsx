@@ -74,7 +74,7 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
         },
       });
       console.log('✅ KioskStateProvider: Fetched kiosk data, items count:', data.items?.length ?? 0);
-      console.log('💰 KioskStateProvider: Kiosk profits:', data.profits);
+      console.log('💰 KioskStateProvider: Kiosk profits:', data.kiosk?.profits);
       setKioskItems(data.items ?? []);
       setKioskData(data);
     } catch (e) {
