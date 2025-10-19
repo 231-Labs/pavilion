@@ -236,79 +236,85 @@ export function SculptureControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="space-y-3" style={{ fontSize: '13px' }}>
+        <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
           {/* Tab Navigation */}
-          <div className="flex border-b border-white/5">
+          <div className="flex gap-2 p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
             <button
               onClick={() => setActiveTab('kiosk')}
-              className={`relative flex-1 py-3 px-4 text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${
+              className={`relative flex-1 py-2.5 px-3 text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
                 activeTab === 'kiosk'
-                  ? 'text-white/85'
-                  : 'text-white/50 hover:text-white/70'
+                  ? 'bg-white/10 text-white/90 shadow-sm'
+                  : 'text-white/50 hover:text-white/70 hover:bg-white/5'
               }`}
             >
-              Assets
-              {nftManager.kioskNftItems.length > 0 && (
-                <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded-full ${
-                  activeTab === 'kiosk' ? 'bg-white/15' : 'bg-white/10'
-                }`}>
-                  {nftManager.kioskNftItems.length}
-                </span>
-              )}
-              {activeTab === 'kiosk' && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/0 via-white/50 to-white/0"></div>
-              )}
+              <div className="flex items-center justify-center gap-1.5">
+                <span>Assets</span>
+                {nftManager.kioskNftItems.length > 0 && (
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                    activeTab === 'kiosk' ? 'bg-white/20' : 'bg-white/10'
+                  }`}>
+                    {nftManager.kioskNftItems.length}
+                  </span>
+                )}
+              </div>
             </button>
             <button
               onClick={() => setActiveTab('objects')}
-              className={`relative flex-1 py-3 px-4 text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${
+              className={`relative flex-1 py-2.5 px-3 text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
                 activeTab === 'objects'
-                  ? 'text-white/85'
-                  : 'text-white/50 hover:text-white/70'
+                  ? 'bg-white/10 text-white/90 shadow-sm'
+                  : 'text-white/50 hover:text-white/70 hover:bg-white/5'
               }`}
             >
-              Editor
-              {controllableObjects.length > 0 && (
-                <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded-full ${
-                  activeTab === 'objects' ? 'bg-white/15' : 'bg-white/10'
-                }`}>
-                  {controllableObjects.length}
-                </span>
-              )}
-              {activeTab === 'objects' && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/0 via-white/50 to-white/0"></div>
-              )}
+              <div className="flex items-center justify-center gap-1.5">
+                <span>Editor</span>
+                {controllableObjects.length > 0 && (
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                    activeTab === 'objects' ? 'bg-white/20' : 'bg-white/10'
+                  }`}>
+                    {controllableObjects.length}
+                  </span>
+                )}
+              </div>
             </button>
           </div>
 
           {/* Tab Content */}
-          <div className="pt-2 px-3 pb-3">
+          <div>
             {/* Assets Tab */}
             {activeTab === 'kiosk' && (
-              nftManager.kioskNftItems.length > 0 ? (
-                <KioskNftItemsSection
-                  items={nftManager.kioskNftItems}
-                  displayedItemIds={nftManager.displayedNftItems}
-                  isLoading={modelLoader.isLoading}
-                  loadingProgress={modelLoader.loadingProgress}
-                  loadingItemId={selectedSculpture}
-                  onToggleItem={nftManager.handleNftItemDisplayToggle}
-                  onListItems={onListItems}
-                  onDelistItem={onDelistItem}
-                  mistToSui={mistToSui}
-                />
-              ) : (
-                <div className="text-xs text-white/50 text-center py-8">
-                  No assets available
-                </div>
-              )
+              <div className="space-y-3">
+                {nftManager.kioskNftItems.length > 0 ? (
+                  <KioskNftItemsSection
+                    items={nftManager.kioskNftItems}
+                    displayedItemIds={nftManager.displayedNftItems}
+                    isLoading={modelLoader.isLoading}
+                    loadingProgress={modelLoader.loadingProgress}
+                    loadingItemId={selectedSculpture}
+                    onToggleItem={nftManager.handleNftItemDisplayToggle}
+                    onListItems={onListItems}
+                    onDelistItem={onDelistItem}
+                    mistToSui={mistToSui}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center space-y-2">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 mx-auto text-white/20">
+                        <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 2v5M8 7V2M16 7V2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <p className="text-xs text-white/40 font-medium">No assets available</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Editor Tab */}
             {activeTab === 'objects' && (
               <div className="space-y-3">
                 {controllableObjects.length > 0 || nftManager.displayedNftItems.size > 0 ? (
-                  <>
+                  <div className="space-y-4">
+                    {/* Object Selector */}
                     <ObjectSelector
                       selectedId={selectedSculpture}
                       onChangeSelected={(id) => setSelectedSculpture(id)}
@@ -531,10 +537,16 @@ export function SculptureControlPanel({
               }}
             />
                     )}
-                  </>
+                  </div>
                 ) : (
-                  <div className="text-xs text-white/50 text-center py-8">
-                    No items in scene
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center space-y-2">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 mx-auto text-white/20">
+                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <p className="text-xs text-white/40 font-medium">No items in scene</p>
+                    </div>
                   </div>
                 )}
               </div>

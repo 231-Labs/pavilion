@@ -33,38 +33,42 @@ export function TransformControlsSection({
   const scale = current.scale || { x: 1, y: 1, z: 1 };
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-          Transform
-        </label>
+    <div className="space-y-3">
+      {/* Transform Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+          <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+            Transform
+          </label>
+        </div>
         <button
           onClick={onResetAll}
-          className="text-[10px] text-white/80 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+          className="px-2 py-1 text-[10px] text-white/60 hover:text-white/80 uppercase tracking-widest rounded bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
         >
           Reset All
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="pl-3.5 space-y-4">
           {/* Position */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-medium tracking-wider uppercase text-white/50">
                 Position
               </label>
               <button
                 onClick={onResetPosition}
-                className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                className="text-[9px] text-white/40 hover:text-white/60 uppercase tracking-widest transition-colors"
               >
                 Reset
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-2">
               {(['x', 'y', 'z'] as const).map((axis) => (
-                <div key={axis} className="space-y-1">
-                  <label className="block text-sm font-medium tracking-wide text-center control-label-axis">
-                    {axis.toUpperCase()}
+                <div key={axis} className="space-y-1.5">
+                  <label className="block text-[10px] font-semibold tracking-wider text-center text-white/40 uppercase">
+                    {axis}
                   </label>
                   <input
                     type="range"
@@ -77,7 +81,7 @@ export function TransformControlsSection({
                       onChangePosition(next);
                     }}
                     className="w-full"
-                    style={{ height: '5px' }}
+                    style={{ height: '4px' }}
                   />
                   <input
                     key={`${current.id}-pos-${axis}-${position[axis]}`}
@@ -92,7 +96,7 @@ export function TransformControlsSection({
                       const next = { ...position, [axis]: valueToUse } as Vector3Like;
                       onChangePosition(next);
                     }}
-                    className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                    className="w-full px-2 py-1.5 text-xs rounded-md bg-black/20 border border-white/10 focus:outline-none focus:border-white/30 focus:bg-black/30 text-center text-white/80 transition-colors"
                   />
                 </div>
               ))}
@@ -101,23 +105,23 @@ export function TransformControlsSection({
 
           {/* Rotation */}
           {canRotate && (
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-medium tracking-wider uppercase text-white/50">
                   Rotation
                 </label>
                 <button
                   onClick={onResetRotation}
-                  className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                  className="text-[9px] text-white/40 hover:text-white/60 uppercase tracking-widest transition-colors"
                 >
                   Reset
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {(['x', 'y', 'z'] as const).map((axis) => (
-                  <div key={axis} className="space-y-1">
-                    <label className="block text-sm font-medium tracking-wide text-center control-label-axis">
-                      {axis.toUpperCase()}
+                  <div key={axis} className="space-y-1.5">
+                    <label className="block text-[10px] font-semibold tracking-wider text-center text-white/40 uppercase">
+                      {axis}
                     </label>
                     <input
                       type="range"
@@ -132,7 +136,7 @@ export function TransformControlsSection({
                         onChangeRotation(next);
                       }}
                       className="w-full"
-                      style={{ height: '5px' }}
+                      style={{ height: '4px' }}
                     />
                     <input
                       key={`${current.id}-rot-${axis}-${Math.round((((rotation[axis] || 0) * 180) / Math.PI) % 360)}`}
@@ -148,7 +152,7 @@ export function TransformControlsSection({
                         const next = { ...rotation, [axis]: radians } as Vector3Like;
                         onChangeRotation(next);
                       }}
-                      className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                      className="w-full px-2 py-1.5 text-xs rounded-md bg-black/20 border border-white/10 focus:outline-none focus:border-white/30 focus:bg-black/30 text-center text-white/80 transition-colors"
                     />
                   </div>
                 ))}
@@ -158,19 +162,19 @@ export function TransformControlsSection({
 
           {/* Scale */}
           {canScale && (
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium tracking-wide uppercase control-label-secondary">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-medium tracking-wider uppercase text-white/50">
                   Scale
                 </label>
                 <button
                   onClick={onResetScale}
-                  className="text-[10px] text-white/70 uppercase tracking-widest hover:opacity-80 cursor-pointer"
+                  className="text-[9px] text-white/40 hover:text-white/60 uppercase tracking-widest transition-colors"
                 >
                   Reset
                 </button>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <input
                   type="range"
                   min="0.1"
@@ -182,7 +186,7 @@ export function TransformControlsSection({
                     onChangeScale({ x: value, y: value, z: value });
                   }}
                   className="w-full"
-                  style={{ height: '5px' }}
+                  style={{ height: '4px' }}
                 />
                 <input
                   key={`${current.id}-scale-${scale.x || 1}`}
@@ -196,7 +200,7 @@ export function TransformControlsSection({
                     const value = Number.isFinite(parsed) ? parsed : (scale.x || 1);
                     onChangeScale({ x: value, y: value, z: value });
                   }}
-                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-black/30 border border-white/10 focus:outline-none focus:border-white/40 text-center"
+                  className="w-full px-2 py-1.5 text-xs rounded-md bg-black/20 border border-white/10 focus:outline-none focus:border-white/30 focus:bg-black/30 text-center text-white/80 transition-colors"
                 />
               </div>
             </div>

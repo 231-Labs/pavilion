@@ -23,9 +23,18 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const [error, setError] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { kioskId, kioskOwnerCapId } = useKioskState();
+  const { kioskId, kioskOwnerCapId, kioskData } = useKioskState();
   const SUI_TO_MIST = 1000000000;
   const router = useRouter();
+
+  // Debug: log kioskData to see its structure
+  useEffect(() => {
+    if (kioskData) {
+      console.log('💰 WalletTerminal: kioskData structure:', kioskData);
+      console.log('💰 WalletTerminal: kioskData.kiosk:', kioskData.kiosk);
+      console.log('💰 WalletTerminal: kioskData.kiosk.profits:', kioskData.kiosk?.profits);
+    }
+  }, [kioskData]);
 
   // Save related state
   const [isPreparingSave, setIsPreparingSave] = useState(false);
@@ -34,6 +43,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
   // Copy tooltip state
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
   const [isTooltipFadingOut, setIsTooltipFadingOut] = useState(false);
+
+  // Share tooltip state
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
+  const [isShareTooltipFadingOut, setIsShareTooltipFadingOut] = useState(false);
 
   // Use click outside hook for error dismissal
   const containerRef = useClickOutside<HTMLDivElement>(() => {
@@ -186,6 +199,28 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
+  // Handle share pavilion
+  const handleSharePavilion = async () => {
+    if (kioskId) {
+      try {
+        const shareUrl = `${window.location.origin}/pavilion/visit?kioskId=${kioskId}`;
+        await navigator.clipboard.writeText(shareUrl);
+        setIsShareTooltipFadingOut(false);
+        setShowShareTooltip(true);
+        
+        setTimeout(() => {
+          setIsShareTooltipFadingOut(true);
+          setTimeout(() => {
+            setShowShareTooltip(false);
+            setIsShareTooltipFadingOut(false);
+          }, 150);
+        }, 1800);
+      } catch (error) {
+        console.error('Failed to copy share URL to clipboard:', error);
+      }
+    }
+  };
+
 
 
   return (
@@ -211,8 +246,9 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
         {/* Control panel content */}
         {isExpanded && (
-          <div className="p-3 space-y-3" style={{ fontSize: '13px' }}>
+          <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
             
+            {/* Wallet Connection Section */}
             <div className="space-y-2">
               <ConnectButton
                 className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
@@ -221,49 +257,106 @@ export function WalletTerminal(props: WalletTerminalProps) {
             </div>
 
             {currentAccount && (
-              <div className="space-y-2">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                  Balance
-                </label>
-                <div className="flex justify-between items-center p-3 rounded-lg bg-black/20 border border-white/10">
-                  <span className="font-medium control-label-primary">{balance} SUI</span>
+              <>
+                {/* Account Info Section */}
+                <div className="space-y-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+                      <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+                        Sui Balance
+                      </label>
+                    </div>
+                    <div className="flex justify-between items-baseline pl-3.5">
+                      <span className="text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
+                      <span className="text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {/* Kiosk Profits Section */}
+                {kioskId && (
+                  <div className="space-y-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+                        <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+                          Kiosk Profits
+                        </label>
+                      </div>
+                      <div className="flex justify-between items-baseline pl-3.5">
+                        <span className="text-2xl font-bold text-white/90 tracking-tight">
+                          {kioskData?.kiosk?.profits !== undefined && kioskData?.kiosk?.profits !== null
+                            ? (Number(kioskData.kiosk.profits) / SUI_TO_MIST).toFixed(2)
+                            : '0.00'}
+                        </span>
+                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
+                      </div>
+                    </div>
+                    
+                    {/* Profit Actions */}
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <button
+                        className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>Withdraw Directly</span>
+                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
+                        >
+                          Save to PavSUI
+                        </button>
+                        <button
+                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
+                        >
+                          Save to PavUSDB
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
+            {/* Kiosk Info Section */}
             {kioskId && (
-              <div className="space-y-2">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                  Kiosk ID
-                </label>
-                <div className="flex justify-between items-center p-3 rounded-lg bg-black/20 border border-white/10">
-                  <div className="flex items-center space-x-8">
-                    <span className="text-sm font-medium control-label-primary truncate max-w-[200px]">
+              <div className="space-y-2 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+                  <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+                    Kiosk Information
+                  </label>
+                </div>
+                <div className="pl-3.5 space-y-2">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                    <span className="text-xs font-mono text-white/60 truncate max-w-[180px]">
                       {kioskId.length > 20 ? `${kioskId.slice(0, 8)}...${kioskId.slice(-10)}` : kioskId}
                     </span>
                     <div className="relative">
                       <button
                         onClick={handleCopyKioskId}
-                        className="px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+                        className="px-2 py-1 text-[10px] rounded bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 transition-colors border border-white/10"
                         title="Copy Kiosk ID"
                       >
-                        copy
+                        COPY
                       </button>
-                      {/* Tooltip */}
                       {showCopyTooltip && (
                         <div 
                           className={`absolute -top-10 left-1/3 z-30 ${
                             isTooltipFadingOut ? 'tooltip-fade-out' : 'tooltip-fade-in'
                           }`}
                         >
-                          <div className="glass-slab rounded-md px-3 py-1 border border-white/20 backdrop-blur-sm min-w-max">
+                          <div className="rounded-md px-3 py-1.5 border border-white/30 backdrop-blur-md min-w-max bg-black/70">
                             <div className="text-xs font-medium tracking-wider uppercase text-white/90 silver-glow whitespace-nowrap">
                               Kiosk ID Copied!
                             </div>
                           </div>
-                          {/* Arrow */}
                           <div className="absolute top-full left-2/3 transform -translate-x-1/2 -mt-px">
-                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/20"></div>
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/30"></div>
                           </div>
                         </div>
                       )}
@@ -273,55 +366,46 @@ export function WalletTerminal(props: WalletTerminalProps) {
               </div>
             )}
 
-            {/* Save Changes Section */}
-            <div className="space-y-2">
-              <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
-                {hasUnsavedChanges ? 'Save Configuration on Sui' : 'Save Configuration on Sui'}
-              </label>
-              {saveSuccess && (
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-sm font-medium tracking-wide uppercase control-label-secondary">
-                    Configuration saved successfully
-                  </div>
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            {/* Save Configuration Section */}
+            <div className="space-y-3 pt-3 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+                  <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+                    Configuration
+                  </label>
                 </div>
-              )}
-              {hasUnsavedChanges && !saveSuccess && (
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-sm font-medium tracking-wide uppercase control-label-secondary">
-                    Unsaved changes ({props.objectChanges.size})
+                {hasUnsavedChanges && !saveSuccess && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-medium text-white/50">{props.objectChanges.size} Changes</span>
+                    <div className="w-1.5 h-1.5 bg-yellow-400/70 rounded-full animate-pulse"></div>
                   </div>
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                </div>
-              )}
+                )}
+                {saveSuccess && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-medium text-white/60">Saved</span>
+                    <div className="w-1.5 h-1.5 bg-green-400/70 rounded-full"></div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={prepareSaveTransaction}
                 disabled={isPreparingSave}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:hover:bg-white/5 text-white/80 disabled:text-white/50 border border-white/20 disabled:border-white/10 uppercase tracking-widest transition-colors flex items-center justify-center space-x-2 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 disabled:bg-white/5 text-white/80 disabled:text-white/50 border border-white/15 hover:border-white/25 disabled:border-white/10 transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                 style={{ minHeight: '40px' }}
               >
                 {isPreparingSave ? (
                   <>
                     <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Preparing...</span>
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-3 h-3"
-                    >
-                      <path
-                        d="M5 13l4 4L19 7"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span>Save Changes</span>
+                    <span>Save to Sui</span>
                   </>
                 )}
               </button>
@@ -363,14 +447,47 @@ export function WalletTerminal(props: WalletTerminalProps) {
               </div>
             )}
 
-            {/* Back To Home Button at the bottom */}
-            <div className="border-t border-white/10 pt-3 mt-3">
+            {/* Navigation Section */}
+            <div className="space-y-2 pt-3 border-t border-white/5">
+              {kioskId && (
+                <div className="relative">
+                  <button
+                    onClick={handleSharePavilion}
+                    className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                      <path d="M18 8a3 3 0 100-6 3 3 0 000 6zM6 15a3 3 0 100-6 3 3 0 000 6zM18 22a3 3 0 100-6 3 3 0 000 6zM8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Share Pavilion</span>
+                  </button>
+                  {showShareTooltip && (
+                    <div 
+                      className={`absolute -top-12 left-1/2 z-30 ${
+                        isShareTooltipFadingOut ? 'tooltip-fade-out' : 'tooltip-fade-in'
+                      }`}
+                      style={{ transform: 'translateX(-30%)' }}
+                    >
+                      <div className="rounded-md px-3 py-1.5 border border-white/30 backdrop-blur-md min-w-max bg-black/70">
+                        <div className="text-xs font-medium tracking-wider uppercase text-white/90 silver-glow whitespace-nowrap">
+                          Share Link Copied!
+                        </div>
+                      </div>
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-px">
+                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/30"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <button
                 onClick={() => router.push('/')}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
-                style={{ minHeight: '40px' }}
+                className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200 flex items-center justify-center gap-2"
               >
-                ← BACK TO HOME
+                <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Back to Home</span>
               </button>
             </div>
           </div>
