@@ -30,7 +30,7 @@ export function DesignerSection() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setError('請上傳圖片文件');
+        setError('Please upload an image file');
         return;
       }
       setImageFile(file);
@@ -42,7 +42,7 @@ export function DesignerSection() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.name.endsWith('.glb')) {
-        setError('請上傳 .glb 文件');
+        setError('Please upload a .glb file');
         return;
       }
       setGlbFile(file);
@@ -58,42 +58,42 @@ export function DesignerSection() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Walrus 上傳失敗: ${response.statusText} - ${errorText}`);
+      throw new Error(`Walrus upload failed: ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
     
-    // Walrus 返回格式處理
+    // Handle Walrus response format
     if (result.newlyCreated?.blobObject?.blobId) {
       return result.newlyCreated.blobObject.blobId;
     } else if (result.alreadyCertified?.blobId) {
       return result.alreadyCertified.blobId;
     }
     
-    throw new Error('無法從 Walrus 響應中獲取 blob ID');
+    throw new Error('Failed to get blob ID from Walrus response');
   };
 
   const handleMint = async () => {
     if (!currentAccount) {
-      setError('請先連接錢包');
+      setError('Please connect your wallet first');
       return;
     }
 
-    // 驗證必填字段
+    // Validate required fields
     if (!name.trim()) {
-      setError('請填寫 NFT 名稱');
+      setError('NFT name is required');
       return;
     }
     if (!description.trim()) {
-      setError('請填寫 NFT 描述');
+      setError('NFT description is required');
       return;
     }
     if (!imageFile) {
-      setError('請上傳圖片');
+      setError('Please upload an image');
       return;
     }
     if (designerMode === '3d' && !glbFile) {
-      setError('請上傳 3D 模型文件 (.glb)');
+      setError('Please upload a 3D model (.glb)');
       return;
     }
 
@@ -102,35 +102,35 @@ export function DesignerSection() {
       setError(null);
       setUploading(true);
 
-      // 上傳圖片到 Walrus
-      setUploadProgress('上傳圖片到 Walrus...');
+      // Upload image to Walrus
+      setUploadProgress('Uploading image to Walrus...');
       const imageBlobId = await uploadToWalrus(imageFile);
       const imageUrl = `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${imageBlobId}`;
 
       let glbBlobId = '';
       if (designerMode === '3d' && glbFile) {
-        setUploadProgress('上傳 3D 模型到 Walrus...');
+        setUploadProgress('Uploading 3D model to Walrus...');
         glbBlobId = await uploadToWalrus(glbFile);
       }
 
       setUploading(false);
-      setUploadProgress('準備鑄造 NFT...');
+      setUploadProgress('Preparing to mint NFT...');
 
       const tx = new Transaction();
 
       if (designerMode === '2d') {
-        // 檢查 package ID 是否已配置
+        // Check if package ID is configured
         if (!NFT_CONTRACTS.DEMO_NFT_2D.packageId) {
-          throw new Error('2D NFT 合約 Package ID 尚未配置，請先部署合約並設置環境變數 NEXT_PUBLIC_DEMO_NFT_2D_PACKAGE_ID');
+          throw new Error('2D NFT contract Package ID not configured. Please deploy the contract and set NEXT_PUBLIC_DEMO_NFT_2D_PACKAGE_ID');
         }
 
-        // 解析 attributes
+        // Parse attributes
         const attributesArray = attributes
           .split(',')
           .map(a => a.trim())
           .filter(a => a.length > 0);
         
-        // 調用 2D NFT mint 函數
+        // Call 2D NFT mint function
         tx.moveCall({
           target: `${NFT_CONTRACTS.DEMO_NFT_2D.packageId}::${NFT_CONTRACTS.DEMO_NFT_2D.module}::${NFT_CONTRACTS.DEMO_NFT_2D.mintFunction}`,
           arguments: [
@@ -142,12 +142,12 @@ export function DesignerSection() {
           ],
         });
       } else {
-        // 檢查 package ID 是否已配置
+        // Check if package ID is configured
         if (!NFT_CONTRACTS.DEMO_NFT_3D.packageId) {
-          throw new Error('3D NFT 合約 Package ID 尚未配置，請先部署合約並設置環境變數 NEXT_PUBLIC_DEMO_NFT_3D_PACKAGE_ID');
+          throw new Error('3D NFT contract Package ID not configured. Please deploy the contract and set NEXT_PUBLIC_DEMO_NFT_3D_PACKAGE_ID');
         }
         
-        // 調用 3D NFT mint 函數
+        // Call 3D NFT mint function
         tx.moveCall({
           target: `${NFT_CONTRACTS.DEMO_NFT_3D.packageId}::${NFT_CONTRACTS.DEMO_NFT_3D.module}::${NFT_CONTRACTS.DEMO_NFT_3D.mintFunction}`,
           arguments: [
@@ -167,10 +167,10 @@ export function DesignerSection() {
         {
           onSuccess: (result) => {
             console.log('Mint success:', result);
-            setSuccess(`NFT 鑄造成功! Digest: ${result.digest}`);
+            setSuccess(`NFT minted successfully! Digest: ${result.digest}`);
             setUploadProgress('');
             
-            // 重置表單
+            // Reset form
             setName('');
             setDescription('');
             setImageFile(null);
@@ -181,14 +181,14 @@ export function DesignerSection() {
           },
           onError: (error) => {
             console.error('Mint error:', error);
-            setError(`鑄造失敗: ${error.message}`);
+            setError(`Mint failed: ${error.message}`);
             setUploadProgress('');
           },
         }
       );
     } catch (err: any) {
       console.error('Upload or mint error:', err);
-      setError(`錯誤: ${err.message || '未知錯誤'}`);
+      setError(`Error: ${err.message || 'Unknown error'}`);
       setUploading(false);
       setUploadProgress('');
     } finally {
@@ -205,10 +205,10 @@ export function DesignerSection() {
       }}
     >
       <div className="flex flex-col h-full">
-        {/* 標題和模式切換 */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Title and Mode Toggle */}
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-base md:text-lg font-semibold tracking-wide">Designer Mode</div>
+            <div className="text-base md:text-lg font-semibold tracking-wide">Mint NFT</div>
             <div className="mt-2 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
               <button
                 onClick={() => setDesignerMode('2d')}
@@ -238,90 +238,78 @@ export function DesignerSection() {
 
         {/* Success Message */}
         {success && (
-          <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-            <div className="flex items-center justify-between">
-              <span className="text-green-400 text-[11px] tracking-wide">{success}</span>
-              <button
-                onClick={() => setSuccess(null)}
-                className="text-green-400/60 hover:text-green-400 transition-colors"
-                aria-label="關閉成功消息"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+          <div className="mb-3 flex items-center justify-center">
+            <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">{success}</span>
+            <a
+              href={`https://suiscan.xyz/testnet/tx/${success.split('Digest: ')[1]}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="View on SuiScan"
+              className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
+            >
+              <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
+            </a>
           </div>
         )}
 
         {/* Form Fields */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
+        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 mt-2">
           {/* Name */}
           <div className="space-y-2">
-            <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85">
-              NFT Name:
-            </label>
+            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Name:</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="輸入 NFT 名稱"
-              className="w-full bg-transparent px-3 py-2 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 text-white text-sm placeholder:text-white/40"
+              placeholder="Enter NFT name"
+              className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85">
-              Description:
-            </label>
+            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Description:</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="輸入 NFT 描述"
-              rows={3}
-              className="w-full bg-transparent px-3 py-2 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 text-white text-sm placeholder:text-white/40 resize-none"
+              placeholder="Enter NFT description"
+              rows={2}
+              className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 resize-none"
             />
           </div>
 
           {/* Attributes (2D only) */}
           {designerMode === '2d' && (
             <div className="space-y-2">
-              <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85">
-                Attributes:
-              </label>
+              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Attributes:</label>
               <input
                 value={attributes}
                 onChange={(e) => setAttributes(e.target.value)}
-                placeholder="用逗號分隔，例如：Rare, Blue, Limited"
-                className="w-full bg-transparent px-3 py-2 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 text-white text-sm placeholder:text-white/40"
+                placeholder="Comma separated (e.g., Rare, Blue, Limited)"
+                className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
               />
             </div>
           )}
 
           {/* Image Upload */}
           <div className="space-y-2">
-            <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85">
-              Image:
+            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Image:</label>
+            <label className="flex-1 cursor-pointer block">
+              <div className="w-full px-0 py-1.5 border-0 border-b border-white/60 hover:border-white transition-colors text-white/70 text-sm flex items-center justify-between">
+                <span className="text-[13px]">{imageFile ? imageFile.name : 'Choose image file'}</span>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
             </label>
-            <div className="flex items-center gap-2">
-              <label className="flex-1 cursor-pointer">
-                <div className="w-full px-3 py-2 border border-white/20 rounded-lg hover:border-white/40 transition-colors text-white/60 text-sm flex items-center justify-between">
-                  <span>{imageFile ? imageFile.name : '選擇圖片文件'}</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
             {imageFile && (
-              <div className="text-[11px] text-white/50 tracking-wide">
-                已選擇: {imageFile.name} ({(imageFile.size / 1024).toFixed(2)} KB)
+              <div className="text-[11px] text-white/50 tracking-wide pl-0">
+                Selected: {imageFile.name} ({(imageFile.size / 1024).toFixed(2)} KB)
               </div>
             )}
           </div>
@@ -329,28 +317,24 @@ export function DesignerSection() {
           {/* GLB Upload (3D only) */}
           {designerMode === '3d' && (
             <div className="space-y-2">
-              <label className="block text-[14px] font-semibold uppercase tracking-widest text-white/85">
-                3D Model (.glb):
+              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">3D Model (.glb):</label>
+              <label className="flex-1 cursor-pointer block">
+                <div className="w-full px-0 py-1.5 border-0 border-b border-white/60 hover:border-white transition-colors text-white/70 text-sm flex items-center justify-between">
+                  <span className="text-[13px]">{glbFile ? glbFile.name : 'Choose .glb file'}</span>
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <input
+                  type="file"
+                  accept=".glb"
+                  onChange={handleGlbChange}
+                  className="hidden"
+                />
               </label>
-              <div className="flex items-center gap-2">
-                <label className="flex-1 cursor-pointer">
-                  <div className="w-full px-3 py-2 border border-white/20 rounded-lg hover:border-white/40 transition-colors text-white/60 text-sm flex items-center justify-between">
-                    <span>{glbFile ? glbFile.name : '選擇 .glb 文件'}</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".glb"
-                    onChange={handleGlbChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
               {glbFile && (
-                <div className="text-[11px] text-white/50 tracking-wide">
-                  已選擇: {glbFile.name} ({(glbFile.size / 1024).toFixed(2)} KB)
+                <div className="text-[11px] text-white/50 tracking-wide pl-0">
+                  Selected: {glbFile.name} ({(glbFile.size / 1024).toFixed(2)} KB)
                 </div>
               )}
             </div>
@@ -358,43 +342,50 @@ export function DesignerSection() {
 
           {/* Upload Progress */}
           {uploading && uploadProgress && (
-            <div className="text-[12px] text-white/70 tracking-wide flex items-center gap-2">
-              <div className="loading-spinner" />
+            <div className="text-white/70 text-xs tracking-widest uppercase flex items-center gap-2">
+              <span className="loading-spinner" />
               <span>{uploadProgress}</span>
-            </div>
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
-              <span className="text-red-400 text-[11px] tracking-wide flex-1">{error}</span>
-              <button
-                onClick={() => setError(null)}
-                className="text-red-400/60 hover:text-red-400 transition-colors"
-                aria-label="關閉錯誤"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
           )}
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-red-400 text-[11px] tracking-wide flex-1">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400/60 hover:text-red-400 transition-colors"
+              aria-label="Close error"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Mint Button */}
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-white/70 text-xs tracking-widest uppercase">
+            {minting || uploading ? 'Processing...' : (designerMode === '2d' ? 'Mint 2D NFT on Sui' : 'Mint 3D NFT on Sui')}
+          </div>
           <button
             onClick={handleMint}
             disabled={minting || uploading || !currentAccount}
-            className="px-6 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-semibold uppercase tracking-widest hover:bg-white/15 hover:border-white/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="group relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20"
           >
             {minting || uploading ? (
-              <>
-                <div className="loading-spinner" />
-                <span>處理中...</span>
-              </>
+              <div className="loading-spinner" />
             ) : (
-              <span>鑄造 NFT</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5"
+              >
+                <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             )}
           </button>
         </div>
