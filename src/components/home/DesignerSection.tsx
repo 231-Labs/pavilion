@@ -416,16 +416,14 @@ export function DesignerSection() {
                 
                 {/* Selector - Centered */}
                 <div className="flex justify-center">
-                  <div className="w-full max-w-md">
-                    <KioskSelector
-                      kiosks={pavilionKiosks}
-                      loading={fetchingKiosks}
-                      selectedKioskId={selectedKioskId}
-                      onSelectKiosk={setSelectedKioskId}
-                      emptyMessage="No pavilions found"
-                      showNames={true}
-                    />
-                  </div>
+                  <KioskSelector
+                    kiosks={pavilionKiosks}
+                    loading={fetchingKiosks}
+                    selectedKioskId={selectedKioskId}
+                    onSelectKiosk={setSelectedKioskId}
+                    emptyMessage="No pavilions found"
+                    showNames={true}
+                  />
                 </div>
                 
                 {/* Action Buttons */}
@@ -503,7 +501,7 @@ export function DesignerSection() {
                         href={`https://suiscan.xyz/testnet/tx/${placeSuccess}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-green-400/80 hover:text-green-400 uppercase tracking-widest transition-colors whitespace-nowrap"
+                        className="text-[11px] text-white/70 hover:text-white uppercase tracking-widest transition-colors whitespace-nowrap"
                       >
                         View Place TX on Explorer →
                       </a>
