@@ -71,16 +71,12 @@ export function DesignerSection() {
         typeArguments: [nftType],
       });
 
-      console.log('🏛️ Placing NFT in kiosk:', { nftId: mintedNftId, kioskId: selectedKioskId });
-
       signAndExecuteTransaction(
         {
           transaction: tx,
         },
         {
           onSuccess: (result: any) => {
-            console.log('✅ NFT placed in kiosk successfully:', result);
-            // Show placement success message
             setPlaceSuccess(result.digest);
             
             // Reset after delay
@@ -96,13 +92,11 @@ export function DesignerSection() {
             }, 8000);
           },
           onError: (error) => {
-            console.error('❌ Place in kiosk error:', error);
             setError(`Failed to place in kiosk: ${error.message}`);
           },
         }
       );
     } catch (err: any) {
-      console.error('Place in kiosk error:', err);
       setError(`Error: ${err.message || 'Unknown error'}`);
     } finally {
       setPlacingInKiosk(false);
@@ -134,51 +128,25 @@ export function DesignerSection() {
   };
 
   const uploadToWalrus = async (file: File): Promise<string> => {
-    console.log('🚀 Starting Walrus upload:', {
-      fileName: file.name,
-      fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      fileType: file.type,
-      epochs: 10
-    });
-
     const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/blobs?epochs=10`, {
       method: 'PUT',
       body: file,
     });
 
-    console.log('📡 Walrus response status:', response.status, response.statusText);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Walrus upload failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
       throw new Error(`Walrus upload failed: ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('📦 Walrus response data:', result);
     
     // Handle Walrus response format
     if (result.newlyCreated?.blobObject?.blobId) {
-      const blobId = result.newlyCreated.blobObject.blobId;
-      console.log('✅ Walrus upload successful (newly created):', {
-        blobId,
-        url: `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${blobId}`
-      });
-      return blobId;
+      return result.newlyCreated.blobObject.blobId;
     } else if (result.alreadyCertified?.blobId) {
-      const blobId = result.alreadyCertified.blobId;
-      console.log('✅ Walrus upload successful (already certified):', {
-        blobId,
-        url: `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${blobId}`
-      });
-      return blobId;
+      return result.alreadyCertified.blobId;
     }
     
-    console.error('❌ Failed to extract blob ID from Walrus response:', result);
     throw new Error('Failed to get blob ID from Walrus response');
   };
 
@@ -269,7 +237,6 @@ export function DesignerSection() {
         },
         {
           onSuccess: async (result: any) => {
-            console.log('✅ Mint success:', result);
             setSuccess(result.digest);
             setUploadProgress('');
             
@@ -278,7 +245,6 @@ export function DesignerSection() {
             const fetchTransactionWithRetry = async (digest: string, maxRetries = 5, delay = 1000) => {
               for (let i = 0; i < maxRetries; i++) {
                 try {
-                  console.log(`🔍 Fetching transaction details (attempt ${i + 1}/${maxRetries}):`, digest);
                   const txDetails = await suiClient.getTransactionBlock({
                     digest,
                     options: {
@@ -289,7 +255,6 @@ export function DesignerSection() {
                   return txDetails;
                 } catch (e: any) {
                   if (i === maxRetries - 1) throw e;
-                  console.log(`⏳ Transaction not yet indexed, waiting ${delay}ms before retry...`);
                   await new Promise(resolve => setTimeout(resolve, delay));
                 }
               }
@@ -297,11 +262,7 @@ export function DesignerSection() {
             
             try {
               const txDetails = await fetchTransactionWithRetry(result.digest);
-              
-              console.log('📦 Transaction details:', txDetails);
               const changes = txDetails?.objectChanges ?? [];
-              console.log('📦 Object changes:', changes);
-              console.log('📦 Total changes count:', changes.length);
               
               // Find the minted NFT
               const nftChange = changes.find((ch: any) => 
@@ -314,28 +275,19 @@ export function DesignerSection() {
               
               if (nftChange?.objectId) {
                 const nftId = nftChange.objectId as string;
-                console.log('✅ Minted NFT ID:', nftId);
-                console.log('✅ NFT objectType:', nftChange.objectType);
                 setMintedNftId(nftId);
-              } else {
-                console.warn('⚠️ Could not find minted NFT in objectChanges');
-                console.warn('⚠️ All changes:', changes);
               }
             } catch (e) {
-              console.error('❌ Failed to fetch transaction details after retries:', e);
+              // Silently fail - user can still see the transaction link
             }
-            
-            // Don't reset form yet, wait for user to place in pavilion
           },
           onError: (error) => {
-            console.error('❌ Mint error:', error);
             setError(`Mint failed: ${error.message}`);
             setUploadProgress('');
           },
         }
       );
     } catch (err: any) {
-      console.error('Upload or mint error:', err);
       setError(`Error: ${err.message || 'Unknown error'}`);
       setUploading(false);
       setUploadProgress('');
@@ -430,7 +382,7 @@ export function DesignerSection() {
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <button
                     onClick={placeInKiosk}
-                    disabled={!selectedKioskId || placingInKiosk || placeSuccess}
+                    disabled={!selectedKioskId || placingInKiosk || !!placeSuccess}
                     className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
                   >
                     {placingInKiosk ? (
