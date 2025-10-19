@@ -19,7 +19,7 @@ export function DesignerSection() {
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   
-  // 3D NFT 額外字段
+  // 3D NFT GLB File
   const [glbFile, setGlbFile] = useState<File | null>(null);
   
   const [uploading, setUploading] = useState(false);
@@ -319,7 +319,7 @@ export function DesignerSection() {
             {/* GLB Upload (3D only) */}
             {designerMode === '3d' && (
               <div className="space-y-2">
-                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">3D Model (.glb):</label>
+                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">3D Model:</label>
                 <label className="cursor-pointer block">
                   <div className="relative group h-full">
                     <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200 h-full min-h-[88px] flex items-center">
@@ -402,8 +402,8 @@ export function DesignerSection() {
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5 text-white/80 transition-all duration-200 group-hover:scale-110 group-hover:text-white"
               >
-                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
           </button>
