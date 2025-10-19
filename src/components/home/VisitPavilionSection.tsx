@@ -71,10 +71,9 @@ export function VisitPavilionSection({ visitSubMode, setVisitSubMode, onError }:
 
   return (
     <div 
-      className="w-full slab-segment flex-1"
+      className="w-full slab-segment flex flex-col"
       style={{
-        padding: 'clamp(12px, 2.5vw, 20px)',
-        minHeight: 'clamp(200px, 25vh, 300px)'
+        padding: 'clamp(12px, 2.5vw, 20px)'
       }}
     >
       <div className="flex items-center justify-between">

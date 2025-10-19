@@ -71,35 +71,38 @@ export default function Home() {
                 {/* Mode Toggle (Collector / Designer) */}
               <ModeToggle mode={mode} setMode={setMode} />
 
-              {mode === 'collector' ? (
-                <>
-                  {/* Create Pavilion */}
-                  <CreatePavilionSection 
-                    createSubMode={createSubMode}
-                    setCreateSubMode={setCreateSubMode}
-                  />
+              {/* Content Container with Fixed Height */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {mode === 'collector' ? (
+                  <>
+                    {/* Create Pavilion */}
+                    <CreatePavilionSection 
+                      createSubMode={createSubMode}
+                      setCreateSubMode={setCreateSubMode}
+                    />
 
-                  {/* Error Display */}
-                  <ErrorDisplay error={error} />
+                    {/* Error Display */}
+                    <ErrorDisplay error={error} />
 
-                  {/* Divider */}
-                  <div className="flex justify-center items-center py-2">
-                    <div className="slab-divider w-full" />
-                  </div>
+                    {/* Divider */}
+                    <div className="flex justify-center items-center py-2">
+                      <div className="slab-divider w-full" />
+                    </div>
 
-                  {/* Visit Pavilion */}
-                  <VisitPavilionSection 
-                    visitSubMode={visitSubMode}
-                    setVisitSubMode={setVisitSubMode}
-                    onError={setError}
-                  />
-                </>
-              ) : (
-                <>
-                  {/* Designer Mode */}
-                  <DesignerSection />
-                </>
-              )}
+                    {/* Visit Pavilion */}
+                    <VisitPavilionSection 
+                      visitSubMode={visitSubMode}
+                      setVisitSubMode={setVisitSubMode}
+                      onError={setError}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {/* Designer Mode */}
+                    <DesignerSection />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </section>

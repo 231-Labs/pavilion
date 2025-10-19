@@ -190,10 +190,9 @@ export function DesignerSection() {
 
   return (
     <div 
-      className="w-full slab-segment flex-1 flex flex-col"
+      className="w-full slab-segment flex flex-col h-full overflow-y-auto scrollbar-hide"
       style={{
-        padding: 'clamp(12px, 2.5vw, 20px)',
-        minHeight: 'clamp(200px, 25vh, 300px)'
+        padding: 'clamp(12px, 2.5vw, 20px)'
       }}
     >
       <div className="flex flex-col h-full">
