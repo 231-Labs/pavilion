@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { NFT_CONTRACTS, WALRUS_CONFIG } from '../../config/nft-contracts';
 import { useKioskClient } from '../providers/KioskClientProvider';
@@ -11,6 +11,7 @@ type DesignerMode = '2d' | '3d';
 export function DesignerSection() {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const suiClient = useSuiClient();
   const kioskClient = useKioskClient();
   const { 
     pavilionKiosks, 
@@ -254,56 +255,47 @@ export function DesignerSection() {
           transaction: tx,
         },
         {
-          onSuccess: (result: any) => {
+          onSuccess: async (result: any) => {
             console.log('✅ Mint success:', result);
-            console.log('✅ Full result object:', JSON.stringify(result, null, 2));
             setSuccess(result.digest);
             setUploadProgress('');
             
-            // Extract minted NFT object ID
+            // Fetch full transaction details to get objectChanges
             try {
-              const changes = result?.objectChanges ?? result?.effects?.created ?? [];
+              console.log('🔍 Fetching transaction details for digest:', result.digest);
+              const txDetails = await suiClient.getTransactionBlock({
+                digest: result.digest,
+                options: {
+                  showObjectChanges: true,
+                  showEffects: true,
+                },
+              });
+              
+              console.log('📦 Transaction details:', txDetails);
+              const changes = txDetails?.objectChanges ?? [];
               console.log('📦 Object changes:', changes);
               console.log('📦 Total changes count:', changes.length);
               
-              // Log all created objects
-              const createdObjects = changes.filter((ch: any) => ch.type === 'created' || ch.owner);
-              console.log('🆕 Created objects:', createdObjects);
-              
-              // Try to find NFT with different matching strategies
-              let nftChange = changes.find((ch: any) => 
-                (ch.type === 'created' || ch.owner) && 
-                (ch.objectType?.includes('DemoNFT2D') || ch.objectType?.includes('DemoNFT3D'))
+              // Find the minted NFT
+              const nftChange = changes.find((ch: any) => 
+                ch.type === 'created' && 
+                (ch.objectType?.includes('DemoNFT2D') || 
+                 ch.objectType?.includes('DemoNFT3D') ||
+                 ch.objectType?.includes('demo_nft_2d') ||
+                 ch.objectType?.includes('demo_nft_3d'))
               );
               
-              // If not found, try alternative matching
-              if (!nftChange) {
-                console.log('⚠️ First attempt failed, trying alternative matching...');
-                nftChange = changes.find((ch: any) => 
-                  (ch.type === 'created' || ch.owner) && 
-                  (ch.objectType?.includes('demo_nft_2d') || ch.objectType?.includes('demo_nft_3d'))
-                );
-              }
-              
-              // Try with reference
-              if (!nftChange && result?.effects?.created) {
-                nftChange = result.effects.created.find((obj: any) => 
-                  obj.reference?.objectId
-                );
-              }
-              
-              if (nftChange?.objectId || nftChange?.reference?.objectId) {
-                const nftId = nftChange.objectId || nftChange.reference?.objectId;
+              if (nftChange?.objectId) {
+                const nftId = nftChange.objectId;
                 console.log('✅ Minted NFT ID:', nftId);
                 console.log('✅ NFT objectType:', nftChange.objectType);
                 setMintedNftId(nftId);
-                console.log('✅ State updated, mintedNftId should now be:', nftId);
               } else {
                 console.warn('⚠️ Could not find minted NFT in objectChanges');
-                console.warn('⚠️ All object types:', createdObjects.map((c: any) => c.objectType));
+                console.warn('⚠️ All changes:', changes);
               }
             } catch (e) {
-              console.error('❌ Failed to extract NFT ID:', e);
+              console.error('❌ Failed to fetch transaction details:', e);
             }
             
             // Reset form
