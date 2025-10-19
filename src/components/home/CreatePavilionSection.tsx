@@ -125,7 +125,7 @@ export function CreatePavilionSection({ createSubMode, setCreateSubMode }: Creat
               </div>
             )}
             {createSubMode === 'new' && !txDigest ? (
-              <div className="mt-4 mb-6 flex flex-col flex-1">
+              <div className="mt-4 mb-2 flex flex-col flex-1">
                 <div className="space-y-2">
                   <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Pavilion Name:</label>
                   <input
