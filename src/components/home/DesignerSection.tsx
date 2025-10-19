@@ -380,8 +380,6 @@ export function DesignerSection() {
                   : 'Create 3D NFT with image and model assets'}
               </span>
             </div>
-            {/* Divider */}
-            <div className="mt-4 border-t border-white/10"></div>
           </div>
         </div>
 
@@ -391,18 +389,25 @@ export function DesignerSection() {
           // Place in Pavilion Section (replaces form after successful mint)
           <div className="flex-1 flex flex-col justify-center">
             <div className="w-full space-y-8">
-              {/* Success Title */}
-              <div className="space-y-3">
-                <div className="text-white/90 text-base font-semibold uppercase tracking-widest">
-                  Object Published Successfully
-                </div>
-                <div className="text-white/60 text-xs tracking-wide">
-                  Select a pavilion to place your NFT
+              {/* Success Title with Border Lines */}
+              <div className="relative">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-white/20"></div>
+                  <div className="text-white/90 text-[13px] font-semibold uppercase tracking-[0.2em] whitespace-nowrap px-2">
+                    Object Published Successfully
+                  </div>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/20 to-white/20"></div>
                 </div>
               </div>
               
-              {/* Selector and Action Buttons */}
-              <div className="space-y-6">
+              {/* Content Area with Border */}
+              <div className="border border-white/15 rounded-lg bg-white/[0.02] backdrop-blur-sm p-6 space-y-6">
+                {/* Instruction Text */}
+                <div className="text-white/60 text-xs tracking-wide text-center">
+                  Select a pavilion to place your NFT
+                </div>
+                
+                {/* Selector */}
                 <div className="w-full">
                   <KioskSelector
                     kiosks={pavilionKiosks}
@@ -414,7 +419,8 @@ export function DesignerSection() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-center gap-6">
+                {/* Action Buttons */}
+                <div className="flex items-center justify-center gap-6 pt-2">
                   <button
                     onClick={placeInKiosk}
                     disabled={!selectedKioskId || placingInKiosk}
@@ -448,17 +454,21 @@ export function DesignerSection() {
                 </div>
               </div>
               
-              {/* Transaction Link */}
+              {/* Transaction Link with Border Lines */}
               {success && (
-                <div className="text-center pt-4">
-                  <a
-                    href={`https://suiscan.xyz/testnet/tx/${success}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-white/70 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
-                  >
-                    View Transaction on Explorer →
-                  </a>
+                <div className="relative">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10"></div>
+                    <a
+                      href={`https://suiscan.xyz/testnet/tx/${success}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-white/70 hover:text-white uppercase tracking-widest transition-colors whitespace-nowrap"
+                    >
+                      View on Explorer →
+                    </a>
+                    <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10"></div>
+                  </div>
                 </div>
               )}
             </div>
