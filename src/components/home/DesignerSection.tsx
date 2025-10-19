@@ -57,7 +57,7 @@ export function DesignerSection() {
       epochs: 10
     });
 
-    const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/store?epochs=10`, {
+    const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/blobs?epochs=10`, {
       method: 'PUT',
       body: file,
     });
