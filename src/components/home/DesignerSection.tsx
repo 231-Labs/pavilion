@@ -50,25 +50,51 @@ export function DesignerSection() {
   };
 
   const uploadToWalrus = async (file: File): Promise<string> => {
+    console.log('🚀 Starting Walrus upload:', {
+      fileName: file.name,
+      fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      fileType: file.type,
+      epochs: 10
+    });
+
     const response = await fetch(`${WALRUS_CONFIG.PUBLISHER_URL}/v1/store?epochs=10`, {
       method: 'PUT',
       body: file,
     });
 
+    console.log('📡 Walrus response status:', response.status, response.statusText);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ Walrus upload failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
       throw new Error(`Walrus upload failed: ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('📦 Walrus response data:', result);
     
     // Handle Walrus response format
     if (result.newlyCreated?.blobObject?.blobId) {
-      return result.newlyCreated.blobObject.blobId;
+      const blobId = result.newlyCreated.blobObject.blobId;
+      console.log('✅ Walrus upload successful (newly created):', {
+        blobId,
+        url: `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${blobId}`
+      });
+      return blobId;
     } else if (result.alreadyCertified?.blobId) {
-      return result.alreadyCertified.blobId;
+      const blobId = result.alreadyCertified.blobId;
+      console.log('✅ Walrus upload successful (already certified):', {
+        blobId,
+        url: `${WALRUS_CONFIG.AGGREGATOR_URL}/v1/blobs/${blobId}`
+      });
+      return blobId;
     }
     
+    console.error('❌ Failed to extract blob ID from Walrus response:', result);
     throw new Error('Failed to get blob ID from Walrus response');
   };
 
