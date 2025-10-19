@@ -272,54 +272,55 @@ export function DesignerSection() {
             </div>
           </div>
 
-          {/* Image Upload */}
-          <div className="space-y-2">
-            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Image:</label>
-            <label className="cursor-pointer block max-w-md">
-              <div className="relative group">
-                <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all">
-                      <svg className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          {/* File Uploads - Side by side in 3D mode */}
+          <div className={designerMode === '3d' ? 'grid grid-cols-2 gap-4' : 'space-y-5'}>
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Image:</label>
+              <label className="cursor-pointer block">
+                <div className="relative group">
+                  <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all">
+                        <svg className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] text-white/80 font-medium truncate">
+                          {imageFile ? imageFile.name : 'Choose image file'}
+                        </div>
+                        {imageFile && (
+                          <div className="text-[11px] text-white/50 mt-0.5">
+                            {(imageFile.size / 1024).toFixed(2)} KB
+                          </div>
+                        )}
+                        {!imageFile && (
+                          <div className="text-[11px] text-white/40 mt-0.5">
+                            PNG, JPG, GIF supported
+                          </div>
+                        )}
+                      </div>
+                      <svg className="w-4 h-4 text-white/40 flex-shrink-0 group-hover:text-white/60 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] text-white/80 font-medium truncate">
-                        {imageFile ? imageFile.name : 'Choose image file'}
-                      </div>
-                      {imageFile && (
-                        <div className="text-[11px] text-white/50 mt-0.5">
-                          {(imageFile.size / 1024).toFixed(2)} KB
-                        </div>
-                      )}
-                      {!imageFile && (
-                        <div className="text-[11px] text-white/40 mt-0.5">
-                          PNG, JPG, GIF supported
-                        </div>
-                      )}
-                    </div>
-                    <svg className="w-4 h-4 text-white/40 flex-shrink-0 group-hover:text-white/60 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
                   </div>
                 </div>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
-            </label>
-          </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
-          {/* GLB Upload (3D only) - Fixed height container */}
-          <div className="space-y-2" style={{ minHeight: designerMode === '3d' ? 'auto' : '0px' }}>
+            {/* GLB Upload (3D only) */}
             {designerMode === '3d' && (
-              <>
+              <div className="space-y-2">
                 <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">3D Model (.glb):</label>
-                <label className="cursor-pointer block max-w-md">
+                <label className="cursor-pointer block">
                   <div className="relative group">
                     <div className="px-4 py-3 border border-white/15 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/25 transition-all duration-200">
                       <div className="flex items-center gap-3">
@@ -356,7 +357,7 @@ export function DesignerSection() {
                     className="hidden"
                   />
                 </label>
-              </>
+              </div>
             )}
           </div>
 
