@@ -387,10 +387,10 @@ export function DesignerSection() {
         {/* Conditional Content: Form or Place in Pavilion */}
         {mintedNftId ? (
           // Place in Pavilion Section (replaces form after successful mint)
-          <div className="flex-1 flex flex-col items-center justify-center px-4">
-            <div className="w-full max-w-lg space-y-8">
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="w-full space-y-8">
               {/* Success Title */}
-              <div className="text-center space-y-3">
+              <div className="space-y-3">
                 <div className="text-white/90 text-base font-semibold uppercase tracking-widest">
                   Object Published Successfully
                 </div>
