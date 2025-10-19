@@ -8,7 +8,6 @@ import { ControllableObject as ControllableObjectType } from '../../types/contro
 import { KioskNftItemsSection } from './sections/KioskNftItemsSection';
 import { ObjectSelector } from './sections/ObjectSelector';
 import { TransformControlsSection } from './sections/TransformControlsSection';
-import { ExternalModelsSection } from './sections/ExternalModelsSection';
 import { useModelLoader } from '../../hooks/scene/useModelLoader';
 import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';
 import { useTransformControls } from '../../hooks/scene/useTransformControls';
@@ -56,7 +55,6 @@ export function SculptureControlPanel({
   // UI state
   const [selectedSculpture, setSelectedSculpture] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [glbPanelExpanded, setGlbPanelExpanded] = useState(false);
   const [controllableObjects, setControllableObjects] = useState<ControllableObject[]>([]);
   const [activeTab, setActiveTab] = useState<'kiosk' | 'objects'>('kiosk');
 
@@ -543,22 +541,6 @@ export function SculptureControlPanel({
             )}
           </div>
         </div>
-      )}
-
-      {/* GLB model loader panel */}
-      {sceneManager && (
-        <ExternalModelsSection
-          expanded={glbPanelExpanded}
-          onToggleExpanded={() => setGlbPanelExpanded(!glbPanelExpanded)}
-          walrusBlobId={modelLoader.walrusBlobId}
-          onWalrusBlobIdChange={modelLoader.setWalrusBlobId}
-          isLoading={modelLoader.isLoading}
-          loadingProgress={modelLoader.loadingProgress}
-          error={modelLoader.error}
-          loadedModels={modelLoader.loadedModels}
-          onLoadWalrus={modelLoader.loadWalrusModel}
-          onLoadAllModels={modelLoader.loadAllModels}
-        />
       )}
     </div>
   );

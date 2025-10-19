@@ -161,7 +161,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
 
             {/* Info about visitor mode */}
             <div className="space-y-2">
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="p-3 rounded-lg bg-black/20 border border-white/10">
                 <p className="text-xs text-white/70 leading-relaxed">
                   You are viewing this pavilion as a visitor. You can browse and purchase listed items.
                 </p>
