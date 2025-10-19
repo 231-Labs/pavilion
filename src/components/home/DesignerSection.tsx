@@ -298,7 +298,7 @@ export function DesignerSection() {
                         </div>
                         {imageFile && (
                           <div className="text-[11px] text-white/50 mt-0.5">
-                            {(imageFile.size / 1024).toFixed(2)} KB
+                            {(imageFile.size / 1024 / 1024).toFixed(2)} MB
                           </div>
                         )}
                         {!imageFile && (
@@ -341,7 +341,7 @@ export function DesignerSection() {
                           </div>
                           {glbFile && (
                             <div className="text-[11px] text-white/50 mt-0.5">
-                              {(glbFile.size / 1024).toFixed(2)} KB
+                              {(glbFile.size / 1024 / 1024).toFixed(2)} MB
                             </div>
                           )}
                           {!glbFile && (
