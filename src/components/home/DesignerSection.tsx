@@ -18,7 +18,6 @@ export function DesignerSection() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [attributes, setAttributes] = useState<string>('');
   
   // 3D NFT 額外字段
   const [glbFile, setGlbFile] = useState<File | null>(null);
@@ -123,12 +122,6 @@ export function DesignerSection() {
         if (!NFT_CONTRACTS.DEMO_NFT_2D.packageId) {
           throw new Error('2D NFT contract Package ID not configured. Please deploy the contract and set NEXT_PUBLIC_DEMO_NFT_2D_PACKAGE_ID');
         }
-
-        // Parse attributes
-        const attributesArray = attributes
-          .split(',')
-          .map(a => a.trim())
-          .filter(a => a.length > 0);
         
         // Call 2D NFT mint function
         tx.moveCall({
@@ -137,7 +130,7 @@ export function DesignerSection() {
             tx.pure.string(name),
             tx.pure.string(description),
             tx.pure.string(imageUrl),
-            tx.pure.vector('string', attributesArray),
+            tx.pure.vector('string', []), // Empty attributes array
             tx.pure.address(currentAccount.address),
           ],
         });
@@ -175,7 +168,6 @@ export function DesignerSection() {
             setDescription('');
             setImageFile(null);
             setGlbFile(null);
-            setAttributes('');
             
             setTimeout(() => setSuccess(null), 5000);
           },
@@ -279,23 +271,6 @@ export function DesignerSection() {
                 className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45 resize-none"
               />
             </div>
-          </div>
-
-          {/* Attributes (2D only) - Fixed height container */}
-          <div style={{ minHeight: designerMode === '2d' ? 'auto' : '0px' }}>
-            {designerMode === '2d' && (
-              <div className="flex items-end gap-4 max-w-2xl">
-                <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Attributes:</label>
-                <div className="flex-1">
-                  <input
-                    value={attributes}
-                    onChange={(e) => setAttributes(e.target.value)}
-                    placeholder="Comma separated (e.g., Rare, Blue, Limited)"
-                    className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Image Upload */}
