@@ -7,6 +7,7 @@ import { BrandSection } from '../components/home/BrandSection';
 import { ModeToggle } from '../components/home/ModeToggle';
 import { CreatePavilionSection } from '../components/home/CreatePavilionSection';
 import { VisitPavilionSection } from '../components/home/VisitPavilionSection';
+import { DesignerSection } from '../components/home/DesignerSection';
 import { ErrorDisplay } from '../components/home/ErrorDisplay';
 import type { Mode, CreateSubMode, VisitSubMode } from '../types/home';
 
@@ -50,7 +51,7 @@ export default function Home() {
               className="glass-slab glass-slab--thermal rounded-xl overflow-hidden self-center w-full flex flex-col"
               style={{
                 padding: 'clamp(16px, 3vw, 32px)',
-                minHeight: 'clamp(480px, 55vh, 720px)'
+                minHeight: 'clamp(600px, 65vh, 850px)'
               }}
               onClick={onSlabClick}
               onMouseMove={(e) => {
@@ -70,26 +71,38 @@ export default function Home() {
                 {/* Mode Toggle (Collector / Designer) */}
               <ModeToggle mode={mode} setMode={setMode} />
 
-                {/* Create Pavilion */}
-              <CreatePavilionSection 
-                createSubMode={createSubMode}
-                setCreateSubMode={setCreateSubMode}
-              />
+              {/* Content Container with Fixed Height */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {mode === 'collector' ? (
+                  <>
+                    {/* Create Pavilion */}
+                    <CreatePavilionSection 
+                      createSubMode={createSubMode}
+                      setCreateSubMode={setCreateSubMode}
+                    />
 
-              {/* Error Display */}
-              <ErrorDisplay error={error} />
+                    {/* Error Display */}
+                    <ErrorDisplay error={error} />
 
-                {/* Divider */}
-                <div className="flex justify-center items-center py-2">
-                  <div className="slab-divider w-full" />
-                </div>
+                    {/* Divider */}
+                    <div className="flex justify-center items-center py-2">
+                      <div className="slab-divider w-full" />
+                    </div>
 
-                {/* Visit Pavilion */}
-              <VisitPavilionSection 
-                visitSubMode={visitSubMode}
-                setVisitSubMode={setVisitSubMode}
-                onError={setError}
-              />
+                    {/* Visit Pavilion */}
+                    <VisitPavilionSection 
+                      visitSubMode={visitSubMode}
+                      setVisitSubMode={setVisitSubMode}
+                      onError={setError}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {/* Designer Mode */}
+                    <DesignerSection />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </section>

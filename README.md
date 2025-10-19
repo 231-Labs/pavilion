@@ -1,4 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pavilion - NFT Gallery Platform
+
+A decentralized NFT gallery platform built on Sui blockchain with Walrus storage integration.
+
+## Features
+
+- **Collector Mode**: Create and visit NFT pavilions (galleries) using Sui Kiosk
+- **Designer Mode**: Mint 2D and 3D NFTs with Walrus storage
+  - 2D NFT: Images with attributes
+  - 3D NFT: 3D models (.glb) with preview images
+- **Walrus Integration**: Decentralized storage for NFT assets
+- **Sui Kiosk**: Standard NFT marketplace infrastructure
 
 ## Getting Started
 
@@ -16,9 +27,55 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Designer Mode Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To use Designer Mode for minting NFTs:
+
+1. **Deploy Move Contracts** (see `DESIGNER_MODE_SETUP.md` for details)
+   ```bash
+   cd move/demo_nft_2d
+   sui client publish --gas-budget 100000000
+   
+   cd ../demo_nft_3d
+   sui client publish --gas-budget 100000000
+   ```
+
+2. **Configure Environment Variables**
+   ```bash
+   # Create .env.local file
+   NEXT_PUBLIC_DEMO_NFT_2D_PACKAGE_ID=your_2d_package_id
+   NEXT_PUBLIC_DEMO_NFT_3D_PACKAGE_ID=your_3d_package_id
+   ```
+
+3. **Restart Development Server**
+   ```bash
+   npm run dev
+   ```
+
+For detailed setup instructions, see [DESIGNER_MODE_SETUP.md](./DESIGNER_MODE_SETUP.md)
+
+## Project Structure
+
+```
+├── move/                    # Move smart contracts
+│   ├── demo_nft_2d/        # 2D NFT contract
+│   ├── demo_nft_3d/        # 3D NFT contract
+│   └── pavilion/           # Pavilion platform contract
+├── src/
+│   ├── app/                # Next.js app pages
+│   ├── components/         # React components
+│   │   ├── home/          # Home page components (Designer Mode)
+│   │   ├── panels/        # Control panels
+│   │   └── pavilion/      # Pavilion components
+│   ├── config/            # Configuration files
+│   ├── hooks/             # Custom React hooks
+│   ├── lib/               # Utility libraries
+│   │   ├── blockchain/    # Sui blockchain integration
+│   │   ├── three/         # Three.js 3D rendering
+│   │   └── walrus/        # Walrus storage client
+│   └── types/             # TypeScript type definitions
+└── public/                # Static assets
+```
 
 ## Learn More
 

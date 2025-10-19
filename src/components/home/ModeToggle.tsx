@@ -22,7 +22,7 @@ export function ModeToggle({ mode, setMode }: ModeToggleProps) {
       >
         <div
           className="absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-8px)] rounded-md bg-white/10 transition-transform duration-300"
-          style={{ transform: mode === 'designer' ? 'translateX(100%)' : 'translateX(0%)' }}
+          style={{ transform: mode === 'designer' ? 'translateX(calc(100% + 8px))' : 'translateX(0%)' }}
           aria-hidden
         />
         <div className="relative z-10 grid grid-cols-2 text-center">
@@ -34,10 +34,9 @@ export function ModeToggle({ mode, setMode }: ModeToggleProps) {
             Collector
           </button>
           <button
-            disabled
-            aria-disabled="true"
-            title="Designer mode coming soon"
-            className="py-2 text-xs uppercase tracking-widest text-white/50 cursor-not-allowed"
+            onClick={() => setMode('designer')}
+            aria-pressed={mode === 'designer'}
+            className="py-2 text-xs uppercase tracking-widest font-semibold"
           >
             Designer
           </button>
