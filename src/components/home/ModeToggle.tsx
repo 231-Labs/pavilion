@@ -34,10 +34,9 @@ export function ModeToggle({ mode, setMode }: ModeToggleProps) {
             Collector
           </button>
           <button
-            disabled
-            aria-disabled="true"
-            title="Designer mode coming soon"
-            className="py-2 text-xs uppercase tracking-widest text-white/50 cursor-not-allowed"
+            onClick={() => setMode('designer')}
+            aria-pressed={mode === 'designer'}
+            className="py-2 text-xs uppercase tracking-widest font-semibold"
           >
             Designer
           </button>
