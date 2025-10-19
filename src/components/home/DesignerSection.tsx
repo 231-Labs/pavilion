@@ -2,17 +2,28 @@ import React, { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { NFT_CONTRACTS, WALRUS_CONFIG } from '../../config/nft-contracts';
+import { useKioskClient } from '../providers/KioskClientProvider';
+import { useKioskData } from '../../hooks/kiosk/useKioskData';
+import { KioskSelector } from './KioskSelector';
 
 type DesignerMode = '2d' | '3d';
 
 export function DesignerSection() {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const kioskClient = useKioskClient();
+  const { 
+    pavilionKiosks, 
+    fetchingKiosks
+  } = useKioskData();
   
   const [designerMode, setDesignerMode] = useState<DesignerMode>('2d');
   const [minting, setMinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [mintedNftId, setMintedNftId] = useState<string | null>(null);
+  const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
+  const [placingInKiosk, setPlacingInKiosk] = useState(false);
   
   // 2D NFT
   const [name, setName] = useState('');
@@ -24,6 +35,65 @@ export function DesignerSection() {
   
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+
+  const placeInKiosk = async () => {
+    if (!mintedNftId || !selectedKioskId || !currentAccount) {
+      setError('Missing NFT ID or Kiosk selection');
+      return;
+    }
+
+    // Find selected kiosk cap
+    const selectedKiosk = pavilionKiosks?.find(k => k.kioskId === selectedKioskId);
+    if (!selectedKiosk?.objectId) {
+      setError('Could not find kiosk owner cap');
+      return;
+    }
+
+    try {
+      setPlacingInKiosk(true);
+      setError(null);
+
+      const tx = new Transaction();
+      const nftType = designerMode === '2d' 
+        ? `${NFT_CONTRACTS.DEMO_NFT_2D.packageId}::${NFT_CONTRACTS.DEMO_NFT_2D.module}::DemoNFT2D`
+        : `${NFT_CONTRACTS.DEMO_NFT_3D.packageId}::${NFT_CONTRACTS.DEMO_NFT_3D.module}::DemoNFT3D`;
+
+      // Call kiosk::place to add NFT to kiosk
+      tx.moveCall({
+        target: '0x2::kiosk::place',
+        arguments: [
+          tx.object(selectedKioskId),
+          tx.object(selectedKiosk.objectId),
+          tx.object(mintedNftId),
+        ],
+        typeArguments: [nftType],
+      });
+
+      console.log('🏛️ Placing NFT in kiosk:', { nftId: mintedNftId, kioskId: selectedKioskId });
+
+      signAndExecuteTransaction(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: (result: any) => {
+            console.log('✅ NFT placed in kiosk successfully:', result);
+            setMintedNftId(null);
+            setSelectedKioskId(null);
+          },
+          onError: (error) => {
+            console.error('❌ Place in kiosk error:', error);
+            setError(`Failed to place in kiosk: ${error.message}`);
+          },
+        }
+      );
+    } catch (err: any) {
+      console.error('Place in kiosk error:', err);
+      setError(`Error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setPlacingInKiosk(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,10 +254,27 @@ export function DesignerSection() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {
+          onSuccess: (result: any) => {
             console.log('Mint success:', result);
             setSuccess(result.digest);
             setUploadProgress('');
+            
+            // Extract minted NFT object ID
+            try {
+              const changes = result?.objectChanges ?? [];
+              const nftChange = changes.find((ch: any) => 
+                ch.type === 'created' && 
+                (ch.objectType?.includes('DemoNFT2D') || ch.objectType?.includes('DemoNFT3D'))
+              );
+              
+              if (nftChange?.objectId) {
+                const nftId = nftChange.objectId;
+                console.log('✅ Minted NFT ID:', nftId);
+                setMintedNftId(nftId);
+              }
+            } catch (e) {
+              console.error('Failed to extract NFT ID:', e);
+            }
             
             // Reset form
             setName('');
@@ -195,7 +282,11 @@ export function DesignerSection() {
             setImageFile(null);
             setGlbFile(null);
             
-            setTimeout(() => setSuccess(null), 8000);
+            setTimeout(() => {
+              setSuccess(null);
+              setMintedNftId(null);
+              setSelectedKioskId(null);
+            }, 12000);
           },
           onError: (error) => {
             console.error('Mint error:', error);
@@ -404,43 +495,73 @@ export function DesignerSection() {
         )}
 
         {/* Publish Button and Success Message */}
-        <div className="mt-8 flex items-center justify-between">
-          {/* Success Message */}
-          {success ? (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-              <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
-              <a
-                href={`https://suiscan.xyz/testnet/tx/${success}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
-              >
-                View on Explorer →
-              </a>
-            </div>
-          ) : (
-            <div />
-          )}
-
-          <button
-            onClick={handleMint}
-            disabled={minting || uploading || !currentAccount}
-            className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
-          >
-            {minting || uploading ? (
-              <div className="loading-spinner" />
+        <div className="mt-8 space-y-4">
+          <div className="flex items-center justify-between">
+            {/* Success Message */}
+            {success ? (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
+                <a
+                  href={`https://suiscan.xyz/testnet/tx/${success}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
+                >
+                  View on Explorer →
+                </a>
+              </div>
             ) : (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
-              >
-                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <div />
             )}
-          </button>
+
+            <button
+              onClick={handleMint}
+              disabled={minting || uploading || !currentAccount}
+              className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+            >
+              {minting || uploading ? (
+                <div className="loading-spinner" />
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
+                >
+                  <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Place in Pavilion Section */}
+          {mintedNftId && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 border-t border-white/10 pt-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-semibold uppercase tracking-widest text-white/85">
+                  Place in Pavilion
+                </label>
+                <div className="flex items-center gap-3">
+                  <KioskSelector
+                    kiosks={pavilionKiosks}
+                    loading={fetchingKiosks}
+                    selectedKioskId={selectedKioskId}
+                    onSelectKiosk={setSelectedKioskId}
+                    emptyMessage="No pavilions found"
+                    showNames={true}
+                  />
+                  <button
+                    onClick={placeInKiosk}
+                    disabled={!selectedKioskId || placingInKiosk}
+                    className="px-4 py-2 rounded-lg border transition-all disabled:opacity-40 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30 text-[11px] text-white/90 uppercase tracking-wide"
+                  >
+                    {placingInKiosk ? 'Placing...' : 'Place'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
