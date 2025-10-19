@@ -259,8 +259,8 @@ export function DesignerSection() {
           </div>
 
           {/* Description */}
-          <div className="flex items-start gap-4 max-w-2xl">
-            <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pt-1.5">Description:</label>
+          <div className="flex items-end gap-4 max-w-2xl">
+            <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Description:</label>
             <div className="flex-1">
               <textarea
                 value={description}
