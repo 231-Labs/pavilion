@@ -74,10 +74,6 @@ export function DesignerSection() {
       signAndExecuteTransaction(
         {
           transaction: tx,
-          options: {
-            showObjectChanges: true,
-            showEffects: true,
-          },
         },
         {
           onSuccess: (result: any) => {
@@ -256,30 +252,27 @@ export function DesignerSection() {
       signAndExecuteTransaction(
         {
           transaction: tx,
-          options: {
-            showObjectChanges: true,
-            showEffects: true,
-          },
         },
         {
           onSuccess: (result: any) => {
             console.log('✅ Mint success:', result);
+            console.log('✅ Full result object:', JSON.stringify(result, null, 2));
             setSuccess(result.digest);
             setUploadProgress('');
             
             // Extract minted NFT object ID
             try {
-              const changes = result?.objectChanges ?? [];
+              const changes = result?.objectChanges ?? result?.effects?.created ?? [];
               console.log('📦 Object changes:', changes);
               console.log('📦 Total changes count:', changes.length);
               
               // Log all created objects
-              const createdObjects = changes.filter((ch: any) => ch.type === 'created');
+              const createdObjects = changes.filter((ch: any) => ch.type === 'created' || ch.owner);
               console.log('🆕 Created objects:', createdObjects);
               
               // Try to find NFT with different matching strategies
               let nftChange = changes.find((ch: any) => 
-                ch.type === 'created' && 
+                (ch.type === 'created' || ch.owner) && 
                 (ch.objectType?.includes('DemoNFT2D') || ch.objectType?.includes('DemoNFT3D'))
               );
               
@@ -287,13 +280,20 @@ export function DesignerSection() {
               if (!nftChange) {
                 console.log('⚠️ First attempt failed, trying alternative matching...');
                 nftChange = changes.find((ch: any) => 
-                  ch.type === 'created' && 
+                  (ch.type === 'created' || ch.owner) && 
                   (ch.objectType?.includes('demo_nft_2d') || ch.objectType?.includes('demo_nft_3d'))
                 );
               }
               
-              if (nftChange?.objectId) {
-                const nftId = nftChange.objectId;
+              // Try with reference
+              if (!nftChange && result?.effects?.created) {
+                nftChange = result.effects.created.find((obj: any) => 
+                  obj.reference?.objectId
+                );
+              }
+              
+              if (nftChange?.objectId || nftChange?.reference?.objectId) {
+                const nftId = nftChange.objectId || nftChange.reference?.objectId;
                 console.log('✅ Minted NFT ID:', nftId);
                 console.log('✅ NFT objectType:', nftChange.objectType);
                 setMintedNftId(nftId);
