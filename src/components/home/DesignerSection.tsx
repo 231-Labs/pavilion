@@ -251,7 +251,7 @@ export function DesignerSection() {
         )}
 
         {/* Form Fields */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 mt-2">
+        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mt-2">
           {/* Name */}
           <div className="flex items-end gap-4 max-w-2xl">
             <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Name:</label>
