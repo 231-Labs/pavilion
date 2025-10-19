@@ -380,6 +380,8 @@ export function DesignerSection() {
                   : 'Create 3D NFT with image and model assets'}
               </span>
             </div>
+            {/* Divider */}
+            <div className="mt-4 border-t border-white/10"></div>
           </div>
         </div>
 
