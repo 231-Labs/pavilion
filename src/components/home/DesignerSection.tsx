@@ -199,7 +199,7 @@ export function DesignerSection() {
         {/* Title and Mode Toggle */}
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-base md:text-lg font-semibold tracking-wide">Publish Object for Pavilion</div>
+            <div className="text-base md:text-lg font-semibold tracking-wide">Publish Object</div>
             <div className="mt-2 flex items-center space-x-1 text-[10px] tracking-wide uppercase">
               <button
                 onClick={() => setDesignerMode('2d')}
