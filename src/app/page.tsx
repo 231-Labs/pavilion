@@ -51,7 +51,7 @@ export default function Home() {
               className="glass-slab glass-slab--thermal rounded-xl overflow-hidden self-center w-full flex flex-col"
               style={{
                 padding: 'clamp(16px, 3vw, 32px)',
-                height: 'clamp(480px, 55vh, 720px)'
+                minHeight: 'clamp(480px, 55vh, 720px)'
               }}
               onClick={onSlabClick}
               onMouseMove={(e) => {
