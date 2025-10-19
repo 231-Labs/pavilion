@@ -255,9 +255,9 @@ export function DesignerSection() {
         {/* Form Fields */}
         <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 mt-2">
           {/* Name */}
-          <div className="space-y-2">
-            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Name:</label>
-            <div className="max-w-md">
+          <div className="flex items-end gap-4 max-w-2xl">
+            <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Name:</label>
+            <div className="flex-1">
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -268,9 +268,9 @@ export function DesignerSection() {
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Description:</label>
-            <div className="max-w-md">
+          <div className="flex items-start gap-4 max-w-2xl">
+            <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pt-1.5">Description:</label>
+            <div className="flex-1">
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -282,11 +282,11 @@ export function DesignerSection() {
           </div>
 
           {/* Attributes (2D only) - Fixed height container */}
-          <div className="space-y-2" style={{ minHeight: designerMode === '2d' ? 'auto' : '0px' }}>
+          <div style={{ minHeight: designerMode === '2d' ? 'auto' : '0px' }}>
             {designerMode === '2d' && (
-              <>
-                <label className="block text-[15px] md:text-[16px] font-semibold uppercase tracking-widest text-white/85">Attributes:</label>
-                <div className="max-w-md">
+              <div className="flex items-end gap-4 max-w-2xl">
+                <label className="text-[14px] font-semibold uppercase tracking-widest text-white/85 whitespace-nowrap pb-1.5">Attributes:</label>
+                <div className="flex-1">
                   <input
                     value={attributes}
                     onChange={(e) => setAttributes(e.target.value)}
@@ -294,7 +294,7 @@ export function DesignerSection() {
                     className="w-full bg-transparent px-0 py-1.5 border-0 border-b border-white/60 focus:outline-none focus:border-white text-white text-base placeholder:text-[11px] placeholder:text-white/45"
                   />
                 </div>
-              </>
+              </div>
             )}
           </div>
 
