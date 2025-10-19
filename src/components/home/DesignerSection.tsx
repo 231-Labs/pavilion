@@ -186,7 +186,7 @@ export function DesignerSection() {
         {
           onSuccess: (result) => {
             console.log('Mint success:', result);
-            setSuccess(`NFT minted successfully! Digest: ${result.digest}`);
+            setSuccess(result.digest);
             setUploadProgress('');
             
             // Reset form
@@ -195,7 +195,7 @@ export function DesignerSection() {
             setImageFile(null);
             setGlbFile(null);
             
-            setTimeout(() => setSuccess(null), 5000);
+            setTimeout(() => setSuccess(null), 8000);
           },
           onError: (error) => {
             console.error('Mint error:', error);
@@ -260,21 +260,6 @@ export function DesignerSection() {
           </div>
         </div>
 
-        {/* Success Message */}
-        {success && (
-          <div className="mb-3 flex items-center justify-center">
-            <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent text-[13px] md:text-sm font-extrabold tracking-[0.3em] animate-pulse">{success}</span>
-            <a
-              href={`https://suiscan.xyz/testnet/tx/${success.split('Digest: ')[1]}`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="View on SuiScan"
-              className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/15 hover:text-white/90 transition-colors info-pop-in"
-            >
-              <span className="text-[10px] leading-none font-semibold normal-case relative">i</span>
-            </a>
-          </div>
-        )}
 
         {/* Form Fields */}
         <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mt-2">
@@ -419,26 +404,45 @@ export function DesignerSection() {
         )}
 
         {/* Publish Button */}
-        <div className="mt-8 flex justify-end">
-          <button
-            onClick={handleMint}
-            disabled={minting || uploading || !currentAccount}
-            className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
-          >
-            {minting || uploading ? (
-              <div className="loading-spinner" />
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
-              >
-                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </button>
+        <div className="mt-8">
+          <div className="flex justify-end">
+            <button
+              onClick={handleMint}
+              disabled={minting || uploading || !currentAccount}
+              className="group relative inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all disabled:opacity-60 bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30"
+            >
+              {minting || uploading ? (
+                <div className="loading-spinner" />
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4 text-white/80 transition-transform duration-200 group-hover:scale-110"
+                >
+                  <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 18V20H4V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Success Message */}
+          {success && (
+            <div className="mt-3 text-right animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                <span className="text-[11px] text-white/70 tracking-wide">Published successfully</span>
+                <a
+                  href={`https://suiscan.xyz/testnet/tx/${success}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-white/90 hover:text-white underline underline-offset-2 decoration-white/30 hover:decoration-white/60 transition-colors"
+                >
+                  View on Explorer →
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
