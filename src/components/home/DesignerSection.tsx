@@ -11,7 +11,7 @@ import {
   parseMintedNFTId,
   buildPlaceNFTInKioskTx, 
   buildNFTType 
-} from '../../lib/tx/pavilion';
+} from '../../lib/tx/pavilion/index';
 
 type DesignerMode = '2d' | '3d';
 

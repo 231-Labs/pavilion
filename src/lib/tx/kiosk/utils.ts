@@ -1,5 +1,5 @@
 import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import type { KioskIdsResult, FetchKioskContentsParams, ResolveKioskOwnerCapParams, FetchKioskIdsParams, DebugDynamicFieldsParams } from './types';
+import type { KioskIdsResult, FetchKioskContentsParams, ResolveKioskOwnerCapParams, FetchKioskIdsParams, DebugDynamicFieldsParams } from '../types';
 
 /**
  * Parse the transaction result (or fetch by digest) and return created kiosk & kiosk cap object ids.

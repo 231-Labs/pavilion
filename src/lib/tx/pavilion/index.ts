@@ -1,5 +1,5 @@
 // Re-export all types
-export type * from './types';
+export type * from '../types';
 
 // Re-export transaction builders
 export {
@@ -7,7 +7,7 @@ export {
   buildInitializePavilionWithExistingKioskTx,
   buildAutoPavilionTx,
   setSceneConfigTx,
-} from './transaction-builders';
+} from './builders';
 
 // Re-export kiosk utilities
 export {
@@ -15,7 +15,7 @@ export {
   resolveKioskOwnerCapId,
   fetchKioskContents,
   debugDynamicFields,
-} from './kiosk-utils';
+} from '../kiosk/utils';
 
 // Re-export scene configuration functions
 export {
@@ -28,19 +28,19 @@ export {
   buildMint2DNFTTx,
   buildMint3DNFTTx,
   parseMintedNFTId,
-} from './nft-minting';
+} from '../nft/minting';
 export type {
   MintNFT2DParams,
   MintNFT3DParams,
   ParseMintedNFTParams,
-} from './nft-minting';
+} from '../nft/minting';
 
 // Re-export NFT placement functions
 export {
   buildPlaceNFTInKioskTx,
   buildNFTType,
-} from './nft-placement';
+} from '../nft/placement';
 export type {
   PlaceNFTInKioskParams,
-} from './nft-placement';
+} from '../nft/placement';
 

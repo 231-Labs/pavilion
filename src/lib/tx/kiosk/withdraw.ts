@@ -1,6 +1,6 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { KioskTransaction } from '@mysten/kiosk';
-import type { WithdrawProfitsParams, WithdrawProfitsResult } from './types';
+import type { WithdrawProfitsParams, WithdrawProfitsResult } from '../types';
 
 /**
  * Build a transaction to withdraw profits from a kiosk

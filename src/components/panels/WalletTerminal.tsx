@@ -9,9 +9,9 @@ import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
 import { useKioskClient } from '../providers/KioskClientProvider';
-import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/withdraw';
-import { buildDepositAndBorrowTx, calculateBorrowableUsdb, parseBucketError } from '../../lib/tx/bucket';
-import { buildSaveSceneTx, parseSaveSceneError } from '../../lib/tx/save-scene';
+import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/kiosk/withdraw';
+import { buildDepositAndBorrowTx, calculateBorrowableUsdb, parseBucketError } from '../../lib/tx/protocol/bucket';
+import { buildSaveSceneTx, parseSaveSceneError } from '../../lib/tx/pavilion/save-scene';
 import { useBucketClient } from '../../hooks/bucket/useBucketClient';
 
 interface WalletTerminalProps {

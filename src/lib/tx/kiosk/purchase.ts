@@ -1,7 +1,7 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { KioskTransaction } from '@mysten/kiosk';
-import type { PurchaseTransactionParams, PurchaseTransactionResult } from './types';
-import { registerRoyaltyResolver } from './royalty';
+import type { PurchaseTransactionParams, PurchaseTransactionResult } from '../types';
+import { registerRoyaltyResolver } from '../nft/royalty';
 
 /**
  * Build a purchase transaction for buying an NFT from a kiosk

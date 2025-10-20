@@ -1,4 +1,4 @@
-import type { SceneConfigParams } from './types';
+import type { SceneConfigParams } from '../types';
 
 export async function readSceneConfig(params: SceneConfigParams): Promise<string | null> {
   const { suiClient, packageId, kioskId } = params;

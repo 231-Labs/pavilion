@@ -94,8 +94,14 @@ For detailed setup instructions, see [DESIGNER_MODE_SETUP.md](./DESIGNER_MODE_SE
 │   ├── config/            # Configuration files
 │   ├── hooks/             # Custom React hooks
 │   ├── lib/               # Utility libraries
-│   │   ├── blockchain/    # Sui blockchain integration
+│   │   ├── blockchain/    # Sui blockchain integration (deprecated)
 │   │   ├── three/         # Three.js 3D rendering
+│   │   ├── tx/            # Blockchain transaction builders
+│   │   │   ├── types.ts   # Shared type definitions
+│   │   │   ├── kiosk/     # Kiosk operations (purchase, withdraw, listing)
+│   │   │   ├── nft/       # NFT operations (minting, placement, royalty)
+│   │   │   ├── pavilion/  # Pavilion operations (builders, scene config)
+│   │   │   └── protocol/  # External protocol integrations (Bucket)
 │   │   └── walrus/        # Walrus storage client
 │   └── types/             # TypeScript type definitions
 └── public/                # Static assets

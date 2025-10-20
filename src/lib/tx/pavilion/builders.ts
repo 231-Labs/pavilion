@@ -1,6 +1,6 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { KioskTransaction } from '@mysten/kiosk';
-import type { PavilionTxConfig, PavilionTxParams, ExistingKioskParams, SetSceneConfigParams } from './types';
+import type { PavilionTxConfig, PavilionTxParams, ExistingKioskParams, SetSceneConfigParams } from '../types';
 
 /**
  * Build a transaction to initialize a pavilion on an existing kiosk
