@@ -10,6 +10,7 @@ import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
 import { useKioskClient } from '../providers/KioskClientProvider';
 import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/withdraw';
+import { useBucketClient } from '../../hooks/bucket/useBucketClient';
 
 interface WalletTerminalProps {
   objectChanges: Map<string, ObjectChange>;
@@ -66,6 +67,14 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const kioskClient = useKioskClient();
+
+  // Use Bucket Client
+  const {
+    depositAndBorrow,
+    positions: bucketPositions,
+    isLoading: isBucketLoading,
+    error: bucketError,
+  } = useBucketClient();
 
   
   // When wallet connection status changes
@@ -311,6 +320,99 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
+  // Handle Bucket deposit and borrow (將 Kiosk Profits 抵押到 Bucket 借出 USDB)
+  const handleDepositToBucket = async () => {
+    console.log('Depositing to Bucket:', {
+      currentAccount: currentAccount?.address,
+      profits: kioskData?.kiosk?.profits
+    });
+
+    if (!currentAccount) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    // Check if there are profits available
+    const profits = kioskData?.kiosk?.profits;
+    if (!profits || profits === '0' || Number(profits) === 0) {
+      setError('No profits available to deposit to Bucket');
+      return;
+    }
+
+    const profitsInMist = Number(profits);
+    // 計算可借出的 USDB（假設抵押率 200%，即抵押 1 SUI 可借 0.5 USDB）
+    // 1 SUI = 1e9 MIST, 1 USDB = 1e6
+    // 借款金額 = (抵押金額 / 2) * (1e6 / 1e9) = 抵押金額 / 2000
+    const borrowAmountUsdb = Math.floor(profitsInMist / 2000); // 保守估計
+
+    if (borrowAmountUsdb < 1000000) { // 少於 1 USDB
+      setError('Profits too low to borrow USDB (minimum 2 SUI required)');
+      return;
+    }
+
+    setIsWithdrawing(true); // 重用 withdrawing 狀態
+    setError('');
+
+    try {
+      console.log('💰 Depositing to Bucket and borrowing USDB...');
+      console.log(`Collateral: ${profitsInMist / 1e9} SUI`);
+      console.log(`Borrow: ${borrowAmountUsdb / 1e6} USDB`);
+
+      // 先提取 Kiosk Profits
+      console.log('🏦 Step 1: Withdrawing profits from Kiosk...');
+      const { transaction: withdrawTx } = await buildWithdrawProfitsTx({
+        kioskClient,
+        kioskId: kioskId!,
+        kioskOwnerCapId: kioskOwnerCapId!,
+        ownerAddress: currentAccount.address,
+      });
+
+      const withdrawResult = await signAndExecuteTransaction({ transaction: withdrawTx });
+      console.log('✅ Profits withdrawn:', withdrawResult.digest);
+
+      // 等待一下讓交易確認
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 然後存入 Bucket 並借款
+      console.log('🏦 Step 2: Depositing to Bucket and borrowing USDB...');
+      const bucketResult = await depositAndBorrow(profitsInMist, borrowAmountUsdb);
+      
+      console.log('✅ Bucket transaction successful:', bucketResult.digest);
+      console.log(`📊 Borrowed ${borrowAmountUsdb / 1e6} USDB with ${profitsInMist / 1e9} SUI collateral`);
+
+      // Show success state
+      setWithdrawSuccess(true);
+      setError(''); // 清除可能的 Bucket 錯誤
+
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setWithdrawSuccess(false);
+      }, 5000);
+
+      // Refresh balance
+      try {
+        const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
+        setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
+      } catch (e) {
+        console.error('Failed to refresh balance:', e);
+      }
+
+      // Refresh kiosk data
+      try {
+        await refreshKioskData();
+      } catch (e) {
+        console.error('Failed to refresh kiosk data:', e);
+      }
+    } catch (error) {
+      console.error('❌ Failed to deposit to Bucket:', error);
+      const errorMessage = bucketError || (error as Error).message || 'Failed to deposit to Bucket';
+      setError(errorMessage);
+      setWithdrawSuccess(false);
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
 
 
   return (
@@ -415,22 +517,71 @@ export function WalletTerminal(props: WalletTerminalProps) {
                           </>
                         )}
                       </button>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         <button
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
+                          onClick={handleDepositToBucket}
+                          disabled={isWithdrawing || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
+                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-white/80 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                         >
-                          Save to PavSUI
-                        </button>
-                        <button
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
-                        >
-                          Save to PavUSDB
+                          {isWithdrawing || isBucketLoading ? (
+                            <>
+                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Processing...</span>
+                            </>
+                          ) : withdrawSuccess ? (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>Success! USDB Borrowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>Deposit to Bucket → Borrow USDB</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
               </>
+            )}
+
+            {/* Bucket Lending Info Section */}
+            {currentAccount && bucketPositions.length > 0 && (
+              <div className="space-y-2 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></div>
+                  <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+                    Bucket Lending Position
+                  </label>
+                </div>
+                <div className="pl-3.5 space-y-2">
+                  {bucketPositions.map((position, idx) => (
+                    <div key={idx} className="p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-semibold tracking-wide uppercase text-purple-300/70">Collateral</span>
+                        <span className="text-xs font-mono text-white/80">
+                          {(Number(position.collateralAmount) / 1e9).toFixed(4)} SUI
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-semibold tracking-wide uppercase text-purple-300/70">Debt</span>
+                        <span className="text-xs font-mono text-white/80">
+                          {(Number(position.debtAmount) / 1e6).toFixed(2)} USDB
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Kiosk Info Section */}
