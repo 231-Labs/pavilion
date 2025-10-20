@@ -27,18 +27,45 @@ export async function buildPurchaseTransaction(
 
   // Check if user specified a target kiosk
   if (targetKioskId && targetKioskCapId) {
-    // Use the specified target kiosk
-    buyerKioskTx = new KioskTransaction({ 
-      kioskClient, 
-      transaction: tx, 
-      cap: {
-        objectId: targetKioskCapId,
-        kioskId: targetKioskId,
-        isPersonal: false
-      }
+    // Get the buyer's kiosk caps to find the matching one
+    const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ 
+      address: buyerAddress 
     });
-    usedKioskId = targetKioskId;
-    console.log('🎯 Using selected pavilion kiosk:', targetKioskId);
+    
+    // Find the matching kiosk cap by kioskId
+    const targetCap = kioskOwnerCaps?.find(cap => cap.kioskId === targetKioskId);
+    
+    if (targetCap) {
+      // Use the specified target kiosk with full cap object
+      buyerKioskTx = new KioskTransaction({ 
+        kioskClient, 
+        transaction: tx, 
+        cap: targetCap
+      });
+      usedKioskId = targetKioskId;
+      console.log('🎯 Using selected pavilion kiosk:', targetKioskId);
+    } else {
+      // Fallback: couldn't find the target cap, use first available or create new
+      console.warn('⚠️ Target kiosk cap not found, falling back to default behavior');
+      if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
+        buyerKioskTx = new KioskTransaction({ 
+          kioskClient, 
+          transaction: tx, 
+          cap: kioskOwnerCaps[0] 
+        });
+        usedKioskId = kioskOwnerCaps[0].kioskId;
+        console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
+      } else {
+        // Create new personal kiosk
+        buyerKioskTx = new KioskTransaction({ 
+          kioskClient, 
+          transaction: tx 
+        });
+        buyerKioskTx.create();
+        isNewKiosk = true;
+        console.log('🆕 Creating new kiosk for buyer');
+      }
+    }
   } else {
     // Original behavior: Get or create a personal kiosk for the buyer
     const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ 

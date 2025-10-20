@@ -6,6 +6,9 @@ import { Providers } from '../components/providers/Providers';
 export const metadata: Metadata = {
   title: "Pavilion",
   description: "Turn your kiosk into a curated gallery.",
+  icons: {
+    icon: '/3_icon_walrus_white_RGB.png',
+  },
   other: {
     'cache-control': 'no-cache, no-store, must-revalidate',
   },
