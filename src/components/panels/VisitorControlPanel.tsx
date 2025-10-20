@@ -6,6 +6,7 @@ import { VisitorNftItemsSection } from './sections/VisitorNftItemsSection';
 import { useModelLoader } from '../../hooks/scene/useModelLoader';
 import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';
 import { useNftPurchase } from '../../hooks/kiosk/useNftPurchase';
+import { useKioskState } from '../providers/KioskStateProvider';
 
 interface VisitorControlPanelProps {
   sceneManager?: SceneManager;
@@ -25,6 +26,7 @@ export function VisitorControlPanel({
   initialTransforms,
 }: VisitorControlPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const kioskState = useKioskState();
 
   // Use model loader hook
   const modelLoader = useModelLoader(sceneManager);
@@ -88,6 +90,19 @@ export function VisitorControlPanel({
     });
   };
 
+  // Refresh kiosk data after successful purchase
+  useEffect(() => {
+    if (purchaseSuccess) {
+      console.log('🔄 Purchase successful, refreshing kiosk data...');
+      // Wait a bit for the transaction to be finalized on chain
+      const timeoutId = setTimeout(() => {
+        kioskState.refresh();
+      }, 2000); // 2 second delay to ensure blockchain state is updated
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [purchaseSuccess, kioskState]);
+
   return (
     <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       {/* Title bar */}
@@ -110,9 +125,17 @@ export function VisitorControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="space-y-3" style={{ fontSize: '13px' }}>
-          {/* Assets Display */}
-          <div className="pt-2 px-3 pb-3">
+        <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+          {/* Gallery Header */}
+          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
+            <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+              Available Items
+            </label>
+          </div>
+
+          {/* Items Display */}
+          <div>
             {nftManager.kioskNftItems.length > 0 ? (
               <VisitorNftItemsSection
                 items={nftManager.kioskNftItems}
@@ -126,8 +149,13 @@ export function VisitorControlPanel({
                 onClearStatus={clearPurchaseStatus}
               />
             ) : (
-              <div className="text-xs text-white/50 text-center py-8">
-                No items in this pavilion
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center space-y-2">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 mx-auto text-white/20">
+                    <path d="M3 3h18v18H3zM21 9H3M9 21V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="text-xs text-white/40 font-medium">No items in this pavilion</p>
+                </div>
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ type KioskState = {
   kioskId: string | null;
   kioskOwnerCapId: string | null;
   kioskItems: any[] | null;
+  kioskData: any | null;
   loading: boolean;
   error: string | null;
   setKioskId: (id: string | null) => void;
@@ -21,6 +22,7 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
   const [kioskId, setKioskId] = useState<string | null>(null);
   const [kioskOwnerCapId, setKioskOwnerCapId] = useState<string | null>(null);
   const [kioskItems, setKioskItems] = useState<any[] | null>(null);
+  const [kioskData, setKioskData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,11 +74,14 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
         },
       });
       console.log('✅ KioskStateProvider: Fetched kiosk data, items count:', data.items?.length ?? 0);
+      console.log('💰 KioskStateProvider: Kiosk profits:', data.kiosk?.profits);
       setKioskItems(data.items ?? []);
+      setKioskData(data);
     } catch (e) {
       console.error('❌ KioskStateProvider: Failed to refresh:', e);
       setError((e as Error).message || 'Failed to fetch kiosk contents');
       setKioskItems(null);
+      setKioskData(null);
     } finally {
       setLoading(false);
     }
@@ -96,12 +101,13 @@ export function KioskStateProvider({ children }: { children: React.ReactNode }) 
     kioskId,
     kioskOwnerCapId,
     kioskItems,
+    kioskData,
     loading,
     error,
     setKioskId,
     setKioskFromIds,
     refresh,
-  }), [kioskId, kioskOwnerCapId, kioskItems, loading, error, setKioskFromIds, refresh]);
+  }), [kioskId, kioskOwnerCapId, kioskItems, kioskData, loading, error, setKioskFromIds, refresh]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

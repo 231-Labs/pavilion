@@ -47,18 +47,6 @@ export function ObjectSelector({
               ))}
           </optgroup>
         )}
-
-        {controllableObjects.filter((obj) => obj.type === 'external').length > 0 && (
-          <optgroup label="📦 External Models">
-            {controllableObjects
-              .filter((obj) => obj.type === 'external')
-              .map((obj) => (
-                <option key={obj.id} value={obj.id} className="bg-black text-white">
-                  {obj.name}
-                </option>
-              ))}
-          </optgroup>
-        )}
       </select>
     </div>
   );

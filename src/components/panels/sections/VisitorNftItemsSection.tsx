@@ -28,6 +28,7 @@ export function VisitorNftItemsSection({
 }: VisitorNftItemsSectionProps) {
   const [purchasingItemId, setPurchasingItemId] = useState<string | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [showOnlyForSale, setShowOnlyForSale] = useState(false);
 
   // Get blockchain explorer URL
   const getExplorerUrl = (digest: string) => {
@@ -35,13 +36,22 @@ export function VisitorNftItemsSection({
     return `https://suiscan.xyz/${network}/tx/${digest}`;
   };
 
-  // Filter to only show items that are displayed (show = true)
-  const visibleItems = items.filter(item => displayedItemIds.has(item.id));
+  // Filter to show items that are either:
+  // 1. Listed for sale (should always be visible to visitors)
+  // 2. Displayed in the scene (for unlisted items that owner chose to display)
+  let visibleItems = items.filter(item => 
+    item.isListed || displayedItemIds.has(item.id)
+  );
+
+  // Apply for sale filter if enabled
+  if (showOnlyForSale) {
+    visibleItems = visibleItems.filter(item => item.isListed);
+  }
 
   if (visibleItems.length === 0) {
     return (
       <div className="text-xs text-white/50 text-center py-8">
-        No items on display
+        {showOnlyForSale ? 'No items for sale' : 'No items available for viewing or purchase'}
       </div>
     );
   }
@@ -68,8 +78,29 @@ export function VisitorNftItemsSection({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold tracking-wide uppercase text-white/60 mb-3">
-        Available Items ({visibleItems.length})
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs font-semibold tracking-wide uppercase text-white/60">
+          Items ({visibleItems.length})
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium tracking-wide uppercase text-white/50">
+            For Sale
+          </span>
+          <button
+            onClick={() => setShowOnlyForSale(!showOnlyForSale)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+              showOnlyForSale ? 'bg-white/30' : 'bg-white/10'
+            }`}
+            role="switch"
+            aria-checked={showOnlyForSale}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-200 ${
+                showOnlyForSale ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2 max-h-90 overflow-y-auto scrollbar-hide">
@@ -164,10 +195,10 @@ export function VisitorNftItemsSection({
 
       {/* Status Notifications - Moved to bottom */}
       {purchaseSuccess && (
-        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mt-3">
+        <div className="p-3 rounded-lg bg-black/20 border border-white/10 mt-3">
           <div className="flex justify-between items-start">
             <div className="flex-1 min-w-0 pr-2">
-              <div className="text-xs font-semibold tracking-wide uppercase text-green-400/90 mb-1">
+              <div className="text-xs font-semibold tracking-wide uppercase text-white/70 mb-1">
                 Purchase Successful
               </div>
               <div className="text-xs text-white/70 break-words mb-2" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -178,7 +209,7 @@ export function VisitorNftItemsSection({
                   href={getExplorerUrl(transactionDigest)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-green-400/90 hover:text-green-300 transition-colors underline"
+                  className="inline-flex items-center gap-1 text-xs text-white/70 hover:text-white/90 transition-colors underline"
                 >
                   <span>View on Explorer</span>
                   <svg

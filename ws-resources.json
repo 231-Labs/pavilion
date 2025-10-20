@@ -1,0 +1,31 @@
+{
+  "routes": {
+    "/visit/*": "/visit/index.html",
+    "/pavilion/visit/*": "/pavilion/visit/index.html",
+    "/pavilion/*": "/pavilion/index.html",
+    "/manage/*": "/manage/index.html",
+    "/demo/*": "/demo/index.html",
+    "/*": "/index.html"
+  },
+  "headers": {
+    "/index.html": {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=3600"
+    },
+    "/_next/static/*": {
+      "Cache-Control": "public, max-age=31536000, immutable"
+    }
+  },
+  "site_name": "Pavilion - 3D NFT Gallery",
+  "metadata": {
+    "description": "A 3D NFT gallery platform on Sui blockchain powered by Walrus storage",
+    "creator": "Pavilion Team",
+    "link": "https://pavilion.wal.app"
+  },
+  "ignore": [
+    "/config/*",
+    "/.next/*",
+    "/node_modules/*"
+  ]
+}
+
