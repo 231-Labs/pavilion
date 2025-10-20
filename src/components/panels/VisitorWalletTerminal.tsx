@@ -289,12 +289,12 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
 
             {error && (
               <div className="space-y-2">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                <label className="block text-xs font-medium tracking-wide uppercase control-label-primary">
                   Error
                 </label>
                 <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+                    <span className="text-xs font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
                     <button
                       onClick={() => setError('')}
                       className="ml-2 text-white/40 hover:text-white/70 transition-colors"
@@ -316,7 +316,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
+                  <p className="text-xs font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
                     {error}
                   </p>
                 </div>

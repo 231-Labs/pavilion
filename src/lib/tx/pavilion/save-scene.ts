@@ -60,19 +60,19 @@ export function buildSaveSceneTx(params: SaveSceneParams): SaveSceneResult {
  */
 export function parseSaveSceneError(error: unknown): string {
   if (!(error instanceof Error)) {
-    return '無法保存場景配置';
+    return 'Unable to save scene configuration';
   }
 
   const errorMessage = error.message;
 
   if (errorMessage.includes('User rejected')) {
-    return '交易已被拒絕';
+    return 'Transaction was rejected';
   } else if (errorMessage.includes('Not owner')) {
-    return '您沒有權限修改此展館';
+    return 'You do not have permission to modify this pavilion';
   } else if (errorMessage.includes('Dry run failed')) {
-    return '交易驗證失敗，請重試';
+    return 'Transaction validation failed. Please try again.';
   } else if (errorMessage.includes('Insufficient gas')) {
-    return 'Gas 不足，請確保錢包有足夠的 SUI';
+    return 'Insufficient gas. Please ensure your wallet has enough SUI.';
   }
 
   return errorMessage;
