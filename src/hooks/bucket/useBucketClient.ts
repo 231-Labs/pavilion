@@ -21,12 +21,14 @@ export function useBucketClient() {
   const [error, setError] = useState<string | null>(null);
   const [positions, setPositions] = useState<BucketPosition[]>([]);
 
-  // 初始化 Bucket Client
+  // Initialize Bucket Client
+  // Note: Bucket Protocol currently only supports mainnet with available collateral types
+  // Testnet has no configured collateral types, so borrowing won't work on testnet
   useEffect(() => {
     try {
       const client = new BucketClient({
         suiClient,
-        network: 'mainnet', // Bucket Protocol only supports mainnet
+        network: 'testnet', // Using testnet (note: may have limited functionality)
       });
       setBucketClient(client);
     } catch (err) {
@@ -35,7 +37,7 @@ export function useBucketClient() {
     }
   }, [suiClient]);
 
-  // 查詢用戶借貸位置
+  // Fetch user lending positions
   const fetchUserPositions = async (address?: string) => {
     if (!bucketClient || !address) return;
 
@@ -52,7 +54,7 @@ export function useBucketClient() {
     }
   };
 
-  // 自動查詢當前用戶的位置
+  // Auto-fetch current user's positions
   useEffect(() => {
     if (currentAccount?.address) {
       fetchUserPositions(currentAccount.address);
@@ -93,7 +95,7 @@ export function useBucketClient() {
       console.log('Collateral amount:', collateralAmount / 1e9, 'SUI');
       console.log('Borrow amount:', borrowAmount / 1e6, 'USDB');
 
-      // 執行交易
+      // Execute transaction
       const result = await signAndExecuteTransaction({ transaction: tx });
 
       console.log('✅ Bucket transaction successful:', result.digest);
