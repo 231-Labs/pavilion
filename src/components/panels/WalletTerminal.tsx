@@ -320,7 +320,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
-  // Handle Bucket deposit and borrow (將 Kiosk Profits 抵押到 Bucket 借出 USDB)
+  // Handle Bucket deposit and borrow (Deposit Kiosk Profits to Bucket and borrow USDB)
   const handleDepositToBucket = async () => {
     console.log('Depositing to Bucket:', {
       currentAccount: currentAccount?.address,
@@ -340,17 +340,17 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
 
     const profitsInMist = Number(profits);
-    // 計算可借出的 USDB（假設抵押率 200%，即抵押 1 SUI 可借 0.5 USDB）
+    // Calculate borrowable USDB (assuming 200% collateral ratio, i.e., 1 SUI collateral can borrow 0.5 USDB)
     // 1 SUI = 1e9 MIST, 1 USDB = 1e6
-    // 借款金額 = (抵押金額 / 2) * (1e6 / 1e9) = 抵押金額 / 2000
-    const borrowAmountUsdb = Math.floor(profitsInMist / 2000); // 保守估計
+    // Borrow amount = (collateral amount / 2) * (1e6 / 1e9) = collateral amount / 2000
+    const borrowAmountUsdb = Math.floor(profitsInMist / 2000); // Conservative estimate
 
-    if (borrowAmountUsdb < 1000000) { // 少於 1 USDB
+    if (borrowAmountUsdb < 1000000) { // Less than 1 USDB
       setError('Profits too low to borrow USDB (minimum 2 SUI required)');
       return;
     }
 
-    setIsWithdrawing(true); // 重用 withdrawing 狀態
+    setIsWithdrawing(true); // Reuse withdrawing state
     setError('');
 
     try {
@@ -358,7 +358,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
       console.log(`Collateral: ${profitsInMist / 1e9} SUI`);
       console.log(`Borrow: ${borrowAmountUsdb / 1e6} USDB`);
 
-      // 先提取 Kiosk Profits
+      // Step 1: Withdraw Kiosk Profits
       console.log('🏦 Step 1: Withdrawing profits from Kiosk...');
       const { transaction: withdrawTx } = await buildWithdrawProfitsTx({
         kioskClient,
@@ -370,10 +370,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
       const withdrawResult = await signAndExecuteTransaction({ transaction: withdrawTx });
       console.log('✅ Profits withdrawn:', withdrawResult.digest);
 
-      // 等待一下讓交易確認
+      // Wait for transaction confirmation
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // 然後存入 Bucket 並借款
+      // Step 2: Deposit to Bucket and borrow
       console.log('🏦 Step 2: Depositing to Bucket and borrowing USDB...');
       const bucketResult = await depositAndBorrow(profitsInMist, borrowAmountUsdb);
       
@@ -382,7 +382,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
       // Show success state
       setWithdrawSuccess(true);
-      setError(''); // 清除可能的 Bucket 錯誤
+      setError(''); // Clear potential Bucket errors
 
       // Auto-hide success message after 5 seconds
       setTimeout(() => {

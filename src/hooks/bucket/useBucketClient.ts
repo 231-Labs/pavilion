@@ -31,7 +31,7 @@ export function useBucketClient() {
       setBucketClient(client);
     } catch (err) {
       console.error('Failed to initialize Bucket Client:', err);
-      setError('無法初始化 Bucket 客戶端');
+      setError('Failed to initialize Bucket Client');
     }
   }, [suiClient]);
 
@@ -46,7 +46,7 @@ export function useBucketClient() {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch user positions:', err);
-      setError('無法查詢借貸位置');
+      setError('Failed to fetch lending positions');
     } finally {
       setIsLoading(false);
     }
@@ -60,20 +60,20 @@ export function useBucketClient() {
   }, [currentAccount?.address, bucketClient]);
 
   /**
-   * 一鍵抵押並借款
-   * @param collateralAmount - 抵押金額（MIST）
-   * @param borrowAmount - 借款金額（USDB，6 decimals）
+   * Deposit collateral and borrow USDB in one transaction
+   * @param collateralAmount - Collateral amount in MIST
+   * @param borrowAmount - Borrow amount in USDB (6 decimals)
    */
   const depositAndBorrow = async (
     collateralAmount: number,
     borrowAmount: number
   ) => {
     if (!bucketClient) {
-      throw new Error('Bucket 客戶端未初始化');
+      throw new Error('Bucket client not initialized');
     }
 
     if (!currentAccount) {
-      throw new Error('請先連接錢包');
+      throw new Error('Please connect your wallet first');
     }
 
     try {
@@ -89,23 +89,23 @@ export function useBucketClient() {
         borrowAmount: borrowAmount,
       });
 
-      console.log('🚀 準備執行 Bucket 交易...');
-      console.log('抵押金額:', collateralAmount / 1e9, 'SUI');
-      console.log('借款金額:', borrowAmount / 1e6, 'USDB');
+      console.log('🚀 Preparing Bucket transaction...');
+      console.log('Collateral amount:', collateralAmount / 1e9, 'SUI');
+      console.log('Borrow amount:', borrowAmount / 1e6, 'USDB');
 
       // 執行交易
       const result = await signAndExecuteTransaction({ transaction: tx });
 
-      console.log('✅ Bucket 交易成功:', result.digest);
+      console.log('✅ Bucket transaction successful:', result.digest);
 
-      // 刷新用戶位置
+      // Refresh user positions
       if (currentAccount.address) {
         await fetchUserPositions(currentAccount.address);
       }
 
       return result;
     } catch (err: any) {
-      console.error('❌ Bucket 交易失敗:', err);
+      console.error('❌ Bucket transaction failed:', err);
       const errorMessage = parseError(err);
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -115,12 +115,12 @@ export function useBucketClient() {
   };
 
   /**
-   * 還款
-   * @param repayAmount - 還款金額（USDB，6 decimals）
+   * Repay debt
+   * @param repayAmount - Repay amount in USDB (6 decimals)
    */
   const repayDebt = async (repayAmount: number) => {
     if (!bucketClient) {
-      throw new Error('Bucket 客戶端未初始化');
+      throw new Error('Bucket client not initialized');
     }
 
     try {
@@ -136,9 +136,9 @@ export function useBucketClient() {
 
       const result = await signAndExecuteTransaction({ transaction: tx });
 
-      console.log('✅ 還款成功:', result.digest);
+      console.log('✅ Repayment successful:', result.digest);
 
-      // 刷新用戶位置
+      // Refresh user positions
       if (currentAccount?.address) {
         await fetchUserPositions(currentAccount.address);
       }
@@ -154,12 +154,12 @@ export function useBucketClient() {
   };
 
   /**
-   * 提取抵押品
-   * @param withdrawAmount - 提取金額（MIST）
+   * Withdraw collateral
+   * @param withdrawAmount - Withdraw amount in MIST
    */
   const withdrawCollateral = async (withdrawAmount: number) => {
     if (!bucketClient) {
-      throw new Error('Bucket 客戶端未初始化');
+      throw new Error('Bucket client not initialized');
     }
 
     try {
@@ -175,9 +175,9 @@ export function useBucketClient() {
 
       const result = await signAndExecuteTransaction({ transaction: tx });
 
-      console.log('✅ 提取成功:', result.digest);
+      console.log('✅ Withdrawal successful:', result.digest);
 
-      // 刷新用戶位置
+      // Refresh user positions
       if (currentAccount?.address) {
         await fetchUserPositions(currentAccount.address);
       }
@@ -193,7 +193,7 @@ export function useBucketClient() {
   };
 
   /**
-   * 獲取 USDB 代幣類型
+   * Get USDB token type
    */
   const getUsdbType = () => {
     if (!bucketClient) return null;
@@ -201,14 +201,14 @@ export function useBucketClient() {
   };
 
   /**
-   * 獲取 Vault 資訊
+   * Get Vault information
    */
   const getVaultInfo = async () => {
     if (!bucketClient) return null;
 
     try {
       const allVaults = await bucketClient.getAllVaultObjects();
-      // 返回 SUI vault 的資訊
+      // Return SUI vault information
       return allVaults['0x2::sui::SUI'] || null;
     } catch (err) {
       console.error('Failed to fetch vault info:', err);
@@ -231,24 +231,24 @@ export function useBucketClient() {
 }
 
 /**
- * 解析錯誤訊息
+ * Parse error messages
  */
 function parseError(error: any): string {
   if (error.message) {
     if (error.message.includes('Insufficient balance')) {
-      return '餘額不足';
+      return 'Insufficient balance';
     }
     if (error.message.includes('User rejected')) {
-      return '用戶取消交易';
+      return 'Transaction rejected by user';
     }
     if (error.message.includes('Insufficient collateral')) {
-      return '抵押品不足';
+      return 'Insufficient collateral';
     }
     if (error.message.includes('Position not found')) {
-      return '未找到借貸位置';
+      return 'Lending position not found';
     }
     return error.message;
   }
-  return '未知錯誤';
+  return 'Unknown error';
 }
 
