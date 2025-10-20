@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKioskState } from '../providers/KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { ObjectChange } from '../../hooks/state/useObjectChanges';
 import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
@@ -74,6 +75,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
   // Use Bucket Client
   const {
+    bucketClient,
     depositAndBorrow,
     positions: bucketPositions,
     isLoading: isBucketLoading,
@@ -358,7 +360,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      console.log('💰 Depositing to Bucket and borrowing USDB...');
+      console.log('💰 Executing Withdraw + Deposit to Bucket + Borrow USDB...');
       console.log(`Collateral: ${profitsInMist / 1e9} SUI`);
       console.log(`Borrow: ${borrowAmountUsdb / 1e6} USDB`);
 
@@ -371,17 +373,23 @@ export function WalletTerminal(props: WalletTerminalProps) {
         ownerAddress: currentAccount.address,
       });
 
-      const withdrawResult = await signAndExecuteTransaction({ transaction: withdrawTx });
-      console.log('✅ Profits withdrawn:', withdrawResult.digest);
+      // Add Bucket operations to the same transaction
+      console.log('🏦 Step 2: Adding Bucket deposit and borrow to the same transaction...');
+      if (!bucketClient) {
+        throw new Error('Bucket client not initialized');
+      }
 
-      // Wait for transaction confirmation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await bucketClient.buildManagePositionTransaction(withdrawTx, {
+        coinType: '0x2::sui::SUI',
+        depositCoinOrAmount: profitsInMist,
+        borrowAmount: borrowAmountUsdb,
+      });
 
-      // Step 2: Deposit to Bucket and borrow
-      console.log('🏦 Step 2: Depositing to Bucket and borrowing USDB...');
-      const bucketResult = await depositAndBorrow(profitsInMist, borrowAmountUsdb);
+      // Execute the combined transaction
+      console.log('📝 Executing combined transaction (Withdraw + Bucket)...');
+      const result = await signAndExecuteTransaction({ transaction: withdrawTx });
       
-      console.log('✅ Bucket transaction successful:', bucketResult.digest);
+      console.log('✅ Combined transaction successful:', result.digest);
       console.log(`📊 Borrowed ${borrowAmountUsdb / 1e6} USDB with ${profitsInMist / 1e9} SUI collateral`);
 
       // Show success state
@@ -407,9 +415,15 @@ export function WalletTerminal(props: WalletTerminalProps) {
       } catch (e) {
         console.error('Failed to refresh kiosk data:', e);
       }
+
+      // Refresh Bucket positions
+      if (currentAccount.address) {
+        // The useBucketClient hook will auto-refresh, but we can trigger it manually if needed
+        console.log('🔄 Bucket positions will auto-refresh');
+      }
     } catch (error) {
-      console.error('❌ Failed to deposit to Bucket:', error);
-      const errorMessage = bucketError || (error as Error).message || 'Failed to deposit to Bucket';
+      console.error('❌ Failed to borrow USDB:', error);
+      const errorMessage = (error as Error).message || 'Failed to borrow USDB with profits';
       setError(errorMessage);
       setBorrowSuccess(false);
     } finally {
