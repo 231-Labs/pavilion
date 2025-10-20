@@ -1,10 +1,15 @@
 {
   "routes": {
-    "/visit/*": "/visit/index.html",
+    "/pavilion/visit": "/pavilion/visit/index.html",
     "/pavilion/visit/*": "/pavilion/visit/index.html",
-    "/pavilion/*": "/pavilion/index.html",
+    "/visit": "/visit/index.html",
+    "/visit/*": "/visit/index.html",
+    "/manage": "/manage/index.html",
     "/manage/*": "/manage/index.html",
+    "/demo": "/demo/index.html",
     "/demo/*": "/demo/index.html",
+    "/pavilion": "/pavilion/index.html",
+    "/pavilion/*": "/pavilion/index.html",
     "/*": "/index.html"
   },
   "headers": {
