@@ -26,7 +26,7 @@ export function useBucketClient() {
     try {
       const client = new BucketClient({
         suiClient,
-        network: 'testnet', // 使用測試網
+        network: 'mainnet', // Bucket Protocol only supports mainnet
       });
       setBucketClient(client);
     } catch (err) {

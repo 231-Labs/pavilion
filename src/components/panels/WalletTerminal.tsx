@@ -338,6 +338,12 @@ export function WalletTerminal(props: WalletTerminalProps) {
       return;
     }
 
+    // Check if Bucket client is initialized
+    if (!bucketClient) {
+      setError('Bucket Protocol is not available. Please ensure you are on mainnet.');
+      return;
+    }
+
     // Check if there are profits available
     const profits = kioskData?.kiosk?.profits;
     if (!profits || profits === '0' || Number(profits) === 0) {
@@ -538,8 +544,9 @@ export function WalletTerminal(props: WalletTerminalProps) {
                       <div className="grid grid-cols-1 gap-2">
                         <button
                           onClick={handleDepositToBucket}
-                          disabled={isBorrowingUsdb || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
+                          disabled={!bucketClient || isBorrowingUsdb || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
                           className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/8 flex items-center justify-center gap-2"
+                          title={!bucketClient ? 'Bucket Protocol only available on mainnet' : ''}
                         >
                           {isBorrowingUsdb || isBucketLoading ? (
                             <>
