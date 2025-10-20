@@ -47,6 +47,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
+  // Bucket borrow related state
+  const [isBorrowingUsdb, setIsBorrowingUsdb] = useState(false);
+  const [borrowSuccess, setBorrowSuccess] = useState(false);
+
   // Copy tooltip state
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
   const [isTooltipFadingOut, setIsTooltipFadingOut] = useState(false);
@@ -350,7 +354,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
       return;
     }
 
-    setIsWithdrawing(true); // Reuse withdrawing state
+    setIsBorrowingUsdb(true);
     setError('');
 
     try {
@@ -381,12 +385,12 @@ export function WalletTerminal(props: WalletTerminalProps) {
       console.log(`📊 Borrowed ${borrowAmountUsdb / 1e6} USDB with ${profitsInMist / 1e9} SUI collateral`);
 
       // Show success state
-      setWithdrawSuccess(true);
+      setBorrowSuccess(true);
       setError(''); // Clear potential Bucket errors
 
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
-        setWithdrawSuccess(false);
+        setBorrowSuccess(false);
       }, 5000);
 
       // Refresh balance
@@ -407,9 +411,9 @@ export function WalletTerminal(props: WalletTerminalProps) {
       console.error('❌ Failed to deposit to Bucket:', error);
       const errorMessage = bucketError || (error as Error).message || 'Failed to deposit to Bucket';
       setError(errorMessage);
-      setWithdrawSuccess(false);
+      setBorrowSuccess(false);
     } finally {
-      setIsWithdrawing(false);
+      setIsBorrowingUsdb(false);
     }
   };
 
@@ -520,10 +524,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
                       <div className="grid grid-cols-1 gap-2">
                         <button
                           onClick={handleDepositToBucket}
-                          disabled={isWithdrawing || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
+                          disabled={isBorrowingUsdb || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
                           className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/8 flex items-center justify-center gap-2"
                         >
-                          {isWithdrawing || isBucketLoading ? (
+                          {isBorrowingUsdb || isBucketLoading ? (
                             <>
                               <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -531,7 +535,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
                               </svg>
                               <span>Processing...</span>
                             </>
-                          ) : withdrawSuccess ? (
+                          ) : borrowSuccess ? (
                             <>
                               <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
                                 <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
