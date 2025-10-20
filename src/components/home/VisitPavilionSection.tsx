@@ -5,7 +5,7 @@ import { usePreloadNavigation } from '../../hooks/navigation/usePreloadNavigatio
 import { useKioskData } from '../../hooks/kiosk/useKioskData';
 import { KioskSelector } from './KioskSelector';
 import { useKioskClient } from '../providers/KioskClientProvider';
-import { isPavilionKiosk } from '../../lib/blockchain/pavilion-utils';
+import { isPavilionKiosk } from '../../lib/tx/pavilion/utils';
 import type { VisitSubMode } from '../../types/home';
 
 interface VisitPavilionSectionProps {

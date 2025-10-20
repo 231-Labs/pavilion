@@ -6,7 +6,7 @@ import { ConnectButton } from '@mysten/dapp-kit';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { resolveKioskOwnerCapId } from '../../lib/blockchain/pavilion';
+import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion/index';
 import { useObjectChanges } from '../../hooks/state/useObjectChanges';
 import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
 import { WalletTerminal } from '../../components/panels/WalletTerminal';
