@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "build:static": "next build",
-    "build:walrus": "next build && node scripts/fix-paths.js",
+    "build:walrus": "next build && cp ws-resources.json out/ws-resources.json",
+    "deploy": "npm run build:walrus && site-builder deploy ./out --epochs 10",
+    "deploy:testnet": "npm run build:walrus && site-builder deploy ./out --epochs 10 --context testnet",
     "start": "next start",
     "lint": "eslint"
   },
