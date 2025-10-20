@@ -72,9 +72,6 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         packageId: PAVILION_PACKAGE_ID,
         pavilionName,
         ownerAddress: currentAccount.address,
-        platformConfigId: PLATFORM_CONFIG_ID,
-        platformRecipient: PLATFORM_RECIPIENT,
-        suiClient,
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
@@ -164,9 +161,6 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         ownerAddress: currentAccount.address,
         kioskId: selectedKioskId,
         kioskOwnerCapId: selectedCap,
-        platformConfigId: PLATFORM_CONFIG_ID,
-        platformRecipient: PLATFORM_RECIPIENT,
-        suiClient,
       });
       
       const result = await signAndExecuteTransaction({ transaction: tx });

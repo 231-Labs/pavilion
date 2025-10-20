@@ -458,7 +458,7 @@ export function DesignerSection() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] text-white/80 font-medium truncate">
-                          {imageFile ? imageFile.name : 'Choose image file'}
+                          {imageFile ? imageFile.name : 'image'}
                         </div>
                         {imageFile && (
                           <div className="text-[11px] text-white/50 mt-0.5">
@@ -501,7 +501,7 @@ export function DesignerSection() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[13px] text-white/80 font-medium truncate">
-                            {glbFile ? glbFile.name : 'Choose .glb file'}
+                            {glbFile ? glbFile.name : 'model'}
                           </div>
                           {glbFile && (
                             <div className="text-[11px] text-white/50 mt-0.5">
@@ -510,7 +510,7 @@ export function DesignerSection() {
                           )}
                           {!glbFile && (
                             <div className="text-[11px] text-white/40 mt-0.5">
-                              Only .glb format
+                              .glb
                             </div>
                           )}
                         </div>
