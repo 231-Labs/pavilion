@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectButton, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
+import { useKioskData } from '../../hooks/kiosk/useKioskData';
+import { useVisitorPurchaseTarget } from '../providers/VisitorPurchaseTargetProvider';
 
 interface VisitorWalletTerminalProps {
   kioskId: string;
@@ -34,6 +36,24 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
   // Use DappKit hooks
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
+  
+  // Get pavilion kiosks for the current account
+  const { pavilionKiosks, fetchingKiosks } = useKioskData();
+
+  // Get and set target kiosk from context
+  const { targetKioskId, setTargetKiosk } = useVisitorPurchaseTarget();
+
+  // Handler to set target kiosk
+  const handleSelectTargetKiosk = (kioskId: string) => {
+    if (!kioskId) {
+      setTargetKiosk(null, null);
+      return;
+    }
+    const kiosk = pavilionKiosks?.find(k => k.kioskId === kioskId);
+    if (kiosk) {
+      setTargetKiosk(kioskId, kiosk.objectId);
+    }
+  };
 
   // When wallet connection status changes
   useEffect(() => {
@@ -101,8 +121,8 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
   };
 
   return (
-    <div ref={containerRef} className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
-      <div className="relative z-10">
+      <div ref={containerRef} className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+        <div className="relative z-10">
         {/* Title bar */}
         <div
           className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
@@ -146,6 +166,67 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
                     <span className="text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
                     <span className="text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Purchase Target Pavilion Section */}
+            {currentAccount && (
+              <div className="space-y-2 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/30"></div>
+                  <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+                    Purchase Destination
+                  </label>
+                </div>
+                <div className="pl-3.5 space-y-2">
+                  <p className="text-[10px] text-white/50 leading-relaxed mb-2">
+                    Select a pavilion to receive purchased items
+                  </p>
+                  <div className="relative" style={{ maxWidth: '100%' }}>
+                    <select
+                      value={targetKioskId || ''}
+                      onChange={(e) => handleSelectTargetKiosk(e.target.value)}
+                      disabled={fetchingKiosks || !currentAccount}
+                      className="w-full px-3 py-2.5 pr-9 text-xs bg-white/[0.02] border border-white/10 rounded-lg text-white/85 focus:outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="" className="bg-black/95 text-white/70">
+                        {fetchingKiosks ? 'Loading...' : !currentAccount ? 'Connect wallet first' : 'Select a pavilion...'}
+                      </option>
+                      {pavilionKiosks?.map((kiosk) => (
+                        <option key={kiosk.objectId} value={kiosk.kioskId} className="bg-black/95 text-white/85">
+                          {kiosk.name && kiosk.name.trim().length > 0
+                            ? kiosk.name
+                            : `${kiosk.kioskId.slice(0, 8)}...${kiosk.kioskId.slice(-6)}`}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {targetKioskId && (
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-green-400/70 flex-shrink-0">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-[10px] text-white/60 leading-tight">
+                        Items will be placed in selected pavilion
+                      </span>
+                    </div>
+                  )}
+                  {!targetKioskId && pavilionKiosks && pavilionKiosks.length > 0 && (
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                      <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white/40 flex-shrink-0">
+                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-[10px] text-white/50 leading-tight">
+                        No destination selected — will use first kiosk or create new
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -287,8 +368,8 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
   );
 }
 

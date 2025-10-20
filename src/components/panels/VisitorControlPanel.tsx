@@ -7,6 +7,7 @@ import { useModelLoader } from '../../hooks/scene/useModelLoader';
 import { useNftItemsManager } from '../../hooks/kiosk/useNftItemsManager';
 import { useNftPurchase } from '../../hooks/kiosk/useNftPurchase';
 import { useKioskState } from '../providers/KioskStateProvider';
+import { useVisitorPurchaseTarget } from '../providers/VisitorPurchaseTargetProvider';
 
 interface VisitorControlPanelProps {
   sceneManager?: SceneManager;
@@ -27,6 +28,12 @@ export function VisitorControlPanel({
 }: VisitorControlPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const kioskState = useKioskState();
+  
+  // Get selected target kiosk from context
+  // Hook must be called unconditionally per React rules
+  const purchaseTarget = useVisitorPurchaseTarget();
+  const targetKioskId = purchaseTarget.targetKioskId;
+  const targetKioskCapId = purchaseTarget.targetKioskCapId;
 
   // Use model loader hook
   const modelLoader = useModelLoader(sceneManager);
@@ -87,6 +94,8 @@ export function VisitorControlPanel({
       itemType,
       price,
       sellerKiosk: kioskId,
+      targetKioskId: targetKioskId || undefined,
+      targetKioskCapId: targetKioskCapId || undefined,
     });
   };
 

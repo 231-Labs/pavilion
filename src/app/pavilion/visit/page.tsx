@@ -10,6 +10,7 @@ import { KioskItemConverter } from '../../../lib/three/KioskItemConverter';
 import { SceneConfigManager } from '../../../lib/three/SceneConfigManager';
 import { VisitorControlPanel } from '../../../components/panels/VisitorControlPanel';
 import { VisitorWalletTerminal } from '../../../components/panels/VisitorWalletTerminal';
+import { VisitorPurchaseTargetProvider } from '../../../components/providers/VisitorPurchaseTargetProvider';
 
 function VisitorPavilionContent() {
   const searchParams = useSearchParams();
@@ -166,36 +167,38 @@ function VisitorPavilionContent() {
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20 pointer-events-none z-0"></div>
+    <VisitorPurchaseTargetProvider>
+      <div className="relative w-full h-screen overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20 pointer-events-none z-0"></div>
 
-      {/* Main 3D Canvas */}
-      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0" />
+        {/* Main 3D Canvas */}
+        <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0" />
 
-      {/* Liquid Glass Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 pointer-events-none z-5"></div>
+        {/* Liquid Glass Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 pointer-events-none z-5"></div>
 
-      {/* Left Control Panel - Visitor Wallet */}
-      <VisitorWalletTerminal kioskId={kioskId} />
+        {/* Left Control Panel - Visitor Wallet */}
+        <VisitorWalletTerminal kioskId={kioskId} />
 
-      {/* Right Control Panels - Visitor Mode */}
-      <div className="absolute top-6 right-6 z-20">
-        <VisitorControlPanel
-          sceneManager={sceneManager}
-          autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
-          kioskItems={kioskState.kioskItems || []}
-          kioskId={kioskId}
-          initialDisplayedItems={panelDisplayedItems}
-          initialTransforms={panelTransforms}
-        />
+        {/* Right Control Panels - Visitor Mode */}
+        <div className="absolute top-6 right-6 z-20">
+          <VisitorControlPanel
+            sceneManager={sceneManager}
+            autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}
+            kioskItems={kioskState.kioskItems || []}
+            kioskId={kioskId}
+            initialDisplayedItems={panelDisplayedItems}
+            initialTransforms={panelTransforms}
+          />
+        </div>
+        
+        <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
+          <div className="w-full h-full border border-white/15"></div>
+          <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>
+        </div>
       </div>
-      
-      <div className="absolute bottom-4 right-4 w-24 h-24 opacity-15 pointer-events-none">
-        <div className="w-full h-full border border-white/15"></div>
-        <div className="absolute top-1 left-1 w-full h-full border border-white/5"></div>
-      </div>
-    </div>
+    </VisitorPurchaseTargetProvider>
   );
 }
 

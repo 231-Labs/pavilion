@@ -100,6 +100,8 @@ export interface PurchaseTransactionParams {
   price: string;
   sellerKiosk: string;
   buyerAddress: string;
+  targetKioskId?: string;  // Optional: specific kiosk to place purchased item
+  targetKioskCapId?: string;  // Optional: kiosk owner cap for target kiosk
 }
 
 export interface PurchaseTransactionResult {
