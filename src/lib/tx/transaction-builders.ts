@@ -76,7 +76,7 @@ export async function buildAutoPavilionTx(params: PavilionTxParams): Promise<Tra
     }
   } catch (error) {
     // If there's an error getting kiosks (e.g., no kiosks), continue to create new one
-    console.log('No existing kiosk found, creating new one:', error);
+    // No existing kiosk found, creating new one
   }
 
   // No existing kiosk found, create a new one

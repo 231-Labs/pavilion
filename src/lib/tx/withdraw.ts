@@ -38,8 +38,6 @@ export async function buildWithdrawProfitsTx(
   // Finalize the transaction
   kioskTx.finalize();
 
-  console.log('✅ Withdraw transaction built successfully');
-
   return {
     transaction: tx,
     withdrawnAmount: amount,

@@ -80,14 +80,12 @@ export async function fetchKioskContents(params: FetchKioskContentsParams) {
  */
 export async function debugDynamicFields(params: DebugDynamicFieldsParams) {
   const { suiClient, kioskId } = params;
-  console.log('🔍 Starting dynamic field debugging for kiosk:', kioskId);
   
   try {
     // Get all dynamic fields
     const fieldsResp = await suiClient.getDynamicFields({
       parentId: kioskId,
     });
-    console.log('📋 All dynamic fields:', JSON.stringify(fieldsResp, null, 2));
     
     // Get kiosk object structure
     const objResp = await suiClient.getObject({
@@ -98,11 +96,9 @@ export async function debugDynamicFields(params: DebugDynamicFieldsParams) {
         showType: true,
       },
     });
-    console.log('🏛️ Kiosk structure:', JSON.stringify(objResp, null, 2));
     
     return { fields: fieldsResp, object: objResp };
   } catch (error) {
-    console.error('💥 Debug failed:', error);
     throw error;
   }
 }

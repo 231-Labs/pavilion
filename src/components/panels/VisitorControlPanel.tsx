@@ -102,11 +102,10 @@ export function VisitorControlPanel({
   // Refresh kiosk data after successful purchase
   useEffect(() => {
     if (purchaseSuccess) {
-      console.log('🔄 Purchase successful, refreshing kiosk data...');
       // Wait a bit for the transaction to be finalized on chain
       const timeoutId = setTimeout(() => {
         kioskState.refresh();
-      }, 2000); // 2 second delay to ensure blockchain state is updated
+      }, 2000);
       
       return () => clearTimeout(timeoutId);
     }

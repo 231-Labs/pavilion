@@ -17,11 +17,9 @@ export async function readSceneConfig(params: SceneConfigParams): Promise<string
     const value = resp?.data?.content?.fields?.value;
     
     if (typeof value === 'string' && value.length > 0) {
-      console.log('✅ Successfully loaded scene config from chain');
       return value;
     }
     
-    console.log('⚠️ Scene config field exists but value is empty or invalid');
     return null;
     
   } catch {
@@ -45,16 +43,14 @@ export async function readSceneConfig(params: SceneConfigParams): Promise<string
           
           const value = fieldResp?.data?.content?.fields?.value;
           if (typeof value === 'string' && value.length > 0) {
-            console.log('✅ Successfully loaded scene config from chain (fallback method)');
             return value;
           }
         }
       }
     } catch (fallbackError) {
-      console.log('❌ Both primary and fallback methods failed:', fallbackError);
+      // Silently fail
     }
     
-    console.log('💭 No scene config found on chain');
     return null;
   }
 }

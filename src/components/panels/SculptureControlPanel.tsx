@@ -171,7 +171,7 @@ export function SculptureControlPanel({
             }
           });
         } catch (error) {
-          console.warn('Error traversing scene for external objects:', error);
+          // Silently ignore traversal errors
         }
       }
     }

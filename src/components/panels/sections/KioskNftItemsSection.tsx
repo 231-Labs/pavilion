@@ -87,8 +87,7 @@ export function KioskNftItemsSection({
       // Clear selected items after successful listing
       setItemPrices(new Map());
     } catch (error) {
-      console.error('Failed to list items:', error);
-      alert('Failed to list items: ' + (error as Error).message);
+      alert('Listing failed: ' + (error as Error).message);
     } finally {
       setIsListing(false);
     }
@@ -102,8 +101,7 @@ export function KioskNftItemsSection({
       await onDelistItem(itemId, itemType);
       setExpandedItemId(null);
     } catch (error) {
-      console.error('Failed to delist item:', error);
-      alert('Failed to delist item: ' + (error as Error).message);
+      alert('Delisting failed: ' + (error as Error).message);
     } finally {
       setDelistingItemId(null);
     }

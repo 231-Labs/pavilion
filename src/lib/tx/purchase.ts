@@ -43,10 +43,10 @@ export async function buildPurchaseTransaction(
         cap: targetCap
       });
       usedKioskId = targetKioskId;
-      console.log('🎯 Using selected pavilion kiosk:', targetKioskId);
+      // Using selected pavilion kiosk
     } else {
       // Fallback: couldn't find the target cap, use first available or create new
-      console.warn('⚠️ Target kiosk cap not found, falling back to default behavior');
+      // Target kiosk cap not found, falling back to default behavior
       if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
         buyerKioskTx = new KioskTransaction({ 
           kioskClient, 
@@ -54,7 +54,7 @@ export async function buildPurchaseTransaction(
           cap: kioskOwnerCaps[0] 
         });
         usedKioskId = kioskOwnerCaps[0].kioskId;
-        console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
+        // Using existing kiosk
       } else {
         // Create new personal kiosk
         buyerKioskTx = new KioskTransaction({ 
@@ -63,7 +63,7 @@ export async function buildPurchaseTransaction(
         });
         buyerKioskTx.create();
         isNewKiosk = true;
-        console.log('🆕 Creating new kiosk for buyer');
+        // Creating new kiosk for buyer
       }
     }
   } else {
@@ -80,7 +80,7 @@ export async function buildPurchaseTransaction(
         cap: kioskOwnerCaps[0] 
       });
       usedKioskId = kioskOwnerCaps[0].kioskId;
-      console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
+      // Using existing kiosk
     } else {
       // Create new personal kiosk
       buyerKioskTx = new KioskTransaction({ 
@@ -89,7 +89,7 @@ export async function buildPurchaseTransaction(
       });
       buyerKioskTx.create();
       isNewKiosk = true;
-      console.log('🆕 Creating new kiosk for buyer');
+      // Creating new kiosk for buyer
     }
   }
 
@@ -102,8 +102,6 @@ export async function buildPurchaseTransaction(
     price,
     sellerKiosk,
   });
-
-  console.log('✅ Purchase transaction built successfully');
 
   // Finalize the transaction after purchase is complete
   buyerKioskTx.finalize();

@@ -10,7 +10,7 @@ export function registerRoyaltyResolver(kioskClient: KioskClient, itemType: stri
   // itemType format: packageId::moduleName::TypeName
   const parts = itemType.split('::');
   if (parts.length !== 3) {
-    console.error('Invalid itemType format:', itemType);
+    // Invalid itemType format
     return;
   }
   
@@ -20,7 +20,7 @@ export function registerRoyaltyResolver(kioskClient: KioskClient, itemType: stri
   // Check if resolver already exists
   const existingResolver = kioskClient.rules.find((r: TransferPolicyRule) => r.rule === ruleType);
   if (existingResolver) {
-    console.log('ℹ️ RoyaltyRule resolver already registered for:', ruleType);
+    // RoyaltyRule resolver already registered
     return;
   }
   
@@ -31,7 +31,7 @@ export function registerRoyaltyResolver(kioskClient: KioskClient, itemType: stri
     resolveRuleFunction: (params: any) => {
       const { transaction, itemType, transferRequest, policyId, price } = params;
       
-      console.log('🔧 Resolving RoyaltyRule:', { itemType, price, policyId });
+      // Resolving RoyaltyRule
       
       // Extract package and module info from itemType
       const [pkg, mod] = itemType.split('::');
@@ -48,7 +48,7 @@ export function registerRoyaltyResolver(kioskClient: KioskClient, itemType: stri
         ],
       });
 
-      console.log('💰 Calculating royalty from chain config for', `${pkg}::${mod}`);
+      // Calculating royalty from chain config
 
       // Split coin for royalty payment
       const royaltyCoin = transaction.splitCoins(transaction.gas, [royaltyAmount]);
@@ -63,16 +63,16 @@ export function registerRoyaltyResolver(kioskClient: KioskClient, itemType: stri
         ],
       });
       
-      console.log('✅ RoyaltyRule resolved for', `${pkg}::${mod}`);
+      // RoyaltyRule resolved
     },
   };
 
   // Add the resolver to kioskClient
   try {
     kioskClient.addRuleResolver(royaltyRuleResolver);
-    console.log('✅ RoyaltyRule resolver registered:', ruleType);
+    // RoyaltyRule resolver registered
   } catch (error) {
-    console.error('Failed to register RoyaltyRule resolver:', error);
+    // Failed to register RoyaltyRule resolver
   }
 }
 

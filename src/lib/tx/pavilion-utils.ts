@@ -21,7 +21,7 @@ export async function isPavilionKiosk(
     
     return !!(extension && extension.isEnabled !== false);
   } catch (error) {
-    console.error('Error checking if kiosk is pavilion:', error);
+    // Error checking if kiosk is pavilion
     return false;
   }
 }

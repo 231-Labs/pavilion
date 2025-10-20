@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKioskState } from '../providers/KioskStateProvider';
 import { ConnectButton, useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
 import { ObjectChange } from '../../hooks/state/useObjectChanges';
 import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
 import { useKioskClient } from '../providers/KioskClientProvider';
 import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/withdraw';
+import { buildDepositAndBorrowTx, calculateBorrowableUsdb, parseBucketError } from '../../lib/tx/bucket';
+import { buildSaveSceneTx, parseSaveSceneError } from '../../lib/tx/save-scene';
 import { useBucketClient } from '../../hooks/bucket/useBucketClient';
 
 interface WalletTerminalProps {
@@ -31,14 +32,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const SUI_TO_MIST = 1000000000;
   const router = useRouter();
 
-  // Debug: log kioskData to see its structure
-  useEffect(() => {
-    if (kioskData) {
-      console.log('💰 WalletTerminal: kioskData structure:', kioskData);
-      console.log('💰 WalletTerminal: kioskData.kiosk:', kioskData.kiosk);
-      console.log('💰 WalletTerminal: kioskData.kiosk.profits:', kioskData.kiosk?.profits);
-    }
-  }, [kioskData]);
 
   // Save related state
   const [isPreparingSave, setIsPreparingSave] = useState(false);
@@ -107,15 +100,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
   // Prepare save transaction
   const prepareSaveTransaction = async () => {
-    console.log('Debugging save transaction:', {
-      currentAccount: currentAccount?.address,
-      kioskId,
-      kioskOwnerCapId,
-      objectChanges: props.objectChanges.size,
-      hasSceneConfigManager: !!sceneConfigManager,
-      hasCurrentSceneConfig: !!currentSceneConfig
-    });
-
     if (!currentAccount) {
       setError('Please connect your wallet first');
       return;
@@ -145,49 +129,33 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      const changes = Array.from(props.objectChanges.values());
-
-      if (changes.length === 0) {
-        console.log('No changes to save, but proceeding with save operation anyway');
-      }
-
       // Use scene manager to capture current scene state
       const updatedConfig = sceneConfigManager.captureCurrentSceneState(
         currentSceneConfig,
         kioskItems
       );
 
-      console.log('Scene config to save:', {
-        totalObjects: updatedConfig.objects.length,
-        displayedObjects: updatedConfig.objects.filter(obj => obj.displayed).length,
-        stats: sceneConfigManager.getSceneStats(updatedConfig)
+      // Build save transaction
+      const { transaction } = buildSaveSceneTx({
+        sceneConfig: updatedConfig,
+        kioskId,
+        kioskOwnerCapId,
+        sceneConfigManager,
       });
 
-      // Create and execute save transaction directly
-      const transaction = sceneConfigManager.createSaveTransaction(
-        updatedConfig,
-        kioskId,
-        kioskOwnerCapId
-      );
-
-      console.log('Executing save transaction directly...');
-      const result = await signAndExecuteTransaction({ transaction });
-      console.log('Save transaction executed successfully:', result);
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
 
       // Show success state
       setSaveSuccess(true);
-
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
+      setTimeout(() => setSaveSuccess(false), 3000);
 
       // Call success callback
       props.onSaveSuccess?.();
     } catch (error) {
-      console.error('Failed to prepare save transaction:', error);
-      setSaveSuccess(false); // Clear success state on error
-      setError(error instanceof Error ? error.message : 'Failed to prepare save transaction');
+      setSaveSuccess(false);
+      const errorMessage = parseSaveSceneError(error);
+      setError(errorMessage);
       onSaveError?.(error as Error);
     } finally {
       setIsPreparingSave(false);
@@ -216,7 +184,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
           }, 150); // matches fade out animation duration
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        // Silently fail
       }
     }
   };
@@ -238,20 +206,13 @@ export function WalletTerminal(props: WalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy share URL to clipboard:', error);
+        // Silently fail
       }
     }
   };
 
   // Handle withdraw profits
   const handleWithdrawProfits = async () => {
-    console.log('Withdrawing profits:', {
-      currentAccount: currentAccount?.address,
-      kioskId,
-      kioskOwnerCapId,
-      profits: kioskData?.kiosk?.profits
-    });
-
     if (!currentAccount) {
       setError('Please connect your wallet first');
       return;
@@ -278,46 +239,32 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      console.log('🏦 Building withdraw transaction...');
-      
       // Build withdraw transaction
       const { transaction } = await buildWithdrawProfitsTx({
         kioskClient,
         kioskId,
         kioskOwnerCapId,
         ownerAddress: currentAccount.address,
-        // Don't specify amount to withdraw all profits
       });
 
-      console.log('📝 Executing withdraw transaction...');
-      const result = await signAndExecuteTransaction({ transaction });
-      console.log('✅ Withdraw transaction executed successfully:', result);
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
 
       // Show success state
       setWithdrawSuccess(true);
+      setTimeout(() => setWithdrawSuccess(false), 3000);
 
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setWithdrawSuccess(false);
-      }, 3000);
-
-      // Refresh balance after withdrawal
+      // Refresh balance
       try {
         const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
         setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
       } catch (e) {
-        console.error('Failed to refresh balance after withdrawal:', e);
+        // Silently fail - balance will update eventually
       }
 
-      // Refresh kiosk data to update profits display
-      try {
-        await refreshKioskData();
-        console.log('🔄 Kiosk data refreshed after withdrawal');
-      } catch (e) {
-        console.error('Failed to refresh kiosk data after withdrawal:', e);
-      }
+      // Refresh kiosk data
+      await refreshKioskData();
     } catch (error) {
-      console.error('❌ Failed to withdraw profits:', error);
       const errorMessage = parseWithdrawError(error);
       setError(errorMessage);
       setWithdrawSuccess(false);
@@ -326,19 +273,13 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
-  // Handle Bucket deposit and borrow (Deposit Kiosk Profits to Bucket and borrow USDB)
+  // Handle Bucket deposit and borrow
   const handleDepositToBucket = async () => {
-    console.log('Depositing to Bucket:', {
-      currentAccount: currentAccount?.address,
-      profits: kioskData?.kiosk?.profits
-    });
-
     if (!currentAccount) {
       setError('Please connect your wallet first');
       return;
     }
 
-    // Check if Bucket client is initialized
     if (!bucketClient) {
       setError('Bucket Protocol client not initialized. Please try again later.');
       return;
@@ -352,10 +293,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
 
     const profitsInMist = Number(profits);
-    // Calculate borrowable USDB (assuming 200% collateral ratio, i.e., 1 SUI collateral can borrow 0.5 USDB)
-    // 1 SUI = 1e9 MIST, 1 USDB = 1e6
-    // Borrow amount = (collateral amount / 2) * (1e6 / 1e9) = collateral amount / 2000
-    const borrowAmountUsdb = Math.floor(profitsInMist / 2000); // Conservative estimate
+    const borrowAmountUsdb = calculateBorrowableUsdb(profitsInMist);
 
     if (borrowAmountUsdb < 1000000) { // Less than 1 USDB
       setError('Profits too low to borrow USDB (minimum 2 SUI required)');
@@ -366,70 +304,37 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      console.log('💰 Executing Withdraw + Deposit to Bucket + Borrow USDB...');
-      console.log(`Collateral: ${profitsInMist / 1e9} SUI`);
-      console.log(`Borrow: ${borrowAmountUsdb / 1e6} USDB`);
-
-      // Step 1: Withdraw Kiosk Profits
-      console.log('🏦 Step 1: Withdrawing profits from Kiosk...');
-      const { transaction: withdrawTx } = await buildWithdrawProfitsTx({
+      // Build combined transaction
+      const { transaction } = await buildDepositAndBorrowTx({
+        bucketClient,
         kioskClient,
         kioskId: kioskId!,
         kioskOwnerCapId: kioskOwnerCapId!,
         ownerAddress: currentAccount.address,
-      });
-
-      // Add Bucket operations to the same transaction
-      console.log('🏦 Step 2: Adding Bucket deposit and borrow to the same transaction...');
-      if (!bucketClient) {
-        throw new Error('Bucket client not initialized');
-      }
-
-      await bucketClient.buildManagePositionTransaction(withdrawTx, {
-        coinType: '0x2::sui::SUI',
-        depositCoinOrAmount: profitsInMist,
+        collateralAmount: profitsInMist,
         borrowAmount: borrowAmountUsdb,
       });
 
-      // Execute the combined transaction
-      console.log('📝 Executing combined transaction (Withdraw + Bucket)...');
-      const result = await signAndExecuteTransaction({ transaction: withdrawTx });
-      
-      console.log('✅ Combined transaction successful:', result.digest);
-      console.log(`📊 Borrowed ${borrowAmountUsdb / 1e6} USDB with ${profitsInMist / 1e9} SUI collateral`);
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
 
       // Show success state
       setBorrowSuccess(true);
-      setError(''); // Clear potential Bucket errors
-
-      // Auto-hide success message after 5 seconds
-      setTimeout(() => {
-        setBorrowSuccess(false);
-      }, 5000);
+      setError('');
+      setTimeout(() => setBorrowSuccess(false), 5000);
 
       // Refresh balance
       try {
         const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
         setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
       } catch (e) {
-        console.error('Failed to refresh balance:', e);
+        // Silently fail
       }
 
       // Refresh kiosk data
-      try {
-        await refreshKioskData();
-      } catch (e) {
-        console.error('Failed to refresh kiosk data:', e);
-      }
-
-      // Refresh Bucket positions
-      if (currentAccount.address) {
-        // The useBucketClient hook will auto-refresh, but we can trigger it manually if needed
-        console.log('🔄 Bucket positions will auto-refresh');
-      }
+      await refreshKioskData();
     } catch (error) {
-      console.error('❌ Failed to borrow USDB:', error);
-      const errorMessage = (error as Error).message || 'Failed to borrow USDB with profits';
+      const errorMessage = parseBucketError(error);
       setError(errorMessage);
       setBorrowSuccess(false);
     } finally {

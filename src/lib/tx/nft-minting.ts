@@ -152,7 +152,7 @@ export async function parseMintedNFTId(
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } else {
         // On last attempt, log error and return null
-        console.error('Failed to parse minted NFT ID:', error);
+        // Failed to parse minted NFT ID
         return null;
       }
     }

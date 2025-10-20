@@ -32,7 +32,6 @@ export function useBucketClient() {
       });
       setBucketClient(client);
     } catch (err) {
-      console.error('Failed to initialize Bucket Client:', err);
       setError('Failed to initialize Bucket Client');
     }
   }, [suiClient]);
@@ -47,7 +46,6 @@ export function useBucketClient() {
       setPositions(userPositions || []);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch user positions:', err);
       setError('Failed to fetch lending positions');
     } finally {
       setIsLoading(false);
@@ -91,14 +89,8 @@ export function useBucketClient() {
         borrowAmount: borrowAmount,
       });
 
-      console.log('🚀 Preparing Bucket transaction...');
-      console.log('Collateral amount:', collateralAmount / 1e9, 'SUI');
-      console.log('Borrow amount:', borrowAmount / 1e6, 'USDB');
-
       // Execute transaction
       const result = await signAndExecuteTransaction({ transaction: tx });
-
-      console.log('✅ Bucket transaction successful:', result.digest);
 
       // Refresh user positions
       if (currentAccount.address) {
@@ -107,7 +99,6 @@ export function useBucketClient() {
 
       return result;
     } catch (err: any) {
-      console.error('❌ Bucket transaction failed:', err);
       const errorMessage = parseError(err);
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -137,8 +128,6 @@ export function useBucketClient() {
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
-
-      console.log('✅ Repayment successful:', result.digest);
 
       // Refresh user positions
       if (currentAccount?.address) {
@@ -177,8 +166,6 @@ export function useBucketClient() {
 
       const result = await signAndExecuteTransaction({ transaction: tx });
 
-      console.log('✅ Withdrawal successful:', result.digest);
-
       // Refresh user positions
       if (currentAccount?.address) {
         await fetchUserPositions(currentAccount.address);
@@ -213,7 +200,6 @@ export function useBucketClient() {
       // Return SUI vault information
       return allVaults['0x2::sui::SUI'] || null;
     } catch (err) {
-      console.error('Failed to fetch vault info:', err);
       return null;
     }
   };

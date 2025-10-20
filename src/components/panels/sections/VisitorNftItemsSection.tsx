@@ -70,7 +70,7 @@ export function VisitorNftItemsSection({
       await onPurchaseItem(item.id, item.itemType, item.listPrice);
       setExpandedItemId(null);
     } catch (error) {
-      console.error('Purchase failed:', error);
+      // Error is handled by parent component
     } finally {
       setPurchasingItemId(null);
     }

@@ -93,7 +93,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        // Silently fail
       }
     }
   };
@@ -115,7 +115,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy share URL to clipboard:', error);
+        // Silently fail
       }
     }
   };
