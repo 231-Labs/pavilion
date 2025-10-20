@@ -521,7 +521,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
                         <button
                           onClick={handleDepositToBucket}
                           disabled={isWithdrawing || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-white/80 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                         >
                           {isWithdrawing || isBucketLoading ? (
                             <>
@@ -543,7 +543,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
                               <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
-                              <span>Deposit to Bucket → Borrow USDB</span>
+                              <span>Borrow USDB</span>
                             </>
                           )}
                         </button>
