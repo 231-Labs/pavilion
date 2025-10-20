@@ -1,6 +1,6 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { SceneConfig } from '../../types/scene';
-import { SceneConfigManager } from '../three/SceneConfigManager';
+import { SceneConfig } from '../../../types/scene';
+import { SceneConfigManager } from '../../three/SceneConfigManager';
 
 /**
  * Parameters for save scene transaction
