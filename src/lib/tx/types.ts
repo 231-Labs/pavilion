@@ -95,3 +95,16 @@ export interface PurchaseTransactionResult {
   isNewKiosk: boolean;
   buyerKioskId?: string;
 }
+
+export interface WithdrawProfitsParams {
+  kioskClient: KioskClient;
+  kioskId: string;
+  kioskOwnerCapId: string;
+  ownerAddress: string;
+  amount?: string; // Amount in MIST to withdraw, if not specified withdraws all profits
+}
+
+export interface WithdrawProfitsResult {
+  transaction: Transaction;
+  withdrawnAmount?: string;
+}

@@ -8,6 +8,8 @@ import { ObjectChange } from '../../hooks/state/useObjectChanges';
 import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
+import { useKioskClient } from '../providers/KioskClientProvider';
+import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/withdraw';
 
 interface WalletTerminalProps {
   objectChanges: Map<string, ObjectChange>;
@@ -23,7 +25,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const [error, setError] = useState<string>('');
   const [balance, setBalance] = useState<string>('0');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { kioskId, kioskOwnerCapId, kioskData } = useKioskState();
+  const { kioskId, kioskOwnerCapId, kioskData, refresh: refreshKioskData } = useKioskState();
   const SUI_TO_MIST = 1000000000;
   const router = useRouter();
 
@@ -39,6 +41,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
   // Save related state
   const [isPreparingSave, setIsPreparingSave] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Withdraw related state
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
   // Copy tooltip state
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
@@ -59,6 +65,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const kioskClient = useKioskClient();
 
   
   // When wallet connection status changes
@@ -221,6 +228,89 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
+  // Handle withdraw profits
+  const handleWithdrawProfits = async () => {
+    console.log('Withdrawing profits:', {
+      currentAccount: currentAccount?.address,
+      kioskId,
+      kioskOwnerCapId,
+      profits: kioskData?.kiosk?.profits
+    });
+
+    if (!currentAccount) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!kioskId) {
+      setError('No kiosk ID found. Please make sure you are in a pavilion.');
+      return;
+    }
+
+    if (!kioskOwnerCapId) {
+      setError('No kiosk owner cap found. Please make sure you own this kiosk.');
+      return;
+    }
+
+    // Check if there are profits to withdraw
+    const profits = kioskData?.kiosk?.profits;
+    if (!profits || profits === '0' || Number(profits) === 0) {
+      setError('No profits available to withdraw');
+      return;
+    }
+
+    setIsWithdrawing(true);
+    setError('');
+
+    try {
+      console.log('🏦 Building withdraw transaction...');
+      
+      // Build withdraw transaction
+      const { transaction } = await buildWithdrawProfitsTx({
+        kioskClient,
+        kioskId,
+        kioskOwnerCapId,
+        ownerAddress: currentAccount.address,
+        // Don't specify amount to withdraw all profits
+      });
+
+      console.log('📝 Executing withdraw transaction...');
+      const result = await signAndExecuteTransaction({ transaction });
+      console.log('✅ Withdraw transaction executed successfully:', result);
+
+      // Show success state
+      setWithdrawSuccess(true);
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setWithdrawSuccess(false);
+      }, 3000);
+
+      // Refresh balance after withdrawal
+      try {
+        const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
+        setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
+      } catch (e) {
+        console.error('Failed to refresh balance after withdrawal:', e);
+      }
+
+      // Refresh kiosk data to update profits display
+      try {
+        await refreshKioskData();
+        console.log('🔄 Kiosk data refreshed after withdrawal');
+      } catch (e) {
+        console.error('Failed to refresh kiosk data after withdrawal:', e);
+      }
+    } catch (error) {
+      console.error('❌ Failed to withdraw profits:', error);
+      const errorMessage = parseWithdrawError(error);
+      setError(errorMessage);
+      setWithdrawSuccess(false);
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
 
 
   return (
@@ -297,12 +387,33 @@ export function WalletTerminal(props: WalletTerminalProps) {
                     {/* Profit Actions */}
                     <div className="space-y-2 pt-2 border-t border-white/5">
                       <button
-                        className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 flex items-center justify-center gap-2"
+                        onClick={handleWithdrawProfits}
+                        disabled={isWithdrawing || !kioskData?.kiosk?.profits || kioskData.kiosk.profits === '0'}
+                        className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/8"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
-                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <span>Withdraw Directly</span>
+                        {isWithdrawing ? (
+                          <>
+                            <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Withdrawing...</span>
+                          </>
+                        ) : withdrawSuccess ? (
+                          <>
+                            <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Withdrawn Successfully!</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Withdraw Directly</span>
+                          </>
+                        )}
                       </button>
                       <div className="grid grid-cols-2 gap-2">
                         <button
