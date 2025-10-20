@@ -13,7 +13,31 @@ A decentralized NFT gallery platform built on Sui blockchain with Walrus storage
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+Before running the development server, ensure you have the required configuration files:
+
+1. **NFT Collection Configuration** (Required)
+   
+   The platform requires a configuration file to properly display NFT collections. This file is already included in the repository at:
+   ```
+   public/config/nft-collections.json
+   ```
+   
+   This file defines:
+   - Supported NFT collections and their field mappings
+   - Field names for 3D models and 2D images
+   - Resource priority (3D model vs 2D image)
+   - Default fallback configuration for unknown collections
+
+   If you need to add custom NFT collections, edit this file to include your collection's:
+   - `collectionId`: The collection identifier (module name or package ID)
+   - `collectionName`: Human-readable name
+   - `modelFields`: Field names for 3D model blob IDs and URLs
+   - `imageFields`: Field names for 2D image blob IDs and URLs
+   - `resourcePriority`: Which resource type to prefer
+
+### Run Development Server
 
 ```bash
 npm run dev
@@ -75,6 +99,10 @@ For detailed setup instructions, see [DESIGNER_MODE_SETUP.md](./DESIGNER_MODE_SE
 │   │   └── walrus/        # Walrus storage client
 │   └── types/             # TypeScript type definitions
 └── public/                # Static assets
+    ├── config/            # Configuration files
+    │   └── nft-collections.json  # NFT collection field mappings
+    ├── fonts/             # Font files
+    └── models/            # 3D model assets
 ```
 
 ## Learn More
