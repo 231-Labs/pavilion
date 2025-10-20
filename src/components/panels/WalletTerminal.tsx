@@ -521,11 +521,11 @@ export function WalletTerminal(props: WalletTerminalProps) {
                         <button
                           onClick={handleDepositToBucket}
                           disabled={isWithdrawing || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                          className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/8 flex items-center justify-center gap-2"
                         >
                           {isWithdrawing || isBucketLoading ? (
                             <>
-                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                              <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
@@ -543,7 +543,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
                               <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
-                              <span>Borrow USDB</span>
+                              <span>Borrow USDB with Profits</span>
                             </>
                           )}
                         </button>
