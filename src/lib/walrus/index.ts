@@ -3,7 +3,7 @@
  */
 
 // Re-export client functions
-export { getWalrusUrl, fetchModels } from './client';
+export { getWalrusUrl } from './client';
 
 // Re-export upload functions
 export {

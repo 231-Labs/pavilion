@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { SceneManager } from '../../lib/three/SceneManager';
-import { fetchModels, getWalrusUrl } from '../../lib/services/walrus-client';
+import { getWalrusUrl } from '../../lib/services/walrus-client';
 
 /**
  * Model loading state and logic management hook
@@ -80,43 +80,6 @@ export function useModelLoader(sceneManager: SceneManager | undefined) {
     }
   }, [sceneManager, walrusBlobId, loadedModels]);
 
-  /**
-   * Load all models from /public/models
-   */
-  const loadAllModels = useCallback(async () => {
-    if (!sceneManager) return;
-
-    setIsLoading(true);
-    setError(null);
-    setLoadingProgress(0);
-
-    try {
-      const data = await fetchModels();
-      const files = data.files || [];
-
-      if (files.length === 0) {
-        setError('No models found in /public/models');
-        return;
-      }
-
-      const modelsToLoad = files.map((file, index) => ({
-        url: file.url,
-        options: {
-          name: file.name.replace(/\.(glb|gltf)$/i, ''),
-          position: { x: (index - Math.floor(files.length / 2)) * 2.5, y: 1.5, z: 0 },
-        },
-      }));
-
-      await sceneManager.loadMultipleGLBModels(modelsToLoad);
-      const modelNames = modelsToLoad.map((m) => (m.options as { name: string }).name);
-      setLoadedModels(prev => [...prev, ...modelNames]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Loading failed');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sceneManager]);
-
   return {
     isLoading,
     setIsLoading,
@@ -133,7 +96,6 @@ export function useModelLoader(sceneManager: SceneManager | undefined) {
     walrusBlobId,
     setWalrusBlobId,
     loadWalrusModel,
-    loadAllModels,
   };
 }
 
