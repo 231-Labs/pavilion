@@ -13,7 +13,7 @@ import { registerRoyaltyResolver } from './royalty';
 export async function buildPurchaseTransaction(
   params: PurchaseTransactionParams
 ): Promise<PurchaseTransactionResult> {
-  const { kioskClient, itemId, itemType, price, sellerKiosk, buyerAddress, targetKioskId, targetKioskCapId } = params;
+  const { kioskClient, itemId, itemType, price, sellerKiosk, buyerAddress } = params;
 
   // Register RoyaltyRule resolver for this NFT type before building transaction
   registerRoyaltyResolver(kioskClient, itemType);
@@ -21,76 +21,31 @@ export async function buildPurchaseTransaction(
   // Create a new transaction
   const tx = new Transaction();
 
+  // Get or create a personal kiosk for the buyer
+  const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ 
+    address: buyerAddress 
+  });
+
   let buyerKioskTx: KioskTransaction;
   let isNewKiosk = false;
-  let usedKioskId: string | undefined;
 
-  // Check if user specified a target kiosk
-  if (targetKioskId && targetKioskCapId) {
-    // Get the buyer's kiosk caps to find the matching one
-    const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ 
-      address: buyerAddress 
+  if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
+    // Use existing kiosk
+    buyerKioskTx = new KioskTransaction({ 
+      kioskClient, 
+      transaction: tx, 
+      cap: kioskOwnerCaps[0] 
     });
-    
-    // Find the matching kiosk cap by kioskId
-    const targetCap = kioskOwnerCaps?.find(cap => cap.kioskId === targetKioskId);
-    
-    if (targetCap) {
-      // Use the specified target kiosk with full cap object
-      buyerKioskTx = new KioskTransaction({ 
-        kioskClient, 
-        transaction: tx, 
-        cap: targetCap
-      });
-      usedKioskId = targetKioskId;
-      console.log('🎯 Using selected pavilion kiosk:', targetKioskId);
-    } else {
-      // Fallback: couldn't find the target cap, use first available or create new
-      console.warn('⚠️ Target kiosk cap not found, falling back to default behavior');
-      if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
-        buyerKioskTx = new KioskTransaction({ 
-          kioskClient, 
-          transaction: tx, 
-          cap: kioskOwnerCaps[0] 
-        });
-        usedKioskId = kioskOwnerCaps[0].kioskId;
-        console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
-      } else {
-        // Create new personal kiosk
-        buyerKioskTx = new KioskTransaction({ 
-          kioskClient, 
-          transaction: tx 
-        });
-        buyerKioskTx.create();
-        isNewKiosk = true;
-        console.log('🆕 Creating new kiosk for buyer');
-      }
-    }
+    console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
   } else {
-    // Original behavior: Get or create a personal kiosk for the buyer
-    const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ 
-      address: buyerAddress 
+    // Create new personal kiosk
+    buyerKioskTx = new KioskTransaction({ 
+      kioskClient, 
+      transaction: tx 
     });
-
-    if (kioskOwnerCaps && kioskOwnerCaps.length > 0) {
-      // Use existing kiosk
-      buyerKioskTx = new KioskTransaction({ 
-        kioskClient, 
-        transaction: tx, 
-        cap: kioskOwnerCaps[0] 
-      });
-      usedKioskId = kioskOwnerCaps[0].kioskId;
-      console.log('📦 Using existing kiosk:', kioskOwnerCaps[0].kioskId);
-    } else {
-      // Create new personal kiosk
-      buyerKioskTx = new KioskTransaction({ 
-        kioskClient, 
-        transaction: tx 
-      });
-      buyerKioskTx.create();
-      isNewKiosk = true;
-      console.log('🆕 Creating new kiosk for buyer');
-    }
+    buyerKioskTx.create();
+    isNewKiosk = true;
+    console.log('🆕 Creating new kiosk for buyer');
   }
 
   // Purchase the item from the seller's kiosk and place it in buyer's kiosk
@@ -116,7 +71,7 @@ export async function buildPurchaseTransaction(
   return {
     transaction: tx,
     isNewKiosk,
-    buyerKioskId: usedKioskId,
+    buyerKioskId: kioskOwnerCaps?.[0]?.kioskId,
   };
 }
 

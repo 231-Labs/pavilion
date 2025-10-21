@@ -60,7 +60,7 @@ export function ControlPanelsContainer({
       />
 
       {/* Right Control Panels */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 w-[calc(100%-1.5rem)] sm:w-auto max-w-[calc(100%-1.5rem)] sm:max-w-xs">
         <SculptureControlPanel
           sculptures={sculptures}
           sceneManager={sceneManager}

@@ -70,7 +70,7 @@ export function VisitorNftItemsSection({
       await onPurchaseItem(item.id, item.itemType, item.listPrice);
       setExpandedItemId(null);
     } catch (error) {
-      console.error('Purchase failed:', error);
+      // Error is handled by parent component
     } finally {
       setPurchasingItemId(null);
     }
@@ -103,7 +103,7 @@ export function VisitorNftItemsSection({
         </div>
       </div>
 
-      <div className="space-y-2 max-h-90 overflow-y-auto scrollbar-hide">
+      <div className="space-y-2 max-h-[calc(100vh-360px)] overflow-y-auto scrollbar-hide">
         {visibleItems.map((nftItem) => {
           const isExpanded = expandedItemId === nftItem.id;
           const isPurchasingThis = purchasingItemId === nftItem.id;

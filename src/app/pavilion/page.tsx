@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useThreeScene } from '../../hooks/scene/useThreeScene';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { resolveKioskOwnerCapId } from '../../lib/blockchain/pavilion';
+import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion/index';
 import { useObjectChanges } from '../../hooks/state/useObjectChanges';
 import { SculptureControlPanel } from '../../components/panels/SculptureControlPanel';
 import { WalletTerminal } from '../../components/panels/WalletTerminal';
@@ -357,7 +357,7 @@ function PavilionContent() {
       />
 
       {/* Right Control Panels */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 w-[calc(50%-1rem)] sm:w-auto sm:max-w-xs">
         {/* Sculpture Control Panel with Integrated GLB Loader */}
         <SculptureControlPanel
           sculptures={sculptures}

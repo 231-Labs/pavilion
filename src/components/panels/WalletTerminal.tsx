@@ -9,7 +9,10 @@ import { SceneConfigManager } from '../../lib/three/SceneConfigManager';
 import { SceneConfig } from '../../types/scene';
 import { useClickOutside } from '../../hooks/ui/useClickOutside';
 import { useKioskClient } from '../providers/KioskClientProvider';
-import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/withdraw';
+import { buildWithdrawProfitsTx, parseWithdrawError } from '../../lib/tx/kiosk/withdraw';
+import { buildDepositAndBorrowTx, calculateBorrowableUsdb, parseBucketError } from '../../lib/tx/protocol/bucket';
+import { buildSaveSceneTx, parseSaveSceneError } from '../../lib/tx/pavilion/save-scene';
+import { useBucketClient } from '../../hooks/bucket/useBucketClient';
 
 interface WalletTerminalProps {
   objectChanges: Map<string, ObjectChange>;
@@ -29,14 +32,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const SUI_TO_MIST = 1000000000;
   const router = useRouter();
 
-  // Debug: log kioskData to see its structure
-  useEffect(() => {
-    if (kioskData) {
-      console.log('💰 WalletTerminal: kioskData structure:', kioskData);
-      console.log('💰 WalletTerminal: kioskData.kiosk:', kioskData.kiosk);
-      console.log('💰 WalletTerminal: kioskData.kiosk.profits:', kioskData.kiosk?.profits);
-    }
-  }, [kioskData]);
 
   // Save related state
   const [isPreparingSave, setIsPreparingSave] = useState(false);
@@ -45,6 +40,10 @@ export function WalletTerminal(props: WalletTerminalProps) {
   // Withdraw related state
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+
+  // Bucket borrow related state
+  const [isBorrowingUsdb, setIsBorrowingUsdb] = useState(false);
+  const [borrowSuccess, setBorrowSuccess] = useState(false);
 
   // Copy tooltip state
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
@@ -66,6 +65,15 @@ export function WalletTerminal(props: WalletTerminalProps) {
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const kioskClient = useKioskClient();
+
+  // Use Bucket Client
+  const {
+    bucketClient,
+    depositAndBorrow,
+    positions: bucketPositions,
+    isLoading: isBucketLoading,
+    error: bucketError,
+  } = useBucketClient();
 
   
   // When wallet connection status changes
@@ -92,15 +100,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
   // Prepare save transaction
   const prepareSaveTransaction = async () => {
-    console.log('Debugging save transaction:', {
-      currentAccount: currentAccount?.address,
-      kioskId,
-      kioskOwnerCapId,
-      objectChanges: props.objectChanges.size,
-      hasSceneConfigManager: !!sceneConfigManager,
-      hasCurrentSceneConfig: !!currentSceneConfig
-    });
-
     if (!currentAccount) {
       setError('Please connect your wallet first');
       return;
@@ -130,49 +129,33 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      const changes = Array.from(props.objectChanges.values());
-
-      if (changes.length === 0) {
-        console.log('No changes to save, but proceeding with save operation anyway');
-      }
-
       // Use scene manager to capture current scene state
       const updatedConfig = sceneConfigManager.captureCurrentSceneState(
         currentSceneConfig,
         kioskItems
       );
 
-      console.log('Scene config to save:', {
-        totalObjects: updatedConfig.objects.length,
-        displayedObjects: updatedConfig.objects.filter(obj => obj.displayed).length,
-        stats: sceneConfigManager.getSceneStats(updatedConfig)
+      // Build save transaction
+      const { transaction } = buildSaveSceneTx({
+        sceneConfig: updatedConfig,
+        kioskId,
+        kioskOwnerCapId,
+        sceneConfigManager,
       });
 
-      // Create and execute save transaction directly
-      const transaction = sceneConfigManager.createSaveTransaction(
-        updatedConfig,
-        kioskId,
-        kioskOwnerCapId
-      );
-
-      console.log('Executing save transaction directly...');
-      const result = await signAndExecuteTransaction({ transaction });
-      console.log('Save transaction executed successfully:', result);
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
 
       // Show success state
       setSaveSuccess(true);
-
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
+      setTimeout(() => setSaveSuccess(false), 3000);
 
       // Call success callback
       props.onSaveSuccess?.();
     } catch (error) {
-      console.error('Failed to prepare save transaction:', error);
-      setSaveSuccess(false); // Clear success state on error
-      setError(error instanceof Error ? error.message : 'Failed to prepare save transaction');
+      setSaveSuccess(false);
+      const errorMessage = parseSaveSceneError(error);
+      setError(errorMessage);
       onSaveError?.(error as Error);
     } finally {
       setIsPreparingSave(false);
@@ -201,7 +184,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
           }, 150); // matches fade out animation duration
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        // Silently fail
       }
     }
   };
@@ -223,20 +206,13 @@ export function WalletTerminal(props: WalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy share URL to clipboard:', error);
+        // Silently fail
       }
     }
   };
 
   // Handle withdraw profits
   const handleWithdrawProfits = async () => {
-    console.log('Withdrawing profits:', {
-      currentAccount: currentAccount?.address,
-      kioskId,
-      kioskOwnerCapId,
-      profits: kioskData?.kiosk?.profits
-    });
-
     if (!currentAccount) {
       setError('Please connect your wallet first');
       return;
@@ -263,46 +239,32 @@ export function WalletTerminal(props: WalletTerminalProps) {
     setError('');
 
     try {
-      console.log('🏦 Building withdraw transaction...');
-      
       // Build withdraw transaction
       const { transaction } = await buildWithdrawProfitsTx({
         kioskClient,
         kioskId,
         kioskOwnerCapId,
         ownerAddress: currentAccount.address,
-        // Don't specify amount to withdraw all profits
       });
 
-      console.log('📝 Executing withdraw transaction...');
-      const result = await signAndExecuteTransaction({ transaction });
-      console.log('✅ Withdraw transaction executed successfully:', result);
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
 
       // Show success state
       setWithdrawSuccess(true);
+      setTimeout(() => setWithdrawSuccess(false), 3000);
 
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setWithdrawSuccess(false);
-      }, 3000);
-
-      // Refresh balance after withdrawal
+      // Refresh balance
       try {
         const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
         setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
       } catch (e) {
-        console.error('Failed to refresh balance after withdrawal:', e);
+        // Silently fail - balance will update eventually
       }
 
-      // Refresh kiosk data to update profits display
-      try {
-        await refreshKioskData();
-        console.log('🔄 Kiosk data refreshed after withdrawal');
-      } catch (e) {
-        console.error('Failed to refresh kiosk data after withdrawal:', e);
-      }
+      // Refresh kiosk data
+      await refreshKioskData();
     } catch (error) {
-      console.error('❌ Failed to withdraw profits:', error);
       const errorMessage = parseWithdrawError(error);
       setError(errorMessage);
       setWithdrawSuccess(false);
@@ -311,24 +273,93 @@ export function WalletTerminal(props: WalletTerminalProps) {
     }
   };
 
+  // Handle Bucket deposit and borrow
+  const handleDepositToBucket = async () => {
+    if (!currentAccount) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!bucketClient) {
+      setError('Bucket Protocol client not initialized. Please try again later.');
+      return;
+    }
+
+    // Check if there are profits available
+    const profits = kioskData?.kiosk?.profits;
+    if (!profits || profits === '0' || Number(profits) === 0) {
+      setError('No profits available to deposit to Bucket');
+      return;
+    }
+
+    const profitsInMist = Number(profits);
+    const borrowAmountUsdb = calculateBorrowableUsdb(profitsInMist);
+
+    if (borrowAmountUsdb < 1000000) { // Less than 1 USDB
+      setError('Profits too low to borrow USDB (minimum 2 SUI required)');
+      return;
+    }
+
+    setIsBorrowingUsdb(true);
+    setError('');
+
+    try {
+      // Build combined transaction
+      const { transaction } = await buildDepositAndBorrowTx({
+        bucketClient,
+        kioskClient,
+        kioskId: kioskId!,
+        kioskOwnerCapId: kioskOwnerCapId!,
+        ownerAddress: currentAccount.address,
+        collateralAmount: profitsInMist,
+        borrowAmount: borrowAmountUsdb,
+      });
+
+      // Execute transaction
+      await signAndExecuteTransaction({ transaction });
+
+      // Show success state
+      setBorrowSuccess(true);
+      setError('');
+      setTimeout(() => setBorrowSuccess(false), 5000);
+
+      // Refresh balance
+      try {
+        const { totalBalance } = await suiClient.getBalance({ owner: currentAccount.address });
+        setBalance((Number(totalBalance) / SUI_TO_MIST).toString());
+      } catch (e) {
+        // Silently fail
+      }
+
+      // Refresh kiosk data
+      await refreshKioskData();
+    } catch (error) {
+      const errorMessage = parseBucketError(error);
+      setError(errorMessage);
+      setBorrowSuccess(false);
+    } finally {
+      setIsBorrowingUsdb(false);
+    }
+  };
+
 
 
   return (
-    <div ref={containerRef} className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+    <div ref={containerRef} className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel w-[calc(50%-1rem)] sm:max-w-xs sm:min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       <div className="relative z-10">
         {/* Title bar */}
         <div
-          className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+          className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h3 className="elegant-title tracking-wider uppercase silver-glow">
+          <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
             Wallet
           </h3>
-          <div className="flex items-center space-x-2">
-            <span className="elegant-expand-text font-medium tracking-wide">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs hidden sm:inline">
               {isExpanded ? 'COLLAPSE' : 'EXPAND'}
             </span>
-            <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               ▼
             </span>
           </div>
@@ -336,30 +367,30 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
         {/* Control panel content */}
         {isExpanded && (
-          <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+          <div className="p-2 sm:p-3 space-y-3 sm:space-y-4" style={{ fontSize: '13px' }}>
             
             {/* Wallet Connection Section */}
             <div className="space-y-2">
               <ConnectButton
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
-                style={{ minHeight: '48px' }}
+                className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
+                style={{ minHeight: '44px' }}
               />
             </div>
 
             {currentAccount && (
               <>
                 {/* Account Info Section */}
-                <div className="space-y-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
-                      <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+                <div className="space-y-2 sm:space-y-3 p-2 sm:p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white/40"></div>
+                      <label className="text-[10px] sm:text-xs font-semibold tracking-wider uppercase text-white/50">
                         Sui Balance
                       </label>
                     </div>
-                    <div className="flex justify-between items-baseline pl-3.5">
-                      <span className="text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
-                      <span className="text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
+                    <div className="flex justify-between items-baseline pl-2.5 sm:pl-3.5">
+                      <span className="text-xl sm:text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
+                      <span className="text-[10px] sm:text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
                     </div>
                   </div>
                 </div>
@@ -415,22 +446,72 @@ export function WalletTerminal(props: WalletTerminalProps) {
                           </>
                         )}
                       </button>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         <button
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
+                          onClick={handleDepositToBucket}
+                          disabled={!bucketClient || isBorrowingUsdb || isBucketLoading || !kioskData?.kiosk?.profits || Number(kioskData?.kiosk?.profits) === 0}
+                          className="w-full px-3 py-2 text-xs font-semibold tracking-wide uppercase rounded-lg bg-white/8 hover:bg-white/12 text-white/80 border border-white/15 hover:border-white/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/8 flex items-center justify-center gap-2"
+                          title={!bucketClient ? 'Bucket Protocol client not initialized' : ''}
                         >
-                          Save to PavSUI
-                        </button>
-                        <button
-                          className="px-2 py-2 text-[10px] font-semibold tracking-wide uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:border-white/20 transition-all duration-200"
-                        >
-                          Save to PavUSDB
+                          {isBorrowingUsdb || isBucketLoading ? (
+                            <>
+                              <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Processing...</span>
+                            </>
+                          ) : borrowSuccess ? (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>Success! USDB Borrowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>Borrow USDB with Profits</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
               </>
+            )}
+
+            {/* Bucket Lending Info Section */}
+            {currentAccount && bucketPositions.length > 0 && (
+              <div className="space-y-2 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></div>
+                  <label className="text-xs font-semibold tracking-wider uppercase text-white/40">
+                    Bucket Lending Position
+                  </label>
+                </div>
+                <div className="pl-3.5 space-y-2">
+                  {bucketPositions.map((position, idx) => (
+                    <div key={idx} className="p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-semibold tracking-wide uppercase text-purple-300/70">Collateral</span>
+                        <span className="text-xs font-mono text-white/80">
+                          {(Number(position.collateralAmount) / 1e9).toFixed(4)} SUI
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-semibold tracking-wide uppercase text-purple-300/70">Debt</span>
+                        <span className="text-xs font-mono text-white/80">
+                          {(Number(position.debtAmount) / 1e6).toFixed(2)} USDB
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Kiosk Info Section */}
@@ -524,12 +605,12 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
             {error && (
               <div className="space-y-2">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                <label className="block text-xs font-medium tracking-wide uppercase control-label-primary">
                   Error
                 </label>
                 <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+                    <span className="text-xs font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
                     <button
                       onClick={() => setError('')}
                       className="ml-2 text-white/40 hover:text-white/70 transition-colors"
@@ -551,7 +632,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
+                  <p className="text-xs font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
                     {error}
                   </p>
                 </div>

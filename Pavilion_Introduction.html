@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pavilion - 專案簡介</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            padding: 15mm 18mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            border-bottom: 3px solid #2d3748;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            color: #2d3748;
+            text-transform: uppercase;
+        }
+
+        .tagline {
+            font-size: 10px;
+            color: #718096;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #4a5568;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* Main Content */
+        .content {
+            margin-top: 16px;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-left: 3px solid #2d3748;
+            padding-left: 8px;
+        }
+
+        .section-content {
+            font-size: 10.5px;
+            color: #4a5568;
+            line-height: 1.55;
+            text-align: justify;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .feature-list {
+            list-style: none;
+            font-size: 10px;
+            color: #4a5568;
+        }
+
+        .feature-list li {
+            margin-bottom: 5px;
+            padding-left: 15px;
+            position: relative;
+            line-height: 1.45;
+        }
+
+        .feature-list li:before {
+            content: "▪";
+            position: absolute;
+            left: 4px;
+            color: #2d3748;
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: #f7fafc;
+            border-left: 3px solid #4299e1;
+            padding: 9px 11px;
+            margin: 9px 0;
+            font-size: 10px;
+            color: #2d3748;
+            line-height: 1.55;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .tech-badge {
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 20px;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 8.5px;
+            color: #a0aec0;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+
+        .business-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .contract-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .business-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 9px;
+        }
+
+        .business-card-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .business-card-content {
+            font-size: 9.5px;
+            color: #4a5568;
+            line-height: 1.45;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="logo">Pavilion</div>
+                <div class="tagline">3D Kiosk Extension</div>
+            </div>
+            <div class="subtitle">為 Kiosk 注入 3D 空間與社交功能</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Overview -->
+            <div class="section">
+                <h2 class="section-title">專案概述與動機</h2>
+                <p class="section-content">
+                    Pavilion 是一個基於 Sui Kiosk 標準開發的個人收藏空間平台。
+                    主要的功能是展示 3D NFT，但由於當前主流的 NFT 都是 2D 圖片為主、因此也提供了 2D NFT 的展示功能。
+                    相信隨著 Sui 生態遊戲的發展，未來可能會出現越來越多的 3D NFT 遊戲道具。
+                </p>
+                <p class="section-content">
+                    本專案的目標是提供一個帶有交易以及社交屬性的展示平台，讓用戶能按自己的喜好來組織並展示、交易自己的收藏品。
+                    3D 空間中除了展示外部既有的 NFT 資源外，專案中的 Designer 發布器功能讓用戶能簡單的創建鏈上物件，並放入 Kiosk 中進而在 3D 空間中展示自己的圖片或是模型，
+                    配置好的場景可以透過分享連結讓其他用戶訪問，並透過連結分享與交易購買功能把「收藏」、「展示」、「社交」、「交易」融為一體。
+                </p>
+            </div>
+            <!-- Core Features -->
+            <div class="two-column">
+                <div>
+                    <div class="section">
+                        <h2 class="section-title">核心功能</h2>
+                        <ul class="feature-list">
+                            <li><strong>創建收藏空間</strong> - 新建或是使用現有 Kiosk 建立收藏空間，並在 3D 空間中自定義尺寸、場景配置</li>
+                            <li><strong>跨系列展示</strong> - 可在同一空間展示來自不同系列的 NFT 收藏、提供位置、旋轉、縮放等操作</li>
+                            <li><strong>社交分享</strong> - 透過連結分享收藏空間，讓其他人訪問、欣賞，或是直接購買展品</li>
+                            <li><strong>自由鑄造</strong> - 上傳自訂的 3D 模型、2D 照片，鑄造成鏈上物件並在收藏空間展示</li>
+                            <li><strong>靈活交易</strong> - 隨時上架或下架展品，訪客可在收藏空間中直接購買想要的作品</li>
+                            <li><strong>通用相容</strong> - 基於 Sui Kiosk 標準拓展，原有的 NFT 流通機制不改變</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section">
+                        <h2 class="section-title">技術架構</h2>
+                        <div class="tech-stack">
+                            <span class="tech-badge">Sui Blockchain</span>
+                            <span class="tech-badge">Walrus Storage</span>
+                            <span class="tech-badge">Three.js</span>
+                            <span class="tech-badge">Next.js 15</span>
+                            <span class="tech-badge">Move Language</span>
+                        </div>
+                        <div class="highlight-box" style="margin-top: 12px;">
+                            <strong>為什麼選擇 Sui？</strong>
+                            <ul class="feature-list" style="margin-top: 6px; font-size: 10px;">
+                                <li>物件中心模型：每個 NFT 都是獨立鏈上物件，天生適合跨系列展示</li>
+                                <li>Kiosk 標準：透過動態欄位即可擴充 3D 展示與場景管理功能</li>
+                                <li>高性能低成本：Gas Fee 極低，適合消費型應用</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Move Smart Contracts -->
+            <div class="section">
+                <h2 class="section-title">Move 智能合約架構</h2>
+                <div class="contract-grid">
+                    <div class="business-card">
+                        <div class="business-card-title">pavilion.move</div>
+                        <div class="business-card-content">
+                            Kiosk Extension 邏輯<br>
+                            • 儲存名稱與場景配置<br>
+                            • 提供上架、下架、購買等交易函數
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">platform.move</div>
+                        <div class="business-card-content">
+                            平台層級設定<br>
+                            • 管理創建手續費與平台配置<br>
+                            • 處理 Transfer Policy 佣金邏輯
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">staking_pool.move</div>
+                        <div class="business-card-content">
+                            Patronage 質押機制<br>
+                            • 用戶質押 SUI 獲得年化收益<br>
+                            • 平台對接 DeFi 放貸池賺取利差
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">constants.move</div>
+                        <div class="business-card-content">
+                            全域常數定義<br>
+                            • 定義基點、年化時間等數學常數<br>
+                            • 設定手續費與獎勵率的上限值
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">demo_nft_2d.move</div>
+                        <div class="business-card-content">
+                            2D NFT 鑄造合約<br>
+                            • 平台自營 2D NFT 系列<br>
+                            • 支援版稅系統、無總量限制、可自由鑄造
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">demo_nft_3d.move</div>
+                        <div class="business-card-content">
+                            3D NFT 鑄造合約<br>
+                            • 平台自營 3D NFT 系列<br>
+                            • 支援版稅系統、無總量限制、可自由鑄造
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Model -->
+            <div class="section">
+                <h2 class="section-title">商業模式</h2>
+                <div class="business-grid">
+                    <div class="business-card">
+                        <div class="business-card-title">創建手續費</div>
+                        <div class="business-card-content">
+                            每次創建 Pavilion 收取初始化費用（Demo 階段預設 1 SUI），作為平台維護與開發的基礎收入。
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">交易佣金</div>
+                        <div class="business-card-content">
+                            NFT 交易時收取平台佣金（Demo 階段預設 2.5%），透過 Transfer Policy 自動執行，確保收益分配透明。
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">平台自營 NFT</div>
+                        <div class="business-card-content">
+                            經營 2D 與 3D Demo NFT 系列（無總量限制），透過 Transfer Policy 收取版稅，同時作為平台展示範例。
+                        </div>
+                    </div>
+                    <div class="business-card">
+                        <div class="business-card-title">質押收益 (規劃中)</div>
+                        <div class="business-card-content">
+                            Patronage 計畫對接 DeFi 放貸池，賺取協議獎勵差額，用於覆蓋營運基礎設施與 Walrus 存儲成本。
+                            並提供質押用戶獎勵，如特殊的基本場景配置、特殊 NFT 系列等。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Future Roadmap -->
+            <div class="section">
+                <h2 class="section-title">未來發展路線</h2>
+                <div class="two-column" style="margin-top: 10px;">
+                    <div>
+                        <ul class="feature-list">
+                            <li><strong>更多 Sui 生態 NFT 支持</strong> - 深度整合 Sui 原生 NFT 系列、Sui 遊戲道具等，強化生態連結</li>
+                            <li><strong>私人訂閱空間</strong> - 透過 Seal 實作 Pavilion 白名單，只有訂閱者或授權者才能進入</li>
+                            <li><strong>SocialFi 社交功能</strong> - 訪客可在 Pavilion 留言評論，擁有者可將精彩留言鑄造並公開展示，讓留言者獲得收益</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <ul class="feature-list">
+                            <li><strong>真實世界藝術家合作</strong> - 與實體藝術家合作，將作品在 Pavilion 展示，為 Sui 帶來圈外關注</li>
+                            <li><strong>多人協作空間</strong> - 支援多個擁有者共同管理同一個 Pavilion，適合團隊或社群使用</li>
+                            <li><strong>進階場景編輯器</strong> - 提供更豐富的 3D 場景自訂功能，包括燈光、材質、特效等</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Pavilion by 231 Labs | Built on Sui and Walrus 
+        </div>
+    </div>
+
+    <script>
+        // Auto-print on load (optional)
+        // window.onload = () => window.print();
+    </script>
+</body>
+</html>

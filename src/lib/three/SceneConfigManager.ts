@@ -13,7 +13,8 @@ import {
   compressSceneConfig,
   decompressSceneConfig
 } from '../../types/scene';
-import { readSceneConfig, setSceneConfigTx } from '../blockchain/pavilion';
+import { readSceneConfig } from '../tx/pavilion/scene-config';
+import { setSceneConfigTx } from '../tx/pavilion/builders';
 import { KioskClient } from '@mysten/kiosk';
 import { SceneManager } from '../three/SceneManager';
 import * as THREE from 'three';

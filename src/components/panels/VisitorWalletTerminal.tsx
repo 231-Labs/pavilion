@@ -93,7 +93,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        // Silently fail
       }
     }
   };
@@ -115,27 +115,27 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
           }, 150);
         }, 1800);
       } catch (error) {
-        console.error('Failed to copy share URL to clipboard:', error);
+        // Silently fail
       }
     }
   };
 
   return (
-      <div ref={containerRef} className="absolute top-6 left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+      <div ref={containerRef} className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel w-[calc(50%-1rem)] sm:max-w-xs sm:min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
         <div className="relative z-10">
         {/* Title bar */}
         <div
-          className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+          className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h3 className="elegant-title tracking-wider uppercase silver-glow">
+          <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
             Wallet
           </h3>
-          <div className="flex items-center space-x-2">
-            <span className="elegant-expand-text font-medium tracking-wide">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs hidden sm:inline">
               {isExpanded ? 'COLLAPSE' : 'EXPAND'}
             </span>
-            <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               ▼
             </span>
           </div>
@@ -143,28 +143,28 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
 
         {/* Control panel content */}
         {isExpanded && (
-          <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+          <div className="p-2 sm:p-3 space-y-3 sm:space-y-4" style={{ fontSize: '13px' }}>
             
             {/* Wallet Connection Section */}
             <div className="space-y-2">
               <ConnectButton
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
-                style={{ minHeight: '48px' }}
+                className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/20 uppercase tracking-widest transition-colors"
+                style={{ minHeight: '44px' }}
               />
             </div>
 
             {currentAccount && (
-              <div className="space-y-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
-                    <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+              <div className="space-y-2 sm:space-y-3 p-2 sm:p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white/40"></div>
+                    <label className="text-[10px] sm:text-xs font-semibold tracking-wider uppercase text-white/50">
                       Sui Balance
                     </label>
                   </div>
-                  <div className="flex justify-between items-baseline pl-3.5">
-                    <span className="text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
-                    <span className="text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
+                  <div className="flex justify-between items-baseline pl-2.5 sm:pl-3.5">
+                    <span className="text-xl sm:text-2xl font-bold text-white/90 tracking-tight">{Number(balance).toFixed(2)}</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-white/50 uppercase tracking-wider">SUI</span>
                   </div>
                 </div>
               </div>
@@ -289,12 +289,12 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
 
             {error && (
               <div className="space-y-2">
-                <label className="block text-base font-medium tracking-wide uppercase control-label-primary">
+                <label className="block text-xs font-medium tracking-wide uppercase control-label-primary">
                   Error
                 </label>
                 <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
+                    <span className="text-xs font-medium tracking-wide uppercase control-label-secondary">ERROR</span>
                     <button
                       onClick={() => setError('')}
                       className="ml-2 text-white/40 hover:text-white/70 transition-colors"
@@ -316,7 +316,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
+                  <p className="text-xs font-mono break-all leading-relaxed font-medium rounded-lg p-2 bg-white/5 border border-white/10 mt-2">
                     {error}
                   </p>
                 </div>

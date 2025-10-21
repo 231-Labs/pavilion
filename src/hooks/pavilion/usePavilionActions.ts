@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
-import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../../lib/blockchain/pavilion';
+import { buildCreatePavilionTx, buildInitializePavilionWithExistingKioskTx, fetchKioskContents } from '../../lib/tx/pavilion/index';
 import type { SuiTransactionResult, UsePavilionActionsReturn } from '../../types/home';
 
 export function usePavilionActions(): UsePavilionActionsReturn {
@@ -72,9 +72,6 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         packageId: PAVILION_PACKAGE_ID,
         pavilionName,
         ownerAddress: currentAccount.address,
-        platformConfigId: PLATFORM_CONFIG_ID,
-        platformRecipient: PLATFORM_RECIPIENT,
-        suiClient,
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
@@ -164,9 +161,6 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         ownerAddress: currentAccount.address,
         kioskId: selectedKioskId,
         kioskOwnerCapId: selectedCap,
-        platformConfigId: PLATFORM_CONFIG_ID,
-        platformRecipient: PLATFORM_RECIPIENT,
-        suiClient,
       });
       
       const result = await signAndExecuteTransaction({ transaction: tx });

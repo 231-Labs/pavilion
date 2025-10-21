@@ -9,8 +9,6 @@ interface PurchaseItemParams {
   itemType: string;
   price: string;
   sellerKiosk: string;
-  targetKioskId?: string;
-  targetKioskCapId?: string;
 }
 
 export function useNftPurchase() {
@@ -35,7 +33,7 @@ export function useNftPurchase() {
    * Purchase an item from a kiosk
    * Uses buildPurchaseTransaction from tx/purchase.ts for transaction logic
    */
-  const purchaseItem = async ({ itemId, itemType, price, sellerKiosk, targetKioskId, targetKioskCapId }: PurchaseItemParams): Promise<void> => {
+  const purchaseItem = async ({ itemId, itemType, price, sellerKiosk }: PurchaseItemParams): Promise<void> => {
     if (!currentAccount) {
       setPurchaseError('Please connect your wallet first');
       throw new Error('Please connect your wallet first');
@@ -55,8 +53,6 @@ export function useNftPurchase() {
         price,
         sellerKiosk,
         buyerAddress: currentAccount.address,
-        targetKioskId,
-        targetKioskCapId,
       });
 
       // Execute the transaction - this will trigger the wallet

@@ -171,7 +171,7 @@ export function SculptureControlPanel({
             }
           });
         } catch (error) {
-          console.warn('Error traversing scene for external objects:', error);
+          // Silently ignore traversal errors
         }
       }
     }
@@ -215,20 +215,20 @@ export function SculptureControlPanel({
   } : null);
 
   return (
-    <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+    <div className="glass-slab glass-slab--thermal rounded-xl control-panel w-full sm:max-w-xs sm:min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       {/* Title bar */}
       <div
-        className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+        className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="elegant-title tracking-wider uppercase silver-glow">
+        <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
           Scene
         </h3>
-        <div className="flex items-center space-x-2">
-          <span className="elegant-expand-text font-medium tracking-wide">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs hidden sm:inline">
             {isExpanded ? 'COLLAPSE' : 'EXPAND'}
           </span>
-          <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             ▼
           </span>
         </div>
@@ -236,21 +236,21 @@ export function SculptureControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+        <div className="p-2 sm:p-3 space-y-3 sm:space-y-4" style={{ fontSize: '13px' }}>
           {/* Tab Navigation */}
-          <div className="flex gap-2 p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+          <div className="flex gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
             <button
               onClick={() => setActiveTab('kiosk')}
-              className={`relative flex-1 py-2.5 px-3 text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
+              className={`relative flex-1 py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
                 activeTab === 'kiosk'
                   ? 'bg-white/10 text-white/90 shadow-sm'
                   : 'text-white/50 hover:text-white/70 hover:bg-white/5'
               }`}
             >
-              <div className="flex items-center justify-center gap-1.5">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                 <span>Assets</span>
                 {nftManager.kioskNftItems.length > 0 && (
-                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                  <span className={`px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] rounded-full ${
                     activeTab === 'kiosk' ? 'bg-white/20' : 'bg-white/10'
                   }`}>
                     {nftManager.kioskNftItems.length}
@@ -260,16 +260,16 @@ export function SculptureControlPanel({
             </button>
             <button
               onClick={() => setActiveTab('objects')}
-              className={`relative flex-1 py-2.5 px-3 text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
+              className={`relative flex-1 py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-semibold tracking-wider uppercase rounded-md transition-all duration-200 ${
                 activeTab === 'objects'
                   ? 'bg-white/10 text-white/90 shadow-sm'
                   : 'text-white/50 hover:text-white/70 hover:bg-white/5'
               }`}
             >
-              <div className="flex items-center justify-center gap-1.5">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                 <span>Editor</span>
                 {controllableObjects.length > 0 && (
-                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                  <span className={`px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] rounded-full ${
                     activeTab === 'objects' ? 'bg-white/20' : 'bg-white/10'
                   }`}>
                     {controllableObjects.length}

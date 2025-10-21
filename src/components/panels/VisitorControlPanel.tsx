@@ -102,31 +102,30 @@ export function VisitorControlPanel({
   // Refresh kiosk data after successful purchase
   useEffect(() => {
     if (purchaseSuccess) {
-      console.log('🔄 Purchase successful, refreshing kiosk data...');
       // Wait a bit for the transaction to be finalized on chain
       const timeoutId = setTimeout(() => {
         kioskState.refresh();
-      }, 2000); // 2 second delay to ensure blockchain state is updated
+      }, 2000);
       
       return () => clearTimeout(timeoutId);
     }
   }, [purchaseSuccess, kioskState]);
 
   return (
-    <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+    <div className="glass-slab glass-slab--thermal rounded-xl control-panel w-full sm:max-w-xs sm:min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
       {/* Title bar */}
       <div
-        className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+        className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="elegant-title tracking-wider uppercase silver-glow">
+        <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
           Gallery
         </h3>
-        <div className="flex items-center space-x-2">
-          <span className="elegant-expand-text font-medium tracking-wide">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs hidden sm:inline">
             {isExpanded ? 'COLLAPSE' : 'EXPAND'}
           </span>
-          <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             ▼
           </span>
         </div>
@@ -134,11 +133,11 @@ export function VisitorControlPanel({
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+        <div className="p-2 sm:p-3 space-y-3 sm:space-y-4" style={{ fontSize: '13px' }}>
           {/* Gallery Header */}
-          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-            <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
-            <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+          <div className="flex items-center gap-1.5 sm:gap-2 pb-1.5 sm:pb-2 border-b border-white/5">
+            <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white/40"></div>
+            <label className="text-[10px] sm:text-xs font-semibold tracking-wider uppercase text-white/50">
               Available Items
             </label>
           </div>
