@@ -50,17 +50,19 @@ export function ControlPanelsContainer({
   return (
     <>
       {/* Left Control Panel - Sui Wallet */}
-      <WalletTerminal
-        objectChanges={objectChanges || new Map()}
-        sceneConfigManager={sceneConfigManager}
-        currentSceneConfig={currentSceneConfig}
-        kioskItems={kioskState.kioskItems || []}
-        onSaveSuccess={clearChanges}
-        onSaveError={(error) => console.error('Save error:', error)}
-      />
+      <div className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20">
+        <WalletTerminal
+          objectChanges={objectChanges || new Map()}
+          sceneConfigManager={sceneConfigManager}
+          currentSceneConfig={currentSceneConfig}
+          kioskItems={kioskState.kioskItems || []}
+          onSaveSuccess={clearChanges}
+          onSaveError={(error) => console.error('Save error:', error)}
+        />
+      </div>
 
       {/* Right Control Panels */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 max-w-[280px] sm:max-w-xs">
         <SculptureControlPanel
           sculptures={sculptures}
           sceneManager={sceneManager}

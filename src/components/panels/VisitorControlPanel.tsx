@@ -112,32 +112,51 @@ export function VisitorControlPanel({
   }, [purchaseSuccess, kioskState]);
 
   return (
-    <div className="glass-slab glass-slab--thermal rounded-xl control-panel max-w-xs min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
-      {/* Title bar */}
-      <div
-        className="flex justify-between items-center p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
-        onClick={() => setIsExpanded(!isExpanded)}
+    <>
+      {/* Mobile collapsed button */}
+      {!isExpanded && (
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="sm:hidden w-12 h-12 rounded-full glass-slab glass-slab--thermal backdrop-blur-md flex items-center justify-center hover:scale-105 transition-transform duration-200 border border-white/20 ml-auto"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white/80">
+            <path d="M3 3h18v18H3zM21 9H3M9 21V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Panel */}
+      <div 
+        className={`glass-slab glass-slab--thermal rounded-xl control-panel w-full max-w-full sm:max-w-xs sm:min-w-[320px] overflow-hidden transition-all duration-300 ${
+          isExpanded ? 'sm:block' : 'hidden sm:block'
+        }`}
+        style={{ fontSize: '14px' }}
       >
-        <h3 className="elegant-title tracking-wider uppercase silver-glow">
-          Gallery
-        </h3>
-        <div className="flex items-center space-x-2">
-          <span className="elegant-expand-text font-medium tracking-wide">
-            {isExpanded ? 'COLLAPSE' : 'EXPAND'}
-          </span>
-          <span className="elegant-expand-arrow" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-            ▼
-          </span>
+        {/* Title bar */}
+        <div
+          className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
+            Gallery
+          </h3>
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs">
+              {isExpanded ? 'COLLAPSE' : 'EXPAND'}
+            </span>
+            <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▼
+            </span>
+          </div>
         </div>
-      </div>
 
       {/* Control panel content */}
       {isExpanded && (
-        <div className="p-3 space-y-4" style={{ fontSize: '13px' }}>
+        <div className="p-2 sm:p-3 space-y-3 sm:space-y-4" style={{ fontSize: '13px' }}>
           {/* Gallery Header */}
-          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-            <div className="w-1.5 h-1.5 rounded-full bg-white/40"></div>
-            <label className="text-xs font-semibold tracking-wider uppercase text-white/50">
+          <div className="flex items-center gap-1.5 sm:gap-2 pb-1.5 sm:pb-2 border-b border-white/5">
+            <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white/40"></div>
+            <label className="text-[10px] sm:text-xs font-semibold tracking-wider uppercase text-white/50">
               Available Items
             </label>
           </div>
@@ -169,7 +188,8 @@ export function VisitorControlPanel({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
