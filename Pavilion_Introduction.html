@@ -26,7 +26,7 @@
         .page {
             width: 210mm;
             height: 297mm;
-            padding: 25mm;
+            padding: 15mm 18mm;
             margin: 0 auto;
             background: white;
             position: relative;
@@ -35,8 +35,8 @@
         /* Header */
         .header {
             border-bottom: 3px solid #2d3748;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
         }
 
         .header-top {
@@ -47,7 +47,7 @@
         }
 
         .logo {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 800;
             letter-spacing: 0.15em;
             color: #2d3748;
@@ -55,7 +55,7 @@
         }
 
         .tagline {
-            font-size: 11px;
+            font-size: 10px;
             color: #718096;
             letter-spacing: 0.3em;
             text-transform: uppercase;
@@ -63,7 +63,7 @@
         }
 
         .subtitle {
-            font-size: 13px;
+            font-size: 11px;
             color: #4a5568;
             font-weight: 400;
             letter-spacing: 0.02em;
@@ -71,49 +71,49 @@
 
         /* Main Content */
         .content {
-            margin-top: 18px;
+            margin-top: 16px;
         }
 
         .section {
-            margin-bottom: 16px;
+            margin-bottom: 15px;
         }
 
         .section-title {
-            font-size: 15px;
+            font-size: 13.5px;
             font-weight: 700;
             color: #2d3748;
             margin-bottom: 8px;
             letter-spacing: 0.03em;
             text-transform: uppercase;
-            border-left: 4px solid #2d3748;
-            padding-left: 10px;
+            border-left: 3px solid #2d3748;
+            padding-left: 8px;
         }
 
         .section-content {
-            font-size: 11.5px;
+            font-size: 10.5px;
             color: #4a5568;
-            line-height: 1.7;
+            line-height: 1.55;
             text-align: justify;
         }
 
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            margin-top: 16px;
+            gap: 16px;
+            margin-top: 10px;
         }
 
         .feature-list {
             list-style: none;
-            font-size: 11px;
+            font-size: 10px;
             color: #4a5568;
         }
 
         .feature-list li {
-            margin-bottom: 6px;
-            padding-left: 18px;
+            margin-bottom: 5px;
+            padding-left: 15px;
             position: relative;
-            line-height: 1.5;
+            line-height: 1.45;
         }
 
         .feature-list li:before {
@@ -127,11 +127,11 @@
         .highlight-box {
             background: #f7fafc;
             border-left: 3px solid #4299e1;
-            padding: 12px 14px;
-            margin: 12px 0;
-            font-size: 11px;
+            padding: 9px 11px;
+            margin: 9px 0;
+            font-size: 10px;
             color: #2d3748;
-            line-height: 1.6;
+            line-height: 1.55;
         }
 
         .tech-stack {
@@ -153,11 +153,11 @@
 
         /* Footer */
         .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            padding-bottom: 20px;
+            margin-top: 20px;
+            padding-top: 14px;
+            padding-bottom: 14px;
             border-top: 1px solid #e2e8f0;
-            font-size: 9px;
+            font-size: 8.5px;
             color: #a0aec0;
             text-align: center;
             letter-spacing: 0.02em;
@@ -166,35 +166,35 @@
         .business-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 10px;
             margin-top: 10px;
         }
 
         .contract-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 10px;
             margin-top: 10px;
         }
 
         .business-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 10px;
+            border-radius: 4px;
+            padding: 9px;
         }
 
         .business-card-title {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             color: #2d3748;
             margin-bottom: 5px;
         }
 
         .business-card-content {
-            font-size: 10.5px;
+            font-size: 9.5px;
             color: #4a5568;
-            line-height: 1.5;
+            line-height: 1.45;
         }
 
         @media print {
@@ -223,14 +223,15 @@
                 <h2 class="section-title">專案概述與動機</h2>
                 <p class="section-content">
                     Pavilion 是一個基於 Sui Kiosk 標準開發的個人收藏空間平台。
-                    我覺得 NFT 的價值不該只是一個帶圖片的迷因幣，而是打破傳統中心化的資料孤島，讓數位資產能跨平台、跨系列自由流通。
-                    Pavilion 中的 Designer 發布器讓用戶能簡單的創建鏈上物件，並放入 Kiosk 中進而在 3D 空間中展示自己的收藏，
-                    並且可以透過分享連結讓其他用戶訪問場景、直接購買空間中的物品。
-                    我並非想做另一個按系列瀏覽的 NFT 市場，而是希望以用戶意願為中心，讓用戶能按自己的喜好來組織並展示自己的收藏空間。
-                    透過連結分享與交易購買功能把「收藏」、「展示」、「社交」、「交易」融為一體。
+                    主要的功能是展示 3D NFT，但由於當前主流的 NFT 都是 2D 圖片為主、因此也提供了 2D NFT 的展示功能。
+                    相信隨著 Sui 生態遊戲的發展，未來可能會出現越來越多的 3D NFT 遊戲道具。
+                </p>
+                <p class="section-content">
+                    本專案的目標是提供一個帶有交易以及社交屬性的展示平台，讓用戶能按自己的喜好來組織並展示、交易自己的收藏品。
+                    3D 空間中除了展示外部既有的 NFT 資源外，專案中的 Designer 發布器功能讓用戶能簡單的創建鏈上物件，並放入 Kiosk 中進而在 3D 空間中展示自己的圖片或是模型，
+                    配置好的場景可以透過分享連結讓其他用戶訪問，並透過連結分享與交易購買功能把「收藏」、「展示」、「社交」、「交易」融為一體。
                 </p>
             </div>
-
             <!-- Core Features -->
             <div class="two-column">
                 <div>
@@ -238,7 +239,7 @@
                         <h2 class="section-title">核心功能</h2>
                         <ul class="feature-list">
                             <li><strong>創建收藏空間</strong> - 新建或是使用現有 Kiosk 建立收藏空間，並在 3D 空間中自定義尺寸、場景配置</li>
-                            <li><strong>跨系列展示</strong> - 可在同一空間展示來自不同系列的 NFT 收藏</li>
+                            <li><strong>跨系列展示</strong> - 可在同一空間展示來自不同系列的 NFT 收藏、提供位置、旋轉、縮放等操作</li>
                             <li><strong>社交分享</strong> - 透過連結分享收藏空間，讓其他人訪問、欣賞，或是直接購買展品</li>
                             <li><strong>自由鑄造</strong> - 上傳自訂的 3D 模型、2D 照片，鑄造成鏈上物件並在收藏空間展示</li>
                             <li><strong>靈活交易</strong> - 隨時上架或下架展品，訪客可在收藏空間中直接購買想要的作品</li>
