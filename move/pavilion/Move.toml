@@ -1,7 +1,7 @@
 [package]
 name = "pavilion"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-published-at = "0x4f6b55fe24a5535faab381692ed0c990b6b014ca3bfb27a1d51dd9e626534d55"
+published-at = "0x101d6c44aa8b36fcf769d9d07c7d4bc5b3d80bfda7fd13bcae5a3b984ef6c509"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
