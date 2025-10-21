@@ -345,7 +345,7 @@ export function WalletTerminal(props: WalletTerminalProps) {
 
 
   return (
-    <>
+    <div className="relative">
       {/* Mobile collapsed button */}
       {!isExpanded && (
         <button
@@ -706,6 +706,6 @@ export function WalletTerminal(props: WalletTerminalProps) {
         )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -121,7 +121,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
   };
 
   return (
-      <>
+      <div className="relative">
         {/* Mobile collapsed button */}
         {!isExpanded && (
           <button
@@ -390,7 +390,7 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
         )}
           </div>
         </div>
-      </>
+      </div>
   );
 }
 

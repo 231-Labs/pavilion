@@ -112,7 +112,7 @@ export function VisitorControlPanel({
   }, [purchaseSuccess, kioskState]);
 
   return (
-    <>
+    <div className="relative">
       {/* Mobile collapsed button */}
       {!isExpanded && (
         <button
@@ -189,7 +189,7 @@ export function VisitorControlPanel({
         </div>
       )}
       </div>
-    </>
+    </div>
   );
 }
 

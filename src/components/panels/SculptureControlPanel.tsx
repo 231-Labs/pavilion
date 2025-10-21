@@ -215,7 +215,7 @@ export function SculptureControlPanel({
   } : null);
 
   return (
-    <>
+    <div className="relative">
       {/* Mobile collapsed button */}
       {!isExpanded && (
         <button
@@ -574,7 +574,7 @@ export function SculptureControlPanel({
         </div>
       )}
       </div>
-    </>
+    </div>
   );
 }
 
