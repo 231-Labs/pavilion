@@ -121,45 +121,25 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
   };
 
   return (
-      <div className="relative">
-        {/* Mobile collapsed button */}
-        {!isExpanded && (
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="sm:hidden w-12 h-12 rounded-full glass-slab glass-slab--thermal backdrop-blur-md flex items-center justify-center hover:scale-105 transition-transform duration-200 border border-white/20"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white/80">
-              <path d="M21 12c0-1.657-4.03-3-9-3s-9 1.343-9 3m18 0c0 1.657-4.03 3-9 3s-9-1.343-9-3m18 0v6c0 1.657-4.03 3-9 3s-9-1.343-9-3v-6m18 0V6c0-1.657-4.03-3-9-3S3 4.343 3 6v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        )}
-
-        {/* Panel */}
-        <div 
-          ref={containerRef}
-          className={`glass-slab glass-slab--thermal rounded-xl control-panel w-full max-w-[280px] sm:max-w-xs sm:min-w-[320px] overflow-hidden transition-all duration-300 ${
-            isExpanded ? 'sm:block' : 'hidden sm:block'
-          }`}
-          style={{ fontSize: '14px' }}
+      <div ref={containerRef} className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20 glass-slab glass-slab--thermal rounded-xl control-panel w-[calc(50%-1rem)] sm:max-w-xs sm:min-w-[320px] overflow-hidden" style={{ fontSize: '14px' }}>
+        <div className="relative z-10">
+        {/* Title bar */}
+        <div
+          className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
+          onClick={() => setIsExpanded(!isExpanded)}
         >
-          <div className="relative z-10">
-          {/* Title bar */}
-          <div
-            className="flex justify-between items-center p-3 sm:p-5 cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors duration-300"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
-              Wallet
-            </h3>
-            <div className="flex items-center space-x-1.5 sm:space-x-2">
-              <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs">
-                {isExpanded ? 'COLLAPSE' : 'EXPAND'}
-              </span>
-              <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                ▼
-              </span>
-            </div>
+          <h3 className="elegant-title tracking-wider uppercase silver-glow text-sm sm:text-base">
+            Wallet
+          </h3>
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="elegant-expand-text font-medium tracking-wide text-[10px] sm:text-xs hidden sm:inline">
+              {isExpanded ? 'COLLAPSE' : 'EXPAND'}
+            </span>
+            <span className="elegant-expand-arrow text-xs sm:text-sm" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▼
+            </span>
           </div>
+        </div>
 
         {/* Control panel content */}
         {isExpanded && (
@@ -388,7 +368,6 @@ export function VisitorWalletTerminal({ kioskId }: VisitorWalletTerminalProps) {
             </div>
           </div>
         )}
-          </div>
         </div>
       </div>
   );

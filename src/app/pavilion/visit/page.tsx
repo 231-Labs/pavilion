@@ -182,7 +182,7 @@ function VisitorPavilionContent() {
         <VisitorWalletTerminal kioskId={kioskId} />
 
         {/* Right Control Panels - Visitor Mode */}
-        <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 w-[calc(100%-1.5rem)] sm:w-auto max-w-[calc(100%-1.5rem)] sm:max-w-xs">
+        <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 w-[calc(50%-1rem)] sm:w-auto sm:max-w-xs">
           <VisitorControlPanel
             sceneManager={sceneManager}
             autoLoadBlobIds={walrusItems?.map(item => item.blobId).filter((blobId): blobId is string => typeof blobId === 'string' && blobId.trim().length > 0) || []}

@@ -10,6 +10,7 @@ module pavilion::pavilion {
         transfer_policy::{Self, TransferPolicy},
     };
     use pavilion::platform;
+    use pavilion::pavilion_pool::{Self, PavilionPool};
 
     // == Structs ==
 
@@ -130,6 +131,35 @@ module pavilion::pavilion {
         
         // Collect creation fee
         platform::collect_creation_fee(platform_config, payment, platform_recipient);
+        
+        // Install extension and initialize everything
+        kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
+        set_dynamic_field(kiosk, cap, PavilionName {}, name);
+    }
+
+    /// Initialize pavilion with pool integration
+    /// Fee payment goes directly to the shared pool
+    public fun initialize_pavilion_with_pool(
+        kiosk: &mut Kiosk,
+        cap: &KioskOwnerCap,
+        name: String,
+        platform_config: &platform::PlatformConfig,
+        pool: &mut PavilionPool,
+        payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) { 
+        // Ensure kiosk is not already a pavilion
+        assert!(!is_pavilion_kiosk(kiosk), E_ALREADY_PAVILION);
+        
+        // Validate name length
+        validate_pavilion_name(&name);
+        
+        // Verify payment amount matches creation fee
+        let fee_amount = platform::get_creation_fee(platform_config);
+        assert!(sui::coin::value(&payment) >= fee_amount, E_INVALID_NAME_LENGTH);
+        
+        // Deposit fee to pool
+        pavilion_pool::deposit_creation_fee(pool, payment, ctx);
         
         // Install extension and initialize everything
         kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);

@@ -347,19 +347,17 @@ function PavilionContent() {
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 pointer-events-none z-5"></div>
 
       {/* Left Control Panel - Sui Wallet */}
-      <div className="absolute top-3 left-3 sm:top-6 sm:left-6 z-20">
-        <WalletTerminal
-          objectChanges={objectChanges || new Map()}
-          sceneConfigManager={sceneConfigManager}
-          currentSceneConfig={currentSceneConfig}
-          kioskItems={combinedKioskItems}
-          onSaveSuccess={clearChanges}
-          onSaveError={(error) => console.error('Save error:', error)}
-        />
-      </div>
+      <WalletTerminal
+        objectChanges={objectChanges || new Map()}
+        sceneConfigManager={sceneConfigManager}
+        currentSceneConfig={currentSceneConfig}
+        kioskItems={combinedKioskItems}
+        onSaveSuccess={clearChanges}
+        onSaveError={(error) => console.error('Save error:', error)}
+      />
 
       {/* Right Control Panels */}
-      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 max-w-[280px] sm:max-w-xs">
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 w-[calc(50%-1rem)] sm:w-auto sm:max-w-xs">
         {/* Sculpture Control Panel with Integrated GLB Loader */}
         <SculptureControlPanel
           sculptures={sculptures}
