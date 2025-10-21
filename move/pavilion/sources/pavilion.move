@@ -1,4 +1,3 @@
-/// Module: pavilion - User-level pavilion functionality
 module pavilion::pavilion {
     use std::string::{Self, String};
     use sui::{
@@ -10,7 +9,6 @@ module pavilion::pavilion {
         transfer_policy::{Self, TransferPolicy},
     };
     use pavilion::platform;
-    use pavilion::pavilion_pool::{Self, PavilionPool};
 
     // == Structs ==
 
@@ -66,11 +64,8 @@ module pavilion::pavilion {
         transfer_policy::confirm_request(policy, transfer_request);
         nft
     }
-
-    // Simplified Transaction Functions (Legacy - commission now handled in TransferPolicy)
     
     /// Simple marketplace purchase - commission is enforced by TransferPolicy
-    /// This function just executes the purchase and confirms the transfer policy
     public fun marketplace_purchase<T: key + store>(
         kiosk: &mut Kiosk,
         item_id: ID,
@@ -87,10 +82,8 @@ module pavilion::pavilion {
         nft
     }
 
-    // Standard Kiosk Functions (Use platform TransferPolicy for commission enforcement)
     
     /// List an item in the pavilion kiosk
-    /// Commission enforcement is handled by TransferPolicy during purchase
     public fun list_item<T: key + store>(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
@@ -112,8 +105,6 @@ module pavilion::pavilion {
     // Kiosk Management Functions
     
     /// Initialize pavilion functionality on an existing kiosk
-    /// Requires payment of creation fee (obtained from PlatformConfig)
-    /// Note: Cannot be called on a kiosk that is already a pavilion
     public fun initialize_pavilion(
         kiosk: &mut Kiosk,
         cap: &KioskOwnerCap,
@@ -123,54 +114,18 @@ module pavilion::pavilion {
         platform_recipient: address,
         ctx: &mut TxContext
     ) { 
-        // Ensure kiosk is not already a pavilion
         assert!(!is_pavilion_kiosk(kiosk), E_ALREADY_PAVILION);
-        
-        // Validate name length
         validate_pavilion_name(&name);
         
-        // Collect creation fee
         platform::collect_creation_fee(platform_config, payment, platform_recipient);
         
-        // Install extension and initialize everything
-        kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
-        set_dynamic_field(kiosk, cap, PavilionName {}, name);
-    }
-
-    /// Initialize pavilion with pool integration
-    /// Fee payment goes directly to the shared pool
-    public fun initialize_pavilion_with_pool(
-        kiosk: &mut Kiosk,
-        cap: &KioskOwnerCap,
-        name: String,
-        platform_config: &platform::PlatformConfig,
-        pool: &mut PavilionPool,
-        payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ) { 
-        // Ensure kiosk is not already a pavilion
-        assert!(!is_pavilion_kiosk(kiosk), E_ALREADY_PAVILION);
-        
-        // Validate name length
-        validate_pavilion_name(&name);
-        
-        // Verify payment amount matches creation fee
-        let fee_amount = platform::get_creation_fee(platform_config);
-        assert!(sui::coin::value(&payment) >= fee_amount, E_INVALID_NAME_LENGTH);
-        
-        // Deposit fee to pool
-        pavilion_pool::deposit_creation_fee(pool, payment, ctx);
-        
-        // Install extension and initialize everything
         kiosk_extension::add(PavilionExtension {}, kiosk, cap, PAVILION_PERMISSIONS, ctx);
         set_dynamic_field(kiosk, cap, PavilionName {}, name);
     }
 
     /// Update pavilion name (only works on existing pavilion kiosks)
     public fun update_pavilion_name(self: &mut Kiosk, cap: &KioskOwnerCap, name: String) {
-        // Ensure this is a pavilion kiosk
         assert_is_pavilion_kiosk(self);
-        // Validate name length
         validate_pavilion_name(&name);
         set_dynamic_field(self, cap, PavilionName {}, name);
     }
@@ -178,14 +133,13 @@ module pavilion::pavilion {
     /// Set scene configuration blob ID (points to Walrus storage)
     /// Only works on pavilion kiosks
     public fun set_scene_config(self: &mut Kiosk, cap: &KioskOwnerCap, config: String) {
-        // Ensure this is a pavilion kiosk
         assert_is_pavilion_kiosk(self);
         set_dynamic_field(self, cap, SceneConfig {}, config);
     }
 
     /// Remove pavilion functionality from kiosk
     public fun remove_pavilion(self: &mut Kiosk, cap: &KioskOwnerCap) {
-        // Remove dynamic fields
+
         if (df::exists_(self.uid(), PavilionName {})) {
             let _name: String = df::remove(self.uid_mut_as_owner(cap), PavilionName {});
         };
@@ -193,20 +147,17 @@ module pavilion::pavilion {
             let _blob: String = df::remove(self.uid_mut_as_owner(cap), SceneConfig {});
         };
         
-        // Remove pavilion extension
         kiosk_extension::remove<PavilionExtension>(self, cap);
     }
 
     // Query Functions
 
     /// Check if a kiosk has pavilion extension installed
-    /// This is crucial for the frontend to determine if the kiosk should be treated as a pavilion
     public fun is_pavilion_kiosk(kiosk: &Kiosk): bool {
         kiosk_extension::is_installed<PavilionExtension>(kiosk)
     }
 
     /// Verify that a kiosk is a pavilion kiosk (throws error if not)
-    /// Use this in functions that require pavilion functionality
     public fun assert_is_pavilion_kiosk(kiosk: &Kiosk) {
         assert!(is_pavilion_kiosk(kiosk), E_NOT_PAVILION);
     }
