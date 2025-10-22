@@ -733,6 +733,54 @@
             color: rgba(255, 255, 255, 0.8);
             letter-spacing: 0.5px;
         }
+
+        /* Title Page Features */
+        .title-features {
+            margin-top: 80px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .title-slide.active .title-features {
+            animation: slideUp 1.2s ease forwards;
+            animation-delay: 0.8s;
+        }
+
+        .feature-item {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(16px, 1.8vw, 22px);
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 2px;
+            font-weight: 300;
+            position: relative;
+            padding: 0 20px;
+        }
+
+        .feature-item:not(:last-child)::after {
+            content: '×';
+            position: absolute;
+            right: -20px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .feature-tagline {
+            margin-top: 30px;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(14px, 1.5vw, 18px);
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .title-slide.active .feature-tagline {
+            animation: slideUp 1.2s ease forwards;
+            animation-delay: 1s;
+        }
     </style>
 </head>
 <body>
@@ -749,6 +797,14 @@
                 <h1>PAVILION</h1>
                 <div class="subtitle">3D Kiosk Extension</div>
                 <div class="tagline">為 Kiosk 注入 3D 空間與社交功能</div>
+                
+                <div class="title-features">
+                    <div class="feature-item">收藏</div>
+                    <div class="feature-item">展示</div>
+                    <div class="feature-item">社交</div>
+                    <div class="feature-item">交易</div>
+                </div>
+                <div class="feature-tagline">四位一體的完整 NFT 體驗</div>
             </div>
         </div>
 
@@ -770,11 +826,6 @@
                         提供一個帶有交易以及社交屬性的展示平台，<br>
                         讓用戶能按自己的喜好來組織並展示、交易自己的收藏品
                     </p>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 50px;">
-                    <strong>收藏 × 展示 × 社交 × 交易</strong>
-                    <p style="margin-top: 20px;">四位一體的完整 NFT 體驗</p>
                 </div>
             </div>
         </div>
