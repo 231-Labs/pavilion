@@ -697,11 +697,21 @@
             text-align: center;
             opacity: 0;
             transform: translateY(30px);
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
         }
 
         .title-slide.active .qr-container {
             animation: slideUp 1.2s ease forwards;
             animation-delay: 0.5s;
+        }
+
+        .qr-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .qr-code {
@@ -1157,10 +1167,18 @@
                 <div class="tagline">Built on Sui and Walrus</div>
                 
                 <div class="qr-container">
-                    <div class="qr-code">
-                        <img src="images/250922121014.png" alt="訪客模式 QR Code">
+                    <div class="qr-item">
+                        <div class="qr-code">
+                            <img src="images/250922121014.png" alt="訪客模式 QR Code">
+                        </div>
+                        <div class="qr-label">體驗 Testnet 訪客模式</div>
                     </div>
-                    <div class="qr-label">體驗 Testnet 訪客模式</div>
+                    <div class="qr-item">
+                        <div class="qr-code">
+                            <img src="images/pavilion_demo_video.png" alt="Demo Video QR Code">
+                        </div>
+                        <div class="qr-label">觀看 Demo 影片</div>
+                    </div>
                 </div>
             </div>
         </div>
