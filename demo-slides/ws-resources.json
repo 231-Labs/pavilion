@@ -1,0 +1,24 @@
+{
+  "headers": {
+    "/images/*": {
+      "Cache-Control": "public, max-age=31536000, immutable"
+    },
+    "/index.html": {
+      "Cache-Control": "public, max-age=3600",
+      "Content-Type": "text/html; charset=utf-8"
+    }
+  },
+  "routes": {
+    "/*": "/index.html"
+  },
+  "metadata": {
+    "link": "https://pavilion-demo.wal.app",
+    "image_url": null,
+    "description": "Pavilion - 3D Kiosk Extension Demo Presentation. A decentralized NFT gallery platform on Sui blockchain with Walrus storage.",
+    "project_url": "https://pavilion.wal.app",
+    "creator": "Pavilion Team"
+  },
+  "site_name": "Pavilion Demo Presentation",
+  "ignore": []
+}
+
