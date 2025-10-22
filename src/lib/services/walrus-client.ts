@@ -1,5 +1,14 @@
 const DEFAULT_AGGREGATOR = 'https://aggregator.walrus-testnet.walrus.space';
 
+export interface ModelFile {
+  name: string;
+  url: string;
+}
+
+export interface ModelsData {
+  files: ModelFile[];
+}
+
 export function getWalrusUrl(blobId: string, aggregator?: string): string {
   const aggregatorBase = aggregator || DEFAULT_AGGREGATOR;
   // Remove 0x prefix if present, as Walrus aggregator doesn't accept it
@@ -41,5 +50,16 @@ export async function getWalrusUrlSmart(blobId: string, options?: {
   
   // Fallback to aggregator URL (let the loader handle the error)
   return aggregatorUrl;
+}
+
+/**
+ * Fetch models list from the models.json config file
+ */
+export async function fetchModels(): Promise<ModelsData> {
+  const response = await fetch('/config/models.json');
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.statusText}`);
+  }
+  return response.json();
 }
 
