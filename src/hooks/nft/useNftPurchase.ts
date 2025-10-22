@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
-import { buildPurchaseTransaction, parsePurchaseError } from '../../lib/tx/purchase';
-import { mistToSui, suiToMist } from '../../lib/tx/royalty';
+import { buildPurchaseTransaction, parsePurchaseError } from '../../lib/tx/kiosk/purchase';
+import { mistToSui, suiToMist } from '../../lib/tx/nft/royalty';
 
 interface PurchaseItemParams {
   itemId: string;

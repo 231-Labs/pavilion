@@ -3,7 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useKioskClient } from '../../components/providers/KioskClientProvider';
 import { useKioskState } from '../../components/providers/KioskStateProvider';
-import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion';
+import { resolveKioskOwnerCapId } from '../../lib/tx/pavilion/index';
 import type { UsePavilionInitializationReturn } from '../../types/pavilion';
 
 export function usePavilionInitialization(): UsePavilionInitializationReturn {
