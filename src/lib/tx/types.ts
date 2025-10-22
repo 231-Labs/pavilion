@@ -8,6 +8,9 @@ export type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     }
   | {
       mode: 'existing';
@@ -17,6 +20,9 @@ export type PavilionTxConfig =
       ownerAddress: string;
       kioskId: string;
       kioskOwnerCapId: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     }
   | {
       mode: 'auto';
@@ -24,6 +30,9 @@ export type PavilionTxConfig =
       packageId: string;
       pavilionName: string;
       ownerAddress: string;
+      platformConfigId: string;
+      platformRecipient: string;
+      suiClient: any;
     };
 
 export interface PavilionTxParams {
@@ -31,6 +40,9 @@ export interface PavilionTxParams {
   packageId: string;
   pavilionName: string;
   ownerAddress: string;
+  platformConfigId: string;
+  platformRecipient: string;
+  suiClient: any;
 }
 
 export interface ExistingKioskParams extends PavilionTxParams {
