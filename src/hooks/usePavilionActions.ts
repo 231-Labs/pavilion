@@ -18,6 +18,8 @@ export function usePavilionActions(): UsePavilionActionsReturn {
   const kioskState = useKioskState();
   
   const PAVILION_PACKAGE_ID = process.env.NEXT_PUBLIC_PAVILION_PACKAGE_ID as string | undefined;
+  const PLATFORM_CONFIG_ID = process.env.NEXT_PUBLIC_PLATFORM_CONFIG_ID as string | undefined;
+  const PLATFORM_RECIPIENT = process.env.NEXT_PUBLIC_PLATFORM_RECIPIENT as string | undefined;
 
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
@@ -46,6 +48,16 @@ export function usePavilionActions(): UsePavilionActionsReturn {
       return;
     }
     
+    if (!PLATFORM_CONFIG_ID) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID environment variable');
+      return;
+    }
+    
+    if (!PLATFORM_RECIPIENT) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_RECIPIENT environment variable');
+      return;
+    }
+    
     if (!pavilionName.trim()) {
       setError('Pavilion name is required');
       return;
@@ -58,6 +70,9 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         packageId: PAVILION_PACKAGE_ID,
         pavilionName,
         ownerAddress: currentAccount.address,
+        platformConfigId: PLATFORM_CONFIG_ID,
+        platformRecipient: PLATFORM_RECIPIENT,
+        suiClient,
       });
 
       const result = await signAndExecuteTransaction({ transaction: tx });
@@ -99,6 +114,16 @@ export function usePavilionActions(): UsePavilionActionsReturn {
       setError('Missing requirements for initialization');
       return;
     }
+    
+    if (!PLATFORM_CONFIG_ID) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_CONFIG_ID environment variable');
+      return;
+    }
+    
+    if (!PLATFORM_RECIPIENT) {
+      setError('Missing NEXT_PUBLIC_PLATFORM_RECIPIENT environment variable');
+      return;
+    }
 
     if (!pavilionName.trim()) {
       setError('Pavilion name is required');
@@ -115,6 +140,9 @@ export function usePavilionActions(): UsePavilionActionsReturn {
         ownerAddress: currentAccount.address,
         kioskId: selectedKioskId,
         kioskOwnerCapId: selectedCap,
+        platformConfigId: PLATFORM_CONFIG_ID,
+        platformRecipient: PLATFORM_RECIPIENT,
+        suiClient,
       });
       
       const result = await signAndExecuteTransaction({ transaction: tx });
