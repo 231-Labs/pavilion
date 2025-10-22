@@ -553,6 +553,106 @@
         .content-slide.active .tech-badge:nth-child(3) { animation-delay: 0.7s; }
         .content-slide.active .tech-badge:nth-child(4) { animation-delay: 0.8s; }
         .content-slide.active .tech-badge:nth-child(5) { animation-delay: 0.9s; }
+
+        /* Flow diagram styles */
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 50px auto;
+            max-width: 900px;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .flow-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 25px 35px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .flow-box.highlight {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .flow-box h5 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(20px, 2.5vw, 28px);
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .flow-box p {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(14px, 1.6vw, 18px);
+            color: rgba(255, 255, 255, 0.6);
+            margin: 0;
+        }
+
+        .flow-arrow {
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .flow-arrow-down {
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .split-flow {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .split-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px 30px;
+            border-radius: 4px;
+            text-align: center;
+            flex: 1;
+            max-width: 280px;
+        }
+
+        .split-box h6 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(18px, 2.2vw, 24px);
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .split-box p {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(14px, 1.6vw, 18px);
+            color: rgba(255, 255, 255, 0.6);
+            margin: 0;
+        }
+
+        .content-slide.active .flow-box,
+        .content-slide.active .split-box {
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .content-slide.active .flow-row:nth-child(1) .flow-box { animation-delay: 0.5s; }
+        .content-slide.active .flow-row:nth-child(2) .flow-box { animation-delay: 0.7s; }
+        .content-slide.active .flow-row:nth-child(3) .flow-box { animation-delay: 0.9s; }
+        .content-slide.active .split-box:nth-child(1) { animation-delay: 1.1s; }
+        .content-slide.active .split-box:nth-child(2) { animation-delay: 1.2s; }
     </style>
 </head>
 <body>
@@ -731,8 +831,59 @@
             </div>
         </div>
 
-        <!-- Slide 7: Future Roadmap Part 1 -->
+        <!-- Slide 7: Patronage Staking Mechanism -->
         <div class="slide content-slide" data-slide="7">
+            <div class="slide-content">
+                <h2>Patronage 質押機制設計</h2>
+                <p style="text-align: center; margin-bottom: 50px;">與 Scallop 協議整合規劃</p>
+                
+                <div class="flow-diagram">
+                    <div class="flow-row">
+                        <div class="flow-box">
+                            <h5>用戶</h5>
+                            <p>質押 SUI</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <h5>Pavilion StakingPool</h5>
+                            <p>發放 Patronage 憑證</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-arrow-down">↓</div>
+                    
+                    <div class="flow-row">
+                        <div class="flow-box highlight">
+                            <h5>Scallop Lending Pool</h5>
+                            <p>產生放貸利息</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-arrow-down">↓</div>
+                    
+                    <div class="flow-row">
+                        <div class="flow-box">
+                            <h5>利息分配</h5>
+                            <p>智能合約自動執行</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="split-flow">
+                    <div class="split-box">
+                        <h6>用戶收益</h6>
+                        <p>獲得年化收益獎勵<br>（預設 5% APY）</p>
+                    </div>
+                    <div class="split-box">
+                        <h6>平台收益</h6>
+                        <p>利差用於覆蓋<br>Walrus 存儲等成本</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Future Roadmap Part 1 -->
+        <div class="slide content-slide" data-slide="8">
             <div class="slide-content">
                 <h2>未來發展路線</h2>
                 <div class="two-columns">
@@ -754,8 +905,8 @@
             </div>
         </div>
 
-        <!-- Slide 8: Future Roadmap Part 2 -->
-        <div class="slide content-slide" data-slide="8">
+        <!-- Slide 9: Future Roadmap Part 2 -->
+        <div class="slide content-slide" data-slide="9">
             <div class="slide-content">
                 <h2>社交與訂閱功能</h2>
                 <div class="value-card">
@@ -777,8 +928,8 @@
             </div>
         </div>
 
-        <!-- Slide 9: Vision -->
-        <div class="slide content-slide" data-slide="9">
+        <!-- Slide 10: Vision -->
+        <div class="slide content-slide" data-slide="10">
             <div class="slide-content">
                 <h2>我們的願景</h2>
                 <div class="quote-box" style="margin-top: 60px;">
@@ -797,8 +948,8 @@
             </div>
         </div>
 
-        <!-- Slide 10: Thank You -->
-        <div class="slide title-slide" data-slide="10">
+        <!-- Slide 11: Thank You -->
+        <div class="slide title-slide" data-slide="11">
             <div class="slide-content">
                 <h1>謝謝</h1>
                 <div class="subtitle">PAVILION</div>
@@ -809,7 +960,7 @@
 
     <!-- Navigation Controls -->
     <div class="slide-counter">
-        <span id="current-slide">1</span> / <span id="total-slides">10</span>
+        <span id="current-slide">1</span> / <span id="total-slides">11</span>
     </div>
     <div class="nav-controls">
         <button class="nav-btn" id="prev-btn">Prev</button>
