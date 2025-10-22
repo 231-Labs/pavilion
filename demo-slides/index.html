@@ -690,6 +690,49 @@
                 transform: translateY(0);
             }
         }
+
+        /* QR Code Styles */
+        .qr-container {
+            margin-top: 60px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .title-slide.active .qr-container {
+            animation: slideUp 1.2s ease forwards;
+            animation-delay: 0.5s;
+        }
+
+        .qr-code {
+            display: inline-block;
+            width: 280px;
+            height: 280px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .qr-code:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+        }
+
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .qr-label {
+            margin-top: 25px;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(16px, 1.8vw, 22px);
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -1048,6 +1091,13 @@
                 <h1>謝謝</h1>
                 <div class="subtitle">PAVILION</div>
                 <div class="tagline">Built on Sui and Walrus</div>
+                
+                <div class="qr-container">
+                    <div class="qr-code">
+                        <img src="images/250922121014.png" alt="訪客模式 QR Code">
+                    </div>
+                    <div class="qr-label">掃碼體驗訪客模式</div>
+                </div>
             </div>
         </div>
     </div>
