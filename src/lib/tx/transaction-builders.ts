@@ -50,14 +50,27 @@ async function buildPavilionTxInternal(config: PavilionTxConfig): Promise<Transa
   const feeAmount = parseInt(creationFeeStr, 10);
 
   const tx = new Transaction();
-  const kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
+  let kioskTx: KioskTransaction;
 
   // according to mode initialize kiosk
   if (config.mode === 'create' || config.mode === 'auto') {
+    kioskTx = new KioskTransaction({ kioskClient, transaction: tx });
     kioskTx.create();
   } else {
-    kioskTx.setKiosk(tx.object(config.kioskId));
-    kioskTx.setKioskCap(tx.object(config.kioskOwnerCapId));
+    // For existing kiosk, we need to get the full cap object
+    const { kioskOwnerCaps } = await kioskClient.getOwnedKiosks({ address: ownerAddress });
+    const targetCap = kioskOwnerCaps?.find(cap => cap.kioskId === config.kioskId);
+    
+    if (!targetCap) {
+      throw new Error(`Kiosk cap not found for kiosk ${config.kioskId}`);
+    }
+    
+    // Initialize KioskTransaction with the full cap object
+    kioskTx = new KioskTransaction({ 
+      kioskClient, 
+      transaction: tx, 
+      cap: targetCap 
+    });
   }
 
   // common initialize_pavilion call with payment
